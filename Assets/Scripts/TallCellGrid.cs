@@ -68,20 +68,31 @@ public class TallCellGrid
             TallCellGridLayer Temp = new TallCellGridLayer(LayerResolutionXZ, LayerRegularCellCount, CellLength);
             m_TallCellGridLayers.Add(Temp);
         }
-
-
     }
 
     public void ExtrapolationVelocity()
     {
         //narrowband extrapolation
-        //V extrapolation
+        //down sample TerrianHeight and TallCellHeight to coarse level
+        //V-style extrapolation
+    }
+
+    public void Advect()
+    {
+        //particle in cell advect using fine level
     }
 
     public void Remesh()
     {
         //modifie 2D Texture TerrianHeight and TallCellHeight (fine level)
         //transfer data from old to new (fine level)
+        //down sample TerrianHeight and TallCellHeight to coarse level
+    }
+
+    public void SolveLiner()
+    {
+        //generate mark using particle and solid
+        //construct A matrix for each level
     }
 
     private Texture m_Terrian;
