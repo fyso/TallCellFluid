@@ -70,26 +70,40 @@ public class TallCellGrid
         }
     }
 
-    public void ExtrapolationVelocity()
+    public void Step(float vTimeStep)
+    {
+        ExtrapolationVelocity();
+        Advect();
+        Remesh();
+        SolveLiner();
+    }
+
+    private void ExtrapolationVelocity()
     {
         //narrowband extrapolation
         //down sample TerrianHeight and TallCellHeight to coarse level
         //V-style extrapolation
     }
 
-    public void Advect()
+    private void Advect()
     {
-        //particle in cell advect using fine level
+        //grid to particle using fine level
+        //advect particle
+        //Particle to grid using fine level
     }
 
-    public void Remesh()
+    private void Remesh()
     {
         //modifie 2D Texture TerrianHeight and TallCellHeight (fine level)
         //transfer data from old to new (fine level)
+
         //down sample TerrianHeight and TallCellHeight to coarse level
+        //down sample velocity to coarse level
+
+        //update mark for each level
     }
 
-    public void SolveLiner()
+    private void SolveLiner()
     {
         //generate mark using particle and solid
         //construct A matrix for each level
