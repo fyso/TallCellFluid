@@ -1,0 +1,113 @@
+#include "Common.hlsl"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel computeTerrianHeightAndTallCellHeight
+#pragma kernel smoothTallCellHeight
+#pragma kernel enforceDCondition
+
+Texture2D<float> TerrianTexture_R;
+
+Texture2D<float> TerrianHeight_R;
+RWTexture2D<float> TerrianHeight_RW;
+
+Texture2D<float2> TallCellHeightMaxMin_R;
+RWTexture2D<float2> TallCellHeightMaxMin_RW;
+
+Texture2D<float> TallCellHeight_R;
+RWTexture2D<float> TallCellHeight_RW;
+RWTexture2D<float> TallCellHeightCache_RW;
+SamplerState Sampler_Trilinear_Clamp;
+
+float HeightScale;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void computeTerrianHeightAndTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
+    
+    float2 UV = DispatchThreadID.xy / (float2) XZResolution;
+    float TerrianHeight = TerrianTexture_R.SampleLevel(Sampler_Trilinear_Clamp, UV, 0);
+    TerrianHeight = TerrianHeight * HeightScale;
+    TerrianHeight_RW[DispatchThreadID.xy] = TerrianHeight;
+    
+    float H1 = TerrianHeight;
+    float H2 = SeaLevel;
+    if(H2 - H1 < CellLength * (GridAbove - GridLow))
+    {
+        TallCellHeightMaxMin_RW[DispatchThreadID.xy] = float2(0, 0);
+    }
+    else
+    {
+        float Max = H2 - CellLength * GridAbove;
+        float Min = H1 + CellLength * GridLow;
+        
+        TallCellHeightMaxMin_RW[DispatchThreadID.xy] = float2(Max, Min);
+        TallCellHeight_RW[DispatchThreadID.xy] = (Max + Min) * 0.5f;
+    }
+}
+
+float BlurSigma;
+float BlurRadius;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void smoothTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
+    
+    float2 UV = (float2) DispatchThreadID.xy / XZResolution;
+    float2 h = 1.0f / XZResolution;
+    float2 MaxMin = TallCellHeightMaxMin_R[DispatchThreadID.xy];
+ 
+    const float2 offsets[9] =
+    {
+        float2(-1, 1), float2(0, 1), float2(1, 1),
+	    float2(-1, 0), float2(0, 0), float2(1, 0),
+		float2(-1, -1), float2(0, -1), float2(1, -1),
+    };
+    
+    float sum = 0;
+    float weight[9];
+    for (int j = 0; j < 9; j++)
+    {
+        float l = length(BlurRadius * h * offsets[j]);
+        float g = (1.0 / (2.0 * PI * pow(BlurSigma, 2.0))) * pow(E, (-(l * l) / (2.0 * pow(BlurSigma, 2.0))));
+        weight[j] = g;
+        sum += g;
+    }
+
+    for (j = 0; j < 9; j++)
+        weight[j] /= sum;
+
+    float Result = 0.0;
+    for (j = 0; j < 9; j++)
+    {
+        Result += TallCellHeight_R.SampleLevel(Sampler_Trilinear_Clamp, UV + BlurRadius * h * offsets[j], 0) * weight[j];
+    }
+    TallCellHeightCache_RW[DispatchThreadID.xy] = clamp(Result, MaxMin.y, MaxMin.x);
+}
+
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
+    
+    float2 Center = TallCellHeight_R[DispatchThreadID.xy];
+    float2 UV = (float2) DispatchThreadID.xy / XZResolution;
+    float2 h = 1.0f / XZResolution;
+    
+    const float2 offsets[9] =
+    {
+        float2(-1, 1), float2(0, 1), float2(1, 1),
+	    float2(-1, 0), float2(0, 0), float2(1, 0),
+		float2(-1, -1), float2(0, -1), float2(1, -1),
+    };
+    float Max = -1.0f;
+    for (int j = 0; j < 9; j++)
+    {
+        Max = max(Max, TallCellHeight_R.SampleLevel(Sampler_Trilinear_Clamp, UV + h * offsets[j], 0));
+    }
+    
+    TallCellHeightCache_RW[DispatchThreadID.xy] = min(Center, Max + D * CellLength) - TerrianHeight_R[DispatchThreadID.xy];
+}
