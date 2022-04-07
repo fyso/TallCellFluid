@@ -266,7 +266,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 10000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -330,11 +330,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Terrian: {fileID: 2800000, guid: 7664b6f69431dfb4cbaf3e1ef3122f15, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
-  m_ResolutionXZ: {x: 256, y: 256}
+  m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellCount: 32
   m_Celllength: 1
-  m_SeaLevel: 25
+  m_SeaLevel: 45
   m_MaxParticleCount: 100000
+  m_TimeStep: 0
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0

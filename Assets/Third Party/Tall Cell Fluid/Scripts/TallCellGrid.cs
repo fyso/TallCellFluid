@@ -44,6 +44,7 @@ public class TallCellGridLayer
 {
     public RenderTexture TerrrianHeight { get { return m_TerrrianHeight; } }
     public RenderTexture TallCellHeight { get { return m_TallCellHeight; } }
+    public Vector2Int ResolutionXZ { get { return m_ResolutionXZ; } }
 
     public TallCellGridLayer(Vector2Int vResolutionXZ, int vRegularCellCount, float vCellLength)
     {
@@ -87,6 +88,8 @@ public class TallCellGridLayer
 
 public class TallCellGrid
 {
+    public List<TallCellGridLayer> TallCellGridLayers { get { return m_TallCellGridLayers; } }
+
     public TallCellGrid(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
     {
         m_SeaLevel = vSeaLevel;
@@ -139,10 +142,6 @@ public class TallCellGrid
         m_BackTallCellHeightCahce.Release();
     }
 
-    public void Init(float vSeaLevel)
-    {
-    }
-
     public void Step(float vTimeStep)
     {
         Remesh();
@@ -167,7 +166,7 @@ public class TallCellGrid
 
     private void Remesh()
     {
-        if(!IsInit)
+        if (!IsInit)
         {
             m_RemeshTools.ComputeTerrianHeight(m_Terrian, m_TallCellGridLayers[0].TerrrianHeight, 10.0f);
             m_RemeshTools.ComputeH1H2WithSeaLevel(m_TallCellGridLayers[0].TerrrianHeight, m_H1H2Cahce, m_SeaLevel);
