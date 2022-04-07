@@ -89,6 +89,7 @@ public class TallCellGrid
 {
     public TallCellGrid(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
     {
+        m_SeaLevel = vSeaLevel;
         m_Terrian = vTerrian;
         m_Min = vMin;
         m_HierarchicalLevel = (int)Mathf.Min(
@@ -107,8 +108,39 @@ public class TallCellGrid
 
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 8.0f);
 
-        m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength);
-        m_RemeshTools.InitTallCellMesh(vTerrian, m_TallCellGridLayers[0].TerrrianHeight, m_TallCellGridLayers[0].TallCellHeight, vSeaLevel, 10.0f);
+        m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellCount);
+
+        m_H1H2Cahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RGFloat)
+        {
+            enableRandomWrite = true,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        m_MaxMinCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RGFloat)
+        {
+            enableRandomWrite = true,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        m_BackTallCellHeightCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RFloat)
+        {
+            enableRandomWrite = true,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+    }
+
+    ~TallCellGrid()
+    {
+        m_H1H2Cahce.Release();
+        m_MaxMinCahce.Release();
+        m_BackTallCellHeightCahce.Release();
+    }
+
+    public void Init(float vSeaLevel)
+    {
     }
 
     public void Step(float vTimeStep)
@@ -135,14 +167,27 @@ public class TallCellGrid
 
     private void Remesh()
     {
-        //modifie 2D Texture TerrianHeight and TallCellHeight (fine level)
+        if(!IsInit)
+        {
+            m_RemeshTools.ComputeTerrianHeight(m_Terrian, m_TallCellGridLayers[0].TerrrianHeight, 10.0f);
+            m_RemeshTools.ComputeH1H2WithSeaLevel(m_TallCellGridLayers[0].TerrrianHeight, m_H1H2Cahce, m_SeaLevel);
+            IsInit = true;
+        }
+        else
+        {
+            //ComputeH1H2WithMark
+        }
 
-        //down sample TerrianHeight and TallCellHeight to coarse level
-
-        //update red-black info for each level
+        m_RemeshTools.ComputeTallCellHeight(m_TallCellGridLayers[0].TerrrianHeight, m_H1H2Cahce, m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight);
+        m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_BackTallCellHeightCahce);
+        m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
+        m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_BackTallCellHeightCahce);
+        m_RemeshTools.EnforceDCondition(m_TallCellGridLayers[0].TerrrianHeight, m_BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
 
         //transfer data from old to new (fine level)
-        //update mark for each level
+
+        //down sample TerrianHeight and TallCellHeight to coarse level
+        //add Particle and update mark for each level
     }
 
     private void SparseMultiGridRedBlackGaussSeidel()
@@ -150,6 +195,8 @@ public class TallCellGrid
         //multi grid gauss-seidel
     }
 
+    private bool IsInit = false;
+    private float m_SeaLevel;
     private Texture m_Terrian;
     private Vector3 m_Min;
     private int m_HierarchicalLevel;
@@ -157,4 +204,8 @@ public class TallCellGrid
     private DynamicParticle m_DynamicParticle;
 
     private RemeshTools m_RemeshTools;
+
+    private RenderTexture m_H1H2Cahce;
+    private RenderTexture m_MaxMinCahce;
+    private RenderTexture m_BackTallCellHeightCahce;
 }

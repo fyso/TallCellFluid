@@ -1,7 +1,9 @@
 #include "Common.hlsl"
 
 #pragma enable_d3d11_debug_symbols
-#pragma kernel computeTerrianHeightAndTallCellHeight
+#pragma kernel computeTerrianHeight
+#pragma kernel computeH1H2WithSeaLevel
+#pragma kernel computeTallCellHeight
 #pragma kernel smoothTallCellHeight
 #pragma kernel enforceDCondition
 
@@ -9,6 +11,9 @@ Texture2D<float> TerrianTexture_R;
 
 Texture2D<float> TerrianHeight_R;
 RWTexture2D<float> TerrianHeight_RW;
+
+Texture2D<float2> WaterSurfaceH1H2_R;
+RWTexture2D<float2> WaterSurfaceH1H2_RW;
 
 Texture2D<float2> TallCellHeightMaxMin_R;
 RWTexture2D<float2> TallCellHeightMaxMin_RW;
@@ -20,7 +25,7 @@ SamplerState Sampler_Trilinear_Clamp;
 
 float HeightScale;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
-void computeTerrianHeightAndTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
+void computeTerrianHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     if (any(DispatchThreadID.xy > XZResolution))
         return;
@@ -29,17 +34,43 @@ void computeTerrianHeightAndTallCellHeight(uint3 DispatchThreadID : SV_DispatchT
     float TerrianHeight = TerrianTexture_R.SampleLevel(Sampler_Trilinear_Clamp, UV, 0);
     TerrianHeight = TerrianHeight * HeightScale;
     TerrianHeight_RW[DispatchThreadID.xy] = TerrianHeight;
+}
+
+float SeaLevel;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void computeH1H2WithSeaLevel(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
     
-    float H1 = TerrianHeight;
-    float H2 = SeaLevel;
-    if(H2 - H1 < CellLength * (GridAbove - GridLow))
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    WaterSurfaceH1H2_RW[DispatchThreadID.xy] = float2(TerrianHeight, SeaLevel > TerrianHeight ? SeaLevel : TerrianHeight);
+}
+
+uint GridLow;
+uint GridAbove;
+uint D;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void computeTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
+    
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    float2 H1H2 = WaterSurfaceH1H2_R[DispatchThreadID.xy];
+    float RegularCellHeight = ConstantCellNum * CellLength;
+    
+    if (H1H2.y - H1H2.x > RegularCellHeight - CellLength * (GridAbove + GridLow))
     {
-        TallCellHeightMaxMin_RW[DispatchThreadID.xy] = float2(0, 0);
+        float Min, Max;
+        Min = Max = max(TerrianHeight, H1H2.y + GridAbove * CellLength - RegularCellHeight);
+        TallCellHeightMaxMin_RW[DispatchThreadID.xy] = float2(Max, Min);
+        TallCellHeight_RW[DispatchThreadID.xy] = (Max + Min) * 0.5f;
     }
     else
     {
-        float Max = H2 - CellLength * GridAbove;
-        float Min = H1 + CellLength * GridLow;
+        float Max = max(TerrianHeight, H1H2.x - CellLength * GridLow);
+        float Min = max(TerrianHeight, H1H2.y + CellLength * GridAbove - RegularCellHeight);
         
         TallCellHeightMaxMin_RW[DispatchThreadID.xy] = float2(Max, Min);
         TallCellHeight_RW[DispatchThreadID.xy] = (Max + Min) * 0.5f;
@@ -94,6 +125,7 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
         return;
     
     float2 Center = TallCellHeight_R[DispatchThreadID.xy];
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
     float2 UV = (float2) DispatchThreadID.xy / XZResolution;
     float2 h = 1.0f / XZResolution;
     
@@ -109,5 +141,5 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
         Max = max(Max, TallCellHeight_R.SampleLevel(Sampler_Trilinear_Clamp, UV + h * offsets[j], 0));
     }
     
-    TallCellHeightCache_RW[DispatchThreadID.xy] = min(Center, Max + D * CellLength) - TerrianHeight_R[DispatchThreadID.xy];
+    TallCellHeightCache_RW[DispatchThreadID.xy] = min(Center, Max + D * CellLength) - TerrianHeight;
 }

@@ -4,13 +4,8 @@
 #define PI 3.1415926535f
 #define E 2.7182818284f
 
-uint GridLow;
-uint GridAbove;
-uint D;
-
 float3 Min;
 float CellLength;
-float SeaLevel;
 uint2 XZResolution;
 uint ConstantCellNum;
 
