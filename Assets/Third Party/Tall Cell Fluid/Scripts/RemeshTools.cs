@@ -6,7 +6,7 @@ public class RemeshTools
 {
     public RemeshTools(Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
     {
-        m_RemeshTallCellGridCS = Resources.Load<ComputeShader>(Common.RemeshTallCellGridCSPath);
+        m_RemeshTallCellGridCS = Resources.Load<ComputeShader>(Common.RemeshToolsCSPath);
         computeTerrianHeight = m_RemeshTallCellGridCS.FindKernel("computeTerrianHeight");
         computeH1H2WithSeaLevel = m_RemeshTallCellGridCS.FindKernel("computeH1H2WithSeaLevel");
         computeTallCellHeight = m_RemeshTallCellGridCS.FindKernel("computeTallCellHeight");
