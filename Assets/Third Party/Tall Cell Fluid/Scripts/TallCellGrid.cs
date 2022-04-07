@@ -89,12 +89,15 @@ public class TallCellGridLayer
 public class TallCellGrid
 {
     public List<TallCellGridLayer> TallCellGridLayers { get { return m_TallCellGridLayers; } }
+    public DynamicParticle DynamicParticle { get { return m_DynamicParticle; } }
 
     public TallCellGrid(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
     {
         m_SeaLevel = vSeaLevel;
         m_Terrian = vTerrian;
         m_Min = vMin;
+        m_CellLength = vCellLength;
+        m_Max = vMin + (new Vector3(vResolutionXZ.x, vRegularCellCount * 32, vResolutionXZ.y)) * vCellLength;
         m_HierarchicalLevel = (int)Mathf.Min(
             Mathf.Log(vResolutionXZ.x, 2),
             Mathf.Min(Mathf.Log(vResolutionXZ.y, 2), Mathf.Log(vRegularCellCount, 2)));
@@ -104,7 +107,7 @@ public class TallCellGrid
         {
             Vector2Int LayerResolutionXZ = vResolutionXZ / (int)Mathf.Pow(2, i);
             int LayerRegularCellCount = vRegularCellCount / (int)Mathf.Pow(2, i);
-            float CellLength = vCellLength / Mathf.Pow(2, i);
+            float CellLength = vCellLength * Mathf.Pow(2, i);
             TallCellGridLayer Temp = new TallCellGridLayer(LayerResolutionXZ, LayerRegularCellCount, CellLength);
             m_TallCellGridLayers.Add(Temp);
         }
@@ -159,6 +162,8 @@ public class TallCellGrid
 
     private void Advect()
     {
+        m_DynamicParticle.OrganizeParticle(m_Min, m_Max, m_CellLength);
+        m_DynamicParticle.ZSort(m_Min, m_CellLength);
         //grid to particle using fine level
         //advect particle
         //Particle to grid using fine level
@@ -195,9 +200,11 @@ public class TallCellGrid
     }
 
     private bool IsInit = false;
-    private float m_SeaLevel;
-    private Texture m_Terrian;
     private Vector3 m_Min;
+    private Vector3 m_Max;
+    private float m_SeaLevel;
+    private float m_CellLength;
+    private Texture m_Terrian;
     private int m_HierarchicalLevel;
     private List<TallCellGridLayer> m_TallCellGridLayers;
     private DynamicParticle m_DynamicParticle;

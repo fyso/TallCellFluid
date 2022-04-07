@@ -116,11 +116,12 @@ namespace DParticle
             m_Particle = Temp;
         }
 
-        public void OrganizeParticle(Vector3 vMin, float vCellLength, Vector3Int vResolution)
+        public void OrganizeParticle(Vector3 vMin, Vector3 vMax, float vCellLength)
         {
             GPUDynamicParticleToolCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
             GPUDynamicParticleToolCS.SetFloat("HashGridCellLength", vCellLength);
-            GPUDynamicParticleToolCS.SetInts("HashGridResolution", vResolution.x, vResolution.y, vResolution.z);
+            Vector3 Res = (vMax - vMin) / vCellLength;
+            GPUDynamicParticleToolCS.SetInts("HashGridResolution", Mathf.CeilToInt(Res.x), Mathf.CeilToInt(Res.y), Mathf.CeilToInt(Res.z));
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticlePosition_R", m_Particle.Position);
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleFilter_RW", m_Particle.Filter);

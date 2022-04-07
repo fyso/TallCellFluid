@@ -22,10 +22,14 @@ public class TallCellGridTest : MonoBehaviour
         m_TallCellGrid = new TallCellGrid(m_Terrian, m_ResolutionXZ, m_RegularCellCount, m_Min, m_Celllength, m_SeaLevel, m_MaxParticleCount);
     }
 
-    // Update is called once per frame
     void Update()
     {
         m_TallCellGrid.Step(m_TimeStep);
+    }
+
+    private void OnRenderObject()
+    {
+        m_TallCellGrid.DynamicParticle.VisualParticle();
     }
 
     private void OnDrawGizmos()
@@ -47,15 +51,8 @@ public class TallCellGridTest : MonoBehaviour
             {
                 for (int j = 0; j < FineLevel.ResolutionXZ.y; j++)
                 {
-                    Gizmos.color = new Color(0.0f, 1.0f, 0.0f);
                     float CurrTerrianHeight = TerrianHeight.GetPixel(i, j).r;
-                    Vector3 TerrianCellCenter = m_Min + new Vector3(i * m_Celllength, CurrTerrianHeight * 0.5f, j * m_Celllength);
-                    Gizmos.DrawWireCube(TerrianCellCenter, new Vector3(m_Celllength, CurrTerrianHeight, m_Celllength));
-
-                    Gizmos.color = new Color(1.0f, 0.0f, 0.0f);
                     float CurrTallCellHeight = TallCellHeight.GetPixel(i, j).r;
-                    Vector3 TallCellCenter = m_Min + new Vector3(i * m_Celllength, CurrTallCellHeight * 0.5f + CurrTerrianHeight, j * m_Celllength);
-                    Gizmos.DrawWireCube(TallCellCenter, new Vector3(m_Celllength, CurrTallCellHeight, m_Celllength));
 
                     Gizmos.color = new Color(0.0f, 0.0f, 1.0f);
                     Vector3 RegularCellCenter = m_Min + new Vector3(i * m_Celllength, CurrTallCellHeight + CurrTerrianHeight + 0.5f * m_Celllength, j * m_Celllength);
@@ -64,6 +61,14 @@ public class TallCellGridTest : MonoBehaviour
                         Gizmos.DrawWireCube(RegularCellCenter, new Vector3(m_Celllength, m_Celllength, m_Celllength));
                         RegularCellCenter.y += m_Celllength;
                     }
+
+                    Gizmos.color = new Color(1.0f, 0.0f, 0.0f);
+                    Vector3 TallCellCenter = m_Min + new Vector3(i * m_Celllength, CurrTallCellHeight * 0.5f + CurrTerrianHeight, j * m_Celllength);
+                    Gizmos.DrawWireCube(TallCellCenter, new Vector3(m_Celllength, CurrTallCellHeight, m_Celllength));
+
+                    Gizmos.color = new Color(0.0f, 1.0f, 0.0f);
+                    Vector3 TerrianCellCenter = m_Min + new Vector3(i * m_Celllength, CurrTerrianHeight * 0.5f, j * m_Celllength);
+                    Gizmos.DrawWireCube(TerrianCellCenter, new Vector3(m_Celllength, CurrTerrianHeight, m_Celllength));
                 }
             }
         }
