@@ -13,8 +13,6 @@ public class RemeshTools
         smoothTallCellHeight = m_RemeshTallCellGridCS.FindKernel("smoothTallCellHeight");
         enforceDCondition = m_RemeshTallCellGridCS.FindKernel("enforceDCondition");
 
-        m_GPUGroupCount.x = Mathf.CeilToInt((float)vResolutionXZ.x / Common.ThreadCount2D);
-        m_GPUGroupCount.y = Mathf.CeilToInt((float)vResolutionXZ.y / Common.ThreadCount2D);
         UpdateGlobalParma(vResolutionXZ, vCellLength, vConstantCellNum);
     }
 
@@ -23,6 +21,9 @@ public class RemeshTools
         m_RemeshTallCellGridCS.SetInts("XZResolution", vResolutionXZ.x, vResolutionXZ.y);
         m_RemeshTallCellGridCS.SetFloat("CellLength", vCellLength);
         m_RemeshTallCellGridCS.SetInt("ConstantCellNum", vConstantCellNum);
+
+        m_GPUGroupCount.x = Mathf.CeilToInt((float)vResolutionXZ.x / Common.ThreadCount2D);
+        m_GPUGroupCount.y = Mathf.CeilToInt((float)vResolutionXZ.y / Common.ThreadCount2D);
     }
 
     public void ComputeTerrianHeight(Texture vTerrian, RenderTexture voTerrianHeight, float vHeightScale = 1.0f)

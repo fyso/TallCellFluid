@@ -2,12 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DParticle;
+using UnityEngine.Profiling;
 
 public class TallCellGridLayerData3D
 {
-    private RenderTexture m_UpperUniform;
-    private RenderTexture m_Top;
-    private RenderTexture m_Bottom;
+    public RenderTexture UpperUniform { get { return m_UpperUniform; } }
+    public RenderTexture Top { get { return m_Top; } }
+    public RenderTexture Bottom { get { return m_Bottom; } }
 
     public TallCellGridLayerData3D(Vector2Int vResolutionXZ, int vRegularCellCount, RenderTextureFormat vDataType)
     {
@@ -38,12 +39,18 @@ public class TallCellGridLayerData3D
         m_Top.Release();
         m_Bottom.Release();
     }
+
+    private RenderTexture m_UpperUniform;
+    private RenderTexture m_Top;
+    private RenderTexture m_Bottom;
 }
 
 public class TallCellGridLayer
 {
     public RenderTexture TerrrianHeight { get { return m_TerrrianHeight; } }
     public RenderTexture TallCellHeight { get { return m_TallCellHeight; } }
+    public TallCellGridLayerData3D Velocity { get { return m_Velocity; } }
+    public TallCellGridLayerData3D Pressure { get { return m_Pressure; } }
     public Vector2Int ResolutionXZ { get { return m_ResolutionXZ; } }
     public float CellLength { get { return m_CellLength; } }
 
@@ -114,45 +121,60 @@ public class TallCellGrid
         }
 
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 8.0f);
-        m_ParticleInCellTools = new ParticleInCellTools();
 
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellCount);
+        m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellCount);
 
-        m_H1H2Cahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RGFloat)
-        {
-            enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
-            wrapMode = TextureWrapMode.Clamp
-        };
-
-        m_MaxMinCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RGFloat)
-        {
-            enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
-            wrapMode = TextureWrapMode.Clamp
-        };
-
-        m_BackTallCellHeightCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RFloat)
-        {
-            enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
-            wrapMode = TextureWrapMode.Clamp
-        };
-    }
-
-    ~TallCellGrid()
-    {
-        m_H1H2Cahce.Release();
-        m_MaxMinCahce.Release();
-        m_BackTallCellHeightCahce.Release();
+        m_GPUCache = new TallCellGridGPUCache(vResolutionXZ, vCellLength, vRegularCellCount);
     }
 
     public void Step(float vTimeStep)
     {
+        Profiler.BeginSample("Remesh");
         Remesh();
+        Profiler.EndSample();
+
+        Profiler.BeginSample("ExtrapolationVelocity");
         ExtrapolationVelocity();
+        Profiler.EndSample();
+
+        Profiler.BeginSample("Advect");
         Advect();
+        Profiler.EndSample();
+
+        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
         SparseMultiGridRedBlackGaussSeidel();
+        Profiler.EndSample();
+    }
+
+    private void Remesh()
+    {
+        if (!m_IsInit)
+        {
+            m_RemeshTools.ComputeTerrianHeight(m_Terrian, m_TallCellGridLayers[0].TerrrianHeight, 10.0f);
+            m_RemeshTools.ComputeH1H2WithSeaLevel(m_TallCellGridLayers[0].TerrrianHeight, m_GPUCache.H1H2Cahce, m_SeaLevel);
+        }
+        else
+        {
+            //ComputeH1H2WithMark
+        }
+
+        m_RemeshTools.ComputeTallCellHeight(m_TallCellGridLayers[0].TerrrianHeight, m_GPUCache.H1H2Cahce, m_GPUCache.MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight);
+        m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
+        m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_GPUCache.BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
+        m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
+        m_RemeshTools.EnforceDCondition(m_TallCellGridLayers[0].TerrrianHeight, m_GPUCache.BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
+
+        if (!m_IsInit)
+            m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_TallCellGridLayers[0], m_SeaLevel, m_DynamicParticle);
+
+        //update mark for each level
+        m_ParticleInCellTools.scatterParticleToGrid(m_DynamicParticle, m_TallCellGridLayers[0], m_GPUCache);
+
+        //transfer data from old to new (fine level)
+        //down sample TerrianHeight and TallCellHeight to coarse level
+
+        if (!m_IsInit) m_IsInit = true;
     }
 
     private void ExtrapolationVelocity()
@@ -171,46 +193,12 @@ public class TallCellGrid
         //Particle to grid using fine level
     }
 
-    private void Remesh()
-    {
-        if (!IsInit)
-        {
-            m_RemeshTools.ComputeTerrianHeight(m_Terrian, m_TallCellGridLayers[0].TerrrianHeight, 10.0f);
-            m_RemeshTools.ComputeH1H2WithSeaLevel(m_TallCellGridLayers[0].TerrrianHeight, m_H1H2Cahce, m_SeaLevel);
-        }
-        else
-        {
-            //ComputeH1H2WithMark
-        }
-
-        m_RemeshTools.ComputeTallCellHeight(m_TallCellGridLayers[0].TerrrianHeight, m_H1H2Cahce, m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight);
-        m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_BackTallCellHeightCahce);
-        m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
-        m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_BackTallCellHeightCahce);
-        m_RemeshTools.EnforceDCondition(m_TallCellGridLayers[0].TerrrianHeight, m_BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
-
-        if(!IsInit)
-        {
-            m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_TallCellGridLayers[0], m_SeaLevel, m_DynamicParticle);
-        }
-
-        //transfer data from old to new (fine level)
-
-        //down sample TerrianHeight and TallCellHeight to coarse level
-        //add Particle and update mark for each level
-
-        if(!IsInit)
-        {
-            IsInit = true;
-        }
-    }
-
     private void SparseMultiGridRedBlackGaussSeidel()
     {
         //multi grid gauss-seidel
     }
 
-    private bool IsInit = false;
+    private bool m_IsInit = false;
     private Vector3 m_Min;
     private Vector3 m_Max;
     private float m_SeaLevel;
@@ -223,7 +211,6 @@ public class TallCellGrid
     private RemeshTools m_RemeshTools;
     private ParticleInCellTools m_ParticleInCellTools;
 
-    private RenderTexture m_H1H2Cahce;
-    private RenderTexture m_MaxMinCahce;
-    private RenderTexture m_BackTallCellHeightCahce;
+    //Temp cache
+    private TallCellGridGPUCache m_GPUCache;
 }
