@@ -82,6 +82,15 @@ namespace DParticle
             m_Argument.Release();
         }
 
+        public void SetData(List<Vector3> vPosition, List<Vector3> vVelocity, List<int> vFilter, int vSize)
+        {
+            m_Particle.Position.SetData(vPosition.ToArray(), 0, 0, vSize);
+            m_Particle.Velocity.SetData(vVelocity.ToArray(), 0, 0, vSize);
+            m_Particle.Filter.SetData(vFilter.ToArray(), 0, 0, vSize);
+            int[] InitArgument = new int[7] { Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1, 3, vSize, 0, 0 };
+            m_Argument.SetData(InitArgument);
+        }
+
         public void ZSort(Vector3 vMin, float vCellLength)
         {
             GPUBufferClearCS.SetInt("BufferSize", m_HashCount.count);

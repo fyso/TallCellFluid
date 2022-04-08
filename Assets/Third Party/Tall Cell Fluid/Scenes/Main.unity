@@ -333,9 +333,10 @@ MonoBehaviour:
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellCount: 32
   m_Celllength: 1
-  m_SeaLevel: 45
-  m_MaxParticleCount: 100000
+  m_SeaLevel: 30
+  m_MaxParticleCount: 2000000
   m_TimeStep: 0
+  ShowDebugInfo: 0
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0

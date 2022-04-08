@@ -45,6 +45,7 @@ public class TallCellGridLayer
     public RenderTexture TerrrianHeight { get { return m_TerrrianHeight; } }
     public RenderTexture TallCellHeight { get { return m_TallCellHeight; } }
     public Vector2Int ResolutionXZ { get { return m_ResolutionXZ; } }
+    public float CellLength { get { return m_CellLength; } }
 
     public TallCellGridLayer(Vector2Int vResolutionXZ, int vRegularCellCount, float vCellLength)
     {
@@ -113,6 +114,7 @@ public class TallCellGrid
         }
 
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 8.0f);
+        m_ParticleInCellTools = new ParticleInCellTools();
 
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellCount);
 
@@ -175,7 +177,6 @@ public class TallCellGrid
         {
             m_RemeshTools.ComputeTerrianHeight(m_Terrian, m_TallCellGridLayers[0].TerrrianHeight, 10.0f);
             m_RemeshTools.ComputeH1H2WithSeaLevel(m_TallCellGridLayers[0].TerrrianHeight, m_H1H2Cahce, m_SeaLevel);
-            IsInit = true;
         }
         else
         {
@@ -188,10 +189,20 @@ public class TallCellGrid
         m_RemeshTools.SmoothTallCellHeight(m_MaxMinCahce, m_TallCellGridLayers[0].TallCellHeight, m_BackTallCellHeightCahce);
         m_RemeshTools.EnforceDCondition(m_TallCellGridLayers[0].TerrrianHeight, m_BackTallCellHeightCahce, m_TallCellGridLayers[0].TallCellHeight);
 
+        if(!IsInit)
+        {
+            m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_TallCellGridLayers[0], m_SeaLevel, m_DynamicParticle);
+        }
+
         //transfer data from old to new (fine level)
 
         //down sample TerrianHeight and TallCellHeight to coarse level
         //add Particle and update mark for each level
+
+        if(!IsInit)
+        {
+            IsInit = true;
+        }
     }
 
     private void SparseMultiGridRedBlackGaussSeidel()
@@ -210,6 +221,7 @@ public class TallCellGrid
     private DynamicParticle m_DynamicParticle;
 
     private RemeshTools m_RemeshTools;
+    private ParticleInCellTools m_ParticleInCellTools;
 
     private RenderTexture m_H1H2Cahce;
     private RenderTexture m_MaxMinCahce;
