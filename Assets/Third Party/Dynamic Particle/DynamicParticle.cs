@@ -1,6 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GPUDPP;
 
 namespace DParticle
 {
@@ -51,16 +51,14 @@ namespace DParticle
             int[] InitArgument = new int[7] { 1, 1, 1, 3, 0, 0, 0 };
             m_Argument.SetData(InitArgument);
 
+            m_GPUScan = new GPUScan();
+            m_GPUBufferClear = new GPUBufferClear();
+
             m_SPHVisualMaterial = Resources.Load<Material>("DrawSPHParticle");
 
             GPUCountingSortHashCS = Resources.Load<ComputeShader>("GPUCountingSortHash");
             InsertParticleIntoHashGridKernel = GPUCountingSortHashCS.FindKernel("insertParticleIntoHashGrid");
             CountingSortFullKernel = GPUCountingSortHashCS.FindKernel("countingSortFull");
-
-            GPUScanCS = Resources.Load<ComputeShader>("GPUScan");
-            ScanInBucketKernel = GPUScanCS.FindKernel("scanInBucket");
-            ScanBucketResultKernel = GPUScanCS.FindKernel("scanBucketResult");
-            ScanAddBucketResultKernel = GPUScanCS.FindKernel("scanAddBucketResult");
 
             GPUDynamicParticleToolCS = Resources.Load<ComputeShader>("GPUDynamicParticleTool");
             AddParticleBlockKernel = GPUDynamicParticleToolCS.FindKernel("addParticleBlock");
@@ -68,9 +66,6 @@ namespace DParticle
             ScatterParticleDataKernel = GPUDynamicParticleToolCS.FindKernel("scatterParticleData");
             UpdateParticleNarrowCountArgmentKernel = GPUDynamicParticleToolCS.FindKernel("updateParticleNarrowCountArgment");
             DeleteParticleOutofRangeKernel = GPUDynamicParticleToolCS.FindKernel("deleteParticleOutofRange");
-
-            GPUBufferClearCS = Resources.Load<ComputeShader>("GPUBufferClear");
-            ClearUIntBufferWithZeroKernel = GPUBufferClearCS.FindKernel("clearUIntBufferWithZero");
         }
 
         ~DynamicParticle()
@@ -96,9 +91,7 @@ namespace DParticle
 
         public void ZSort(Vector3 vMin, float vCellLength)
         {
-            GPUBufferClearCS.SetInt("BufferSize", m_HashCount.count);
-            GPUBufferClearCS.SetBuffer(ClearUIntBufferWithZeroKernel, "TargetUIntBuffer_RW", m_HashCount);
-            GPUBufferClearCS.Dispatch(ClearUIntBufferWithZeroKernel, (int)Mathf.Ceil(((float)m_HashCount.count / Common.ThreadCount1D)), 1, 1);
+            m_GPUBufferClear.ClraeUIntBufferWithZero(m_HashCount);
 
             GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
             GPUCountingSortHashCS.SetFloat("HashGridCellLength", vCellLength);
@@ -109,7 +102,7 @@ namespace DParticle
             GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", m_HashCount);
             GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, m_Argument);
 
-            Scan(m_HashCount, m_HashOffset);
+            m_GPUScan.Scan(m_HashCount, m_HashOffset, m_ScanCache1, m_ScanCache2);
 
             GPUCountingSortHashCS.SetBuffer(CountingSortFullKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUCountingSortHashCS.SetBuffer(CountingSortFullKernel, "ParticleCellIndex_R", m_CellIndexCache);
@@ -139,7 +132,7 @@ namespace DParticle
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleFilter_RW", m_MainParticle.Filter);
             GPUDynamicParticleToolCS.DispatchIndirect(DeleteParticleOutofRangeKernel, m_Argument);
 
-            Scan(m_MainParticle.Filter, m_ScatterOffsetCache);
+            m_GPUScan.Scan(m_MainParticle.Filter, m_ScatterOffsetCache, m_ScanCache1, m_ScanCache2);
 
             GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleScatterOffset_R", m_ScatterOffsetCache);
             GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleIndrectArgment_R", m_Argument);
@@ -194,40 +187,6 @@ namespace DParticle
             Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, m_Argument, 12);
         }
 
-        private void Scan(ComputeBuffer vCountBuffer, ComputeBuffer voOffsetBuffer)
-        {
-            GPUScanCS.SetBuffer(ScanInBucketKernel, "Input", vCountBuffer);
-            GPUScanCS.SetBuffer(ScanInBucketKernel, "Output", voOffsetBuffer);
-            int GroupCount = (int)Mathf.Ceil((float)vCountBuffer.count / Common.ThreadCount1D);
-            GPUScanCS.Dispatch(ScanInBucketKernel, GroupCount, 1, 1);
-
-            GroupCount = (int)Mathf.Ceil((float)GroupCount / Common.ThreadCount1D);
-            if (GroupCount > 0)
-            {
-                GPUScanCS.SetBuffer(ScanBucketResultKernel, "Input", voOffsetBuffer);
-                GPUScanCS.SetBuffer(ScanBucketResultKernel, "Output", m_ScanCache1);
-                GPUScanCS.Dispatch(ScanBucketResultKernel, GroupCount, 1, 1);
-
-                GroupCount = (int)Mathf.Ceil((float)GroupCount / Common.ThreadCount1D);
-                if (GroupCount > 0)
-                {
-                    GPUScanCS.SetBuffer(ScanBucketResultKernel, "Input", m_ScanCache1);
-                    GPUScanCS.SetBuffer(ScanBucketResultKernel, "Output", m_ScanCache2);
-                    GPUScanCS.Dispatch(ScanBucketResultKernel, GroupCount, 1, 1);
-
-                    GPUScanCS.SetBuffer(ScanAddBucketResultKernel, "Input", m_ScanCache1);
-                    GPUScanCS.SetBuffer(ScanAddBucketResultKernel, "Input1", m_ScanCache2);
-                    GPUScanCS.SetBuffer(ScanAddBucketResultKernel, "Output", m_ScanCache1);
-                    GPUScanCS.Dispatch(ScanAddBucketResultKernel, GroupCount * Common.ThreadCount1D, 1, 1);
-                }
-
-                GPUScanCS.SetBuffer(ScanAddBucketResultKernel, "Input", voOffsetBuffer);
-                GPUScanCS.SetBuffer(ScanAddBucketResultKernel, "Input1", m_ScanCache1);
-                GPUScanCS.SetBuffer(ScanAddBucketResultKernel, "Output", voOffsetBuffer);
-                GPUScanCS.Dispatch(ScanAddBucketResultKernel, (int)Mathf.Ceil(((float)vCountBuffer.count / Common.ThreadCount1D)), 1, 1);
-            }
-        }
-
         private float m_Radius;
         private int m_MaxSize;
 
@@ -236,11 +195,14 @@ namespace DParticle
         private ComputeBuffer m_HashCount;
         private ComputeBuffer m_HashOffset;
         private ComputeBuffer m_CellIndexCache;
-        private ComputeBuffer m_InnerSortIndexCache;
         private ComputeBuffer m_ScanCache1;
         private ComputeBuffer m_ScanCache2;
+        private ComputeBuffer m_InnerSortIndexCache;
         private ComputeBuffer m_ScatterOffsetCache;
         private ComputeBuffer m_Argument;
+
+        private GPUScan m_GPUScan;
+        private GPUBufferClear m_GPUBufferClear;
 
         private Material m_SPHVisualMaterial;
 
@@ -248,19 +210,11 @@ namespace DParticle
         private int InsertParticleIntoHashGridKernel;
         private int CountingSortFullKernel;
 
-        private ComputeShader GPUScanCS;
-        private int ScanInBucketKernel;
-        private int ScanBucketResultKernel;
-        private int ScanAddBucketResultKernel;
-
         private ComputeShader GPUDynamicParticleToolCS;
         private int AddParticleBlockKernel;
         private int UpdateParticleCountArgmentKernel;
         private int ScatterParticleDataKernel;
         private int UpdateParticleNarrowCountArgmentKernel;
         private int DeleteParticleOutofRangeKernel;
-
-        private ComputeShader GPUBufferClearCS;
-        private int ClearUIntBufferWithZeroKernel;
     }
 }
