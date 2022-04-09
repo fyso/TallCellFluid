@@ -54,7 +54,7 @@ namespace GPUDPP
                     {
                         Debug.LogError(" Error result!");
                     }
-                }    
+                }
             }
         }
 
