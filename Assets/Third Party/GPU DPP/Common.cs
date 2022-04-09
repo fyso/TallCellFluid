@@ -9,7 +9,8 @@ namespace GPUDPP
         public static int ThreadCount1D = 512;
         public static int ThreadCount2D = 32;
         public static int ThreadCount3D = 8;
-        public static string GPUScanCSPath = "GPUScan";
+        public static string GPUBlellochScanCSPath = "GPUScan-Blelloch";
+        public static string GPUHillisWarpScanCSPath = "GPUScan-HillisWarp";
         public static string GPUBufferClearCSPath = "GPUBufferClear";
     }
 }

@@ -1,0 +1,79 @@
+#pragma kernel scanInBlock
+#pragma kernel sumAcrossPow2BlockSize
+#pragma kernel sumAcrossBlockSize
+#pragma use_dxc
+
+#pragma enable_d3d11_debug_symbols
+
+#define SCAN_BLOCK_SIZE 512
+uint ElementCount;
+StructuredBuffer<uint> Target;
+RWStructuredBuffer<uint> BlockResult;
+RWStructuredBuffer<uint> BlockSum;
+groupshared uint LocalResultLevel1[SCAN_BLOCK_SIZE];
+groupshared uint LocalResultLevel2[SCAN_BLOCK_SIZE];
+[numthreads(SCAN_BLOCK_SIZE, 1, 1)]
+void scanInBlock(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * SCAN_BLOCK_SIZE;
+    
+    int CurrLaneIndex = WaveGetLaneIndex();
+    int CurrLaneCount = WaveGetLaneCount();
+    int CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    
+    int CurrData = 0;
+    if (i >= ElementCount)
+        CurrData = Target[i];
+    
+    uint PerfixSumOfWarp = WavePrefixSum(CurrData);
+    LocalResultLevel1[ThreadIdx] = PerfixSumOfWarp;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if(CurrLaneIndex == CurrLaneCount - 1)
+    {
+        LocalResultLevel2[CurrWarpIndex] = PerfixSumOfWarp + CurrData;
+    }
+    GroupMemoryBarrierWithGroupSync();
+    
+    if(ThreadIdx < CurrLaneCount)
+    {
+        uint CurrWarpSum = LocalResultLevel2[ThreadIdx];
+        uint PerfixSumOfCurrWarpSum = WavePrefixSum(CurrWarpSum);
+        LocalResultLevel2[CurrLaneCount + ThreadIdx] = PerfixSumOfCurrWarpSum;
+    }
+    GroupMemoryBarrierWithGroupSync();
+    
+    LocalResultLevel1[ThreadIdx] += LocalResultLevel2[CurrLaneCount + CurrWarpIndex];
+    GroupMemoryBarrierWithGroupSync();
+    
+    uint CurrScanResult = LocalResultLevel1[ThreadIdx];
+    BlockResult[i] = CurrScanResult;
+    if (ThreadIdx == SCAN_BLOCK_SIZE - 1)
+    {
+        BlockSum[GroupIdx] = CurrScanResult + CurrData;
+    }
+}
+
+StructuredBuffer<uint> ScanCachePow2BlockSize;
+StructuredBuffer<uint> ScanCacheBlockSize;
+RWStructuredBuffer<uint> TargetResult;
+[numthreads(SCAN_BLOCK_SIZE, 1, 1)]
+void sumAcrossPow2BlockSize(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * SCAN_BLOCK_SIZE;
+    
+    uint Level1 = GroupIdx;
+    uint Level2 = GroupIdx / SCAN_BLOCK_SIZE;
+    
+    TargetResult[i] += ScanCachePow2BlockSize[Level1] + ScanCacheBlockSize[Level2];
+}
+
+[numthreads(SCAN_BLOCK_SIZE, 1, 1)]
+void sumAcrossBlockSize(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * SCAN_BLOCK_SIZE;
+    
+    uint Level1 = GroupIdx;
+    
+    TargetResult[i] += ScanCacheBlockSize[Level1];
+}
