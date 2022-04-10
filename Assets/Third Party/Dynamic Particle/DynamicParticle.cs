@@ -49,7 +49,7 @@ namespace DParticle
             int[] InitArgument = new int[7] { 1, 1, 1, 3, 0, 0, 0 };
             m_Argument.SetData(InitArgument);
 
-            m_GPUScan = new GPUScanBlelloch();
+            m_GPUScan = new GPUScanHillis();
             m_GPUBufferClear = new GPUBufferClear();
 
             m_SPHVisualMaterial = Resources.Load<Material>("DrawSPHParticle");
@@ -144,6 +144,7 @@ namespace DParticle
             GPUDynamicParticleToolCS.DispatchIndirect(ScatterParticleDataKernel, m_Argument);
 
             GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleScatterOffset_R", m_ScatterOffsetCache);
+            GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "TargetParticleFilter_R", m_MainParticle.Filter);
             GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
             GPUDynamicParticleToolCS.Dispatch(UpdateParticleNarrowCountArgmentKernel, 1, 1, 1);
 
@@ -195,7 +196,7 @@ namespace DParticle
         private ComputeBuffer m_ScatterOffsetCache;
         private ComputeBuffer m_Argument;
 
-        private GPUScanBlelloch m_GPUScan;
+        private GPUScanHillis m_GPUScan;
         private GPUBufferClear m_GPUBufferClear;
 
         private Material m_SPHVisualMaterial;

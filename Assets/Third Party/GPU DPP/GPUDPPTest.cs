@@ -11,25 +11,22 @@ namespace GPUDPP
         private ComputeBuffer m_Target;
         private ComputeBuffer m_Result1;
         private ComputeBuffer m_Result2;
-        private ComputeBuffer m_ScanCache1;
-        private ComputeBuffer m_ScanCache2;
         private GPUScanBlelloch m_GPUScanBlelloch;
-        private GPUScanHillisWarp m_GPUScanHillisWarp;
+        private GPUScanHillis m_GPUScanHillisWarp;
+        private int[] CPU;
         void Start()
         {
             m_Target = new ComputeBuffer(ElementCount, sizeof(uint));
             m_Result1 = new ComputeBuffer(ElementCount, sizeof(uint));
             m_Result2 = new ComputeBuffer(ElementCount, sizeof(uint));
-            m_ScanCache1 = new ComputeBuffer(Common.ThreadCount1D * Common.ThreadCount1D, sizeof(uint));
-            m_ScanCache2 = new ComputeBuffer(Common.ThreadCount1D, sizeof(uint));
             m_GPUScanBlelloch = new GPUScanBlelloch();
-            m_GPUScanHillisWarp = new GPUScanHillisWarp();
+            m_GPUScanHillisWarp = new GPUScanHillis();
 
-            int[] CPU = new int[ElementCount];
+            CPU = new int[ElementCount];
             System.Random Rand = new System.Random();
             for (int i = 0; i < ElementCount; i++)
             {
-                CPU[i] = 1;
+                CPU[i] = Rand.Next() % 10;
             }
             m_Target.SetData(CPU);
         }
@@ -44,15 +41,23 @@ namespace GPUDPP
             m_GPUScanHillisWarp.Scan(m_Target, m_Result2);
             Profiler.EndSample();
 
-            if (!Input.GetKey(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.Space))
             {
-                int[] CPU = new int[ElementCount];
-                m_Result2.GetData(CPU);
+                int[] Result = new int[ElementCount];
+                m_Result2.GetData(Result);
                 for(int i = 0; i < ElementCount; i++)
                 {
-                    if(CPU[i] != i)
+                    int Sum = 0;
+                    if(i != 0)
                     {
-                        Debug.LogError(" Error result!");
+                        for (int j = 0; j < i; j++)
+                        {
+                            Sum += CPU[j];
+                        }
+                    }
+                    if (Result[i] != Sum)
+                    {
+                        Debug.LogError("H Scan Error!");
                     }
                 }
             }
@@ -63,8 +68,6 @@ namespace GPUDPP
             m_Target.Release();
             m_Result1.Release();
             m_Result2.Release();
-            m_ScanCache1.Release();
-            m_ScanCache2.Release();
         }
     }
 }

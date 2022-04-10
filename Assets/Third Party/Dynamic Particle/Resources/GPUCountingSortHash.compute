@@ -50,7 +50,7 @@ void countingSortFull(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID
         return;
     
     uint CellLinerIndex = ParticleCellIndex_R[i];
-    uint Offset = CellLinerIndex == 0 ? 0 : HashGridCellParticleOffset_R[CellLinerIndex - 1];
+    uint Offset = HashGridCellParticleOffset_R[CellLinerIndex];
     uint Index = ParticleInnerSortIndex_R[i];
     uint SortedIndex = Offset + Index;
     SortedParticlePosition_RW[SortedIndex] = ParticlePosition_R[i];

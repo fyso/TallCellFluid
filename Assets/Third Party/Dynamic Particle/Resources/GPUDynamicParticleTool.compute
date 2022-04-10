@@ -90,12 +90,12 @@ void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Grou
         return;
     
     uint CurrTargetOffset = ParticleScatterOffset_R[i];
-    uint PrevTargetOffset = i == 0 ? 0 : ParticleScatterOffset_R[i - 1];
-    if (CurrTargetOffset != PrevTargetOffset || i == 0)
+    uint CurrTargetFilter = TargetParticleFilter_R[i];
+    if (CurrTargetFilter)
     {
-        NarrowParticlePosition_RW[PrevTargetOffset] = TargetParticlePosition_R[i];
-        NarrowParticleVelocity_RW[PrevTargetOffset] = TargetParticleVelocity_R[i];
-        NarrowParticleFilter_RW[PrevTargetOffset] = TargetParticleFilter_R[i];
+        NarrowParticlePosition_RW[CurrTargetOffset] = TargetParticlePosition_R[i];
+        NarrowParticleVelocity_RW[CurrTargetOffset] = TargetParticleVelocity_R[i];
+        NarrowParticleFilter_RW[CurrTargetOffset] = CurrTargetFilter;
     }
 }
 
@@ -103,7 +103,7 @@ void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Grou
 void updateParticleNarrowCountArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ParticleIndrectArgment_RW[ParticleCountArgumentOffset] - 1;
-    int NewParticleCount = ParticleScatterOffset_R[i];
+    int NewParticleCount = ParticleScatterOffset_R[i] + TargetParticleFilter_R[i];
     ParticleIndrectArgment_RW[ParticleCountArgumentOffset] = NewParticleCount;
     ParticleIndrectArgment_RW[ParticleXGridCountArgumentOffset] = (int) ceil((float) NewParticleCount / THREAD_NUM_1D);
 }

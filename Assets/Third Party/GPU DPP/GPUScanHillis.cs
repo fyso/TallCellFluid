@@ -4,9 +4,9 @@ using UnityEngine;
 
 namespace GPUDPP
 {
-    public class GPUScanHillisWarp
+    public class GPUScanHillis
     {
-        public GPUScanHillisWarp()
+        public GPUScanHillis()
         {
             GPUScanHillisWarpCS = Resources.Load<ComputeShader>(Common.GPUHillisWarpScanCSPath);
             scanInBlock = GPUScanHillisWarpCS.FindKernel("scanInBlock");
@@ -18,7 +18,7 @@ namespace GPUDPP
             ScanCache4 = new ComputeBuffer(Common.ThreadCount1D, sizeof(uint));
         }
 
-        ~GPUScanHillisWarp()
+        ~GPUScanHillis()
         {
             ScanCache1.Release();
             ScanCache2.Release();

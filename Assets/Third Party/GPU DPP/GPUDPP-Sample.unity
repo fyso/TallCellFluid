@@ -259,7 +259,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4867720bf8f348f4c8660fa3bad5d66e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ElementCount: 500000
+  ElementCount: 5000
 --- !u!1 &2038968020
 GameObject:
   m_ObjectHideFlags: 0
