@@ -22,7 +22,7 @@ void scanInBlock(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
     int CurrWarpIndex = ThreadIdx / CurrLaneCount;
     
     int CurrData = 0;
-    if (i >= ElementCount)
+    if (i < ElementCount)
         CurrData = Target[i];
     
     uint PerfixSumOfWarp = WavePrefixSum(CurrData);

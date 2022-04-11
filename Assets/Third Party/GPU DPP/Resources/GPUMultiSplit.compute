@@ -1,0 +1,56 @@
+#pragma kernel computeWarpLevelHistogram
+#pragma use_dxc
+
+#pragma enable_d3d11_debug_symbols
+
+#define MULTI_SPLIT_BLOCK_SIZE 512
+#define MAX_LANE_COUNT 128
+#define MAX_BUCKET_COUNT 32
+
+uint ElementCount;
+uint BucketCount;
+
+StructuredBuffer<uint> Key_R;
+RWStructuredBuffer<uint> Key_RW;
+RWStructuredBuffer<uint> WarpLevelHistogram_RW;
+StructuredBuffer<uint> WarpLevelHistogramOffset_R;
+groupshared uint LocalWarpLevelHistogram[MAX_LANE_COUNT * MAX_BUCKET_COUNT];
+[numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
+void computeWarpLevelHistogram(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
+    
+    uint CurrBucket = BucketCount;
+    if (i < ElementCount)
+        CurrBucket = Key_R[i];
+    
+    int CurrLaneIndex = WaveGetLaneIndex();
+    int CurrLaneCount = WaveGetLaneCount();
+    int CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    uint BlockWarpCount = ceil(MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    
+    for (int c = 0; c < BucketCount; c++)
+    {
+        uint4 BallotResult = WaveActiveBallot(CurrBucket == c);
+        if (CurrLaneIndex == 0)
+        {
+            uint4 CurrBucketCount = countbits(BallotResult);
+            LocalWarpLevelHistogram[c * BlockWarpCount + CurrWarpIndex] = CurrBucketCount.r + CurrBucketCount.g + CurrBucketCount.b + CurrBucketCount.a;
+        }
+    }
+    
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (ThreadIdx < BlockWarpCount * BucketCount)
+    {
+        int WarpCount = ceil(ElementCount / CurrLaneCount);
+        int WarpIndex = ThreadIdx % BlockWarpCount;
+        int BucketIndex = ThreadIdx / BlockWarpCount;
+        WarpLevelHistogram_RW[BucketIndex * WarpCount + GroupIdx * BlockWarpCount + WarpIndex] = LocalWarpLevelHistogram[ThreadIdx];
+    }
+}
+
+[numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
+void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+}

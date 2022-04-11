@@ -50,6 +50,7 @@ namespace DParticle
             m_Argument.SetData(InitArgument);
 
             m_GPUScan = new GPUScanHillis();
+            m_GPUScanHillisCache = new GPUScanHillisPlan();
             m_GPUBufferClear = new GPUBufferClear();
 
             m_SPHVisualMaterial = Resources.Load<Material>("DrawSPHParticle");
@@ -98,7 +99,7 @@ namespace DParticle
             GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", m_HashCount);
             GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, m_Argument);
 
-            m_GPUScan.Scan(m_HashCount, m_HashOffset);
+            m_GPUScan.Scan(m_HashCount, m_HashOffset, m_GPUScanHillisCache, m_HashCount.count);
 
             GPUCountingSortHashCS.SetBuffer(CountingSortFullKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUCountingSortHashCS.SetBuffer(CountingSortFullKernel, "ParticleCellIndex_R", m_CellIndexCache);
@@ -128,7 +129,7 @@ namespace DParticle
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleFilter_RW", m_MainParticle.Filter);
             GPUDynamicParticleToolCS.DispatchIndirect(DeleteParticleOutofRangeKernel, m_Argument);
 
-            m_GPUScan.Scan(m_MainParticle.Filter, m_ScatterOffsetCache);
+            m_GPUScan.Scan(m_MainParticle.Filter, m_ScatterOffsetCache, m_GPUScanHillisCache, m_MaxSize);
 
             GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleScatterOffset_R", m_ScatterOffsetCache);
             GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleIndrectArgment_R", m_Argument);
@@ -197,6 +198,7 @@ namespace DParticle
         private ComputeBuffer m_Argument;
 
         private GPUScanHillis m_GPUScan;
+        private GPUScanHillisPlan m_GPUScanHillisCache;
         private GPUBufferClear m_GPUBufferClear;
 
         private Material m_SPHVisualMaterial;
