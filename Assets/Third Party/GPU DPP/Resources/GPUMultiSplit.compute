@@ -1,9 +1,11 @@
-#pragma kernel computeWarpLevelHistogram
+#pragma kernel preScan
+#pragma kernel postScan
 #pragma use_dxc
 
 #pragma enable_d3d11_debug_symbols
 
 #define MULTI_SPLIT_BLOCK_SIZE 512
+#define MAX_WARP_COUNT 32
 #define MAX_LANE_COUNT 128
 #define MAX_BUCKET_COUNT 32
 
@@ -11,12 +13,39 @@ uint ElementCount;
 uint BucketCount;
 
 StructuredBuffer<uint> Key_R;
-RWStructuredBuffer<uint> Key_RW;
-RWStructuredBuffer<uint> WarpLevelHistogram_RW;
+StructuredBuffer<uint> Value_R;
+RWStructuredBuffer<uint> KeyBack_RW;
+RWStructuredBuffer<uint> ValueBack_RW;
+
 StructuredBuffer<uint> WarpLevelHistogramOffset_R;
+RWStructuredBuffer<uint> WarpLevelHistogram_RW;
+
+RWStructuredBuffer<uint3> DEBUG;
+
 groupshared uint LocalWarpLevelHistogram[MAX_LANE_COUNT * MAX_BUCKET_COUNT];
+groupshared uint LocalOffset[MULTI_SPLIT_BLOCK_SIZE];
+groupshared uint LocalWarpSum[16];
+
+uint4 Mask(uint4 vInput, uint vCount)
+{
+    uint MainIndex = vCount / 32;
+    uint Pad = vCount % 32;
+    vInput[MainIndex] &= (0XFFFFFFFF >> (32 - Pad - 1));
+    for (int c = 0; c < MainIndex; c++)
+    {
+        vInput[c] = 0;
+    }
+    return vInput;
+}
+
+uint CountBits(uint4 vInput)
+{
+    uint4 CurrBucketCount = countbits(vInput);
+    return CurrBucketCount.r + CurrBucketCount.g + CurrBucketCount.b + CurrBucketCount.a;
+}
+
 [numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
-void computeWarpLevelHistogram(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void preScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
     
@@ -32,13 +61,8 @@ void computeWarpLevelHistogram(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : S
     for (int c = 0; c < BucketCount; c++)
     {
         uint4 BallotResult = WaveActiveBallot(CurrBucket == c);
-        if (CurrLaneIndex == 0)
-        {
-            uint4 CurrBucketCount = countbits(BallotResult);
-            LocalWarpLevelHistogram[c * BlockWarpCount + CurrWarpIndex] = CurrBucketCount.r + CurrBucketCount.g + CurrBucketCount.b + CurrBucketCount.a;
-        }
+        LocalWarpLevelHistogram[c * BlockWarpCount + CurrWarpIndex] = CountBits(BallotResult);
     }
-    
     GroupMemoryBarrierWithGroupSync();
     
     if (ThreadIdx < BlockWarpCount * BucketCount)
@@ -50,7 +74,58 @@ void computeWarpLevelHistogram(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : S
     }
 }
 
+groupshared uint LocalNoResignWarpLevelHistogram[MAX_WARP_COUNT * MAX_BUCKET_COUNT];
 [numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
 void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
+    uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
+    
+    uint CurrBucket = BucketCount;
+    if (i < ElementCount)
+        CurrBucket = Key_R[i];
+    
+    uint CurrLaneIndex = WaveGetLaneIndex();
+    uint CurrLaneCount = WaveGetLaneCount();
+    uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    uint BlockWarpCount = ceil((float) MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    
+    LocalNoResignWarpLevelHistogram[ThreadIdx] = 0;
+    GroupMemoryBarrierWithGroupSync();
+    
+    //local histogram and local offset
+    uint4 CurrBucketMask;
+    for (int c = 0; c < BucketCount; c++)
+    {
+        uint4 BallotResult = WaveActiveBallot(CurrBucket == c);
+        LocalNoResignWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + c] = CountBits(BallotResult);
+        
+        if(CurrBucket == c)
+        {
+            CurrBucketMask = BallotResult;
+        }
+    }
+    
+    CurrBucketMask = Mask(CurrBucketMask, CurrLaneIndex);
+    LocalOffset[ThreadIdx] = CountBits(CurrBucketMask) - 1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    //warp level histogram scan
+    uint CurrHistogram =  LocalNoResignWarpLevelHistogram[ThreadIdx];
+    LocalNoResignWarpLevelHistogram[ThreadIdx] = WavePrefixSum(CurrHistogram);
+    GroupMemoryBarrierWithGroupSync();
+        
+    //new index
+    uint InWarpOffset = LocalNoResignWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + CurrBucket] + LocalOffset[ThreadIdx];
+    
+    uint WarpCount = ceil(ElementCount / CurrLaneCount);
+    uint GlobalOffset = WarpLevelHistogramOffset_R[CurrBucket * WarpCount + GroupIdx * BlockWarpCount + CurrWarpIndex];
+    
+    uint NewIndex = GlobalOffset + InWarpOffset;
+    
+    DEBUG[i].x = GlobalOffset;
+    DEBUG[i].y = InWarpOffset;
+    DEBUG[i].z = NewIndex;
+    
+    KeyBack_RW[NewIndex] = Key_R[i];
+    ValueBack_RW[NewIndex] = Value_R[i];
 }

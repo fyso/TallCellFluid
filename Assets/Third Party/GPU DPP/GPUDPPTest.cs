@@ -7,8 +7,8 @@ namespace GPUDPP
 {
     public class GPUDPPTest : MonoBehaviour
     {
-        [Range(0, 5000)]
-        public int ElementCount = 1000000;
+        [Range(0, 1000000)]
+        public int ElementCount = 500000;
         private ComputeBuffer m_Key;
         private ComputeBuffer m_Value;
         private ComputeBuffer m_Result1;
@@ -44,6 +44,7 @@ namespace GPUDPP
             System.Random Rand = new System.Random();
             for (int i = 0; i < ElementCount; i++)
             {
+                //Key[i] = Rand.Next() % 10;
                 Key[i] = i % 10;
             }
             m_Key.SetData(Key);
@@ -67,11 +68,17 @@ namespace GPUDPP
             Profiler.EndSample();
 
             Profiler.BeginSample("MultiSplit");
-            m_GPUMultiSplit.MultiSplit(m_Key, m_Value, m_GPUMultiSplitPlan, m_GPUScanHillis, m_GPUScanHillisPlan);
+            m_GPUMultiSplit.MultiSplit(ref m_Key, ref m_Value, m_GPUMultiSplitPlan, m_GPUScanHillis, m_GPUScanHillisPlan);
             Profiler.EndSample();
 
-            uint[] HistogramOffsetCPU = new uint[m_GPUMultiSplitPlan.HistogramOffset.count];
-            m_GPUMultiSplitPlan.HistogramOffset.GetData(HistogramOffsetCPU);
+            uint[] Key = new uint[m_Key.count];
+            m_Key.GetData(Key);
+
+            uint[] Offset = new uint[m_GPUMultiSplitPlan.HistogramOffset.count];
+            m_GPUMultiSplitPlan.HistogramOffset.GetData(Offset);
+
+            Vector3Int[] Result = new Vector3Int[m_GPUMultiSplitPlan.DEBUG.count];
+            m_GPUMultiSplitPlan.DEBUG.GetData(Result);
 
             if (Input.GetKeyDown(KeyCode.Space))
             {
@@ -82,19 +89,23 @@ namespace GPUDPP
         private void HScanTestCase()
         {
             bool NoError = true;
+
             int[] Result = new int[ElementCount];
             m_Result2.GetData(Result);
+
+            int[] CorrectResult = new int[ElementCount];
             for (int i = 0; i < ElementCount; i++)
             {
-                int Sum = 0;
                 if (i != 0)
                 {
-                    for (int j = 0; j < i; j++)
-                    {
-                        Sum += Key[j];
-                    }
+                    CorrectResult[i] = (CorrectResult[i - 1] + Key[i - 1]);
                 }
-                if (Result[i] != Sum)
+                else
+                {
+                    CorrectResult[i] = 0;
+                }
+
+                if (Result[i] != CorrectResult[i])
                 {
                     NoError = !NoError;
                 }
