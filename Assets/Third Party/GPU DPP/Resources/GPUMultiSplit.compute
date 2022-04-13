@@ -1,9 +1,7 @@
+#pragma enable_d3d11_debug_symbols
 #pragma kernel preScan
 #pragma kernel postScan
 #pragma use_dxc
-
-#pragma enable_d3d11_debug_symbols
-
 #define MULTI_SPLIT_BLOCK_SIZE 512
 #define MAX_WARP_COUNT 32
 #define MAX_LANE_COUNT 128
@@ -11,6 +9,7 @@
 
 uint ElementCount;
 uint BucketCount;
+uint GroupCount;
 
 StructuredBuffer<uint> Key_R;
 StructuredBuffer<uint> Value_R;
@@ -49,28 +48,44 @@ void preScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
     
-    uint CurrBucket = BucketCount;
+    uint CurrBucket = BucketCount - 1;
     if (i < ElementCount)
         CurrBucket = Key_R[i];
     
-    int CurrLaneIndex = WaveGetLaneIndex();
-    int CurrLaneCount = WaveGetLaneCount();
-    int CurrWarpIndex = ThreadIdx / CurrLaneCount;
-    uint BlockWarpCount = ceil(MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    uint CurrLaneIndex = WaveGetLaneIndex();
+    uint CurrLaneCount = WaveGetLaneCount();
+    
+    uint CeilElementCount = ceil((float) ElementCount / CurrLaneCount) * CurrLaneCount;
+    
+    uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    uint PrevBlockWarpCount = GroupIdx == 0 ? 0 : ceil((float) MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    uint CurrBlockWarpCount = GroupIdx == GroupCount - 1 ? ceil((float) (CeilElementCount - GroupIdx * MULTI_SPLIT_BLOCK_SIZE) / CurrLaneCount) : ceil((float) MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    
+    DEBUG[i].x = 0;
+    DEBUG[i].y = 0;
+    DEBUG[i].z = 0;
     
     for (int c = 0; c < BucketCount; c++)
     {
-        uint4 BallotResult = WaveActiveBallot(CurrBucket == c);
-        LocalWarpLevelHistogram[c * BlockWarpCount + CurrWarpIndex] = CountBits(BallotResult);
+        uint4 BallotResult = WaveActiveBallot(c == CurrBucket);
+        if (c == CurrBucket)
+        {
+            LocalWarpLevelHistogram[CurrBucket * CurrBlockWarpCount + CurrWarpIndex] = CountBits(BallotResult);
+        }
     }
     GroupMemoryBarrierWithGroupSync();
     
-    if (ThreadIdx < BlockWarpCount * BucketCount)
+    if (ThreadIdx < CurrBlockWarpCount * BucketCount)
     {
-        int WarpCount = ceil(ElementCount / CurrLaneCount);
-        int WarpIndex = ThreadIdx % BlockWarpCount;
-        int BucketIndex = ThreadIdx / BlockWarpCount;
-        WarpLevelHistogram_RW[BucketIndex * WarpCount + GroupIdx * BlockWarpCount + WarpIndex] = LocalWarpLevelHistogram[ThreadIdx];
+        int WarpCount = ceil((float) CeilElementCount / CurrLaneCount);
+        int WarpIndex = ThreadIdx % CurrBlockWarpCount;
+        int Bucket = ThreadIdx / CurrBlockWarpCount;
+        
+        WarpLevelHistogram_RW[Bucket * WarpCount + GroupIdx * PrevBlockWarpCount + WarpIndex] = LocalWarpLevelHistogram[ThreadIdx];
+            
+        DEBUG[i].x = Bucket * WarpCount + GroupIdx * PrevBlockWarpCount + WarpIndex;
+        DEBUG[i].y = ThreadIdx;
+        DEBUG[i].z = LocalWarpLevelHistogram[ThreadIdx];
     }
 }
 
@@ -80,14 +95,21 @@ void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
     
-    uint CurrBucket = BucketCount;
+    uint CurrBucket = BucketCount - 1;
     if (i < ElementCount)
         CurrBucket = Key_R[i];
     
     uint CurrLaneIndex = WaveGetLaneIndex();
     uint CurrLaneCount = WaveGetLaneCount();
+    
+    uint CeilElementCount = ceil((float) ElementCount / CurrLaneCount) * CurrLaneCount;
+    
     uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
-    uint BlockWarpCount = ceil((float) MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    uint PrevBlockWarpCount = GroupIdx == 0 ? 0 : ceil((float) MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
+    uint CurrBlockWarpCount = GroupIdx == 
+        GroupCount - 1 ? 
+        ceil((float) (CeilElementCount - GroupIdx * MULTI_SPLIT_BLOCK_SIZE) / CurrLaneCount) : 
+        ceil((float) MULTI_SPLIT_BLOCK_SIZE / CurrLaneCount);
     
     LocalNoResignWarpLevelHistogram[ThreadIdx] = 0;
     GroupMemoryBarrierWithGroupSync();
@@ -97,34 +119,32 @@ void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
     for (int c = 0; c < BucketCount; c++)
     {
         uint4 BallotResult = WaveActiveBallot(CurrBucket == c);
-        LocalNoResignWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + c] = CountBits(BallotResult);
+        if (CurrBucket == c)
+            LocalNoResignWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + c] = CountBits(BallotResult);
         
         if(CurrBucket == c)
         {
             CurrBucketMask = BallotResult;
         }
     }
-    
     CurrBucketMask = Mask(CurrBucketMask, CurrLaneIndex);
     LocalOffset[ThreadIdx] = CountBits(CurrBucketMask) - 1;
     GroupMemoryBarrierWithGroupSync();
     
-    //warp level histogram scan
-    uint CurrHistogram =  LocalNoResignWarpLevelHistogram[ThreadIdx];
-    LocalNoResignWarpLevelHistogram[ThreadIdx] = WavePrefixSum(CurrHistogram);
-    GroupMemoryBarrierWithGroupSync();
-        
     //new index
-    uint InWarpOffset = LocalNoResignWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + CurrBucket] + LocalOffset[ThreadIdx];
+    uint InWarpOffset = LocalOffset[ThreadIdx];
     
-    uint WarpCount = ceil(ElementCount / CurrLaneCount);
-    uint GlobalOffset = WarpLevelHistogramOffset_R[CurrBucket * WarpCount + GroupIdx * BlockWarpCount + CurrWarpIndex];
+    uint WarpCount = ceil((float) CeilElementCount / CurrLaneCount);
+    uint GlobalOffset = WarpLevelHistogramOffset_R[CurrBucket * WarpCount + GroupIdx * PrevBlockWarpCount + CurrWarpIndex];
     
     uint NewIndex = GlobalOffset + InWarpOffset;
     
-    DEBUG[i].x = GlobalOffset;
-    DEBUG[i].y = InWarpOffset;
+    DEBUG[i].x = InWarpOffset;
+    DEBUG[i].y = GlobalOffset;
     DEBUG[i].z = NewIndex;
+    
+    if (i >= ElementCount)
+        return;
     
     KeyBack_RW[NewIndex] = Key_R[i];
     ValueBack_RW[NewIndex] = Value_R[i];

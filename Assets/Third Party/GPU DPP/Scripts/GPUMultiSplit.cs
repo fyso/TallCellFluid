@@ -13,6 +13,7 @@ namespace GPUDPP
         public ComputeBuffer DEBUG;
         public int ElementCount;
         public int BucketCount;
+        public int GroupCount;
         public int LaneCount;
         public int KeyTypeSize;
         public int WarpCount;
@@ -23,6 +24,8 @@ namespace GPUDPP
             BucketCount = vBucketCount;
             LaneCount = vLaneCount;
             KeyTypeSize = vKeyTypeSize;
+
+            GroupCount = Mathf.CeilToInt((float)vElementCount / Common.ThreadCount1D);
 
             WarpCount = Mathf.CeilToInt((float)vElementCount / vLaneCount);
             WarpLevelHistogram = new ComputeBuffer(WarpCount * vBucketCount, sizeof(uint));
@@ -60,20 +63,27 @@ namespace GPUDPP
 
             m_GPUMultiSplitCS.SetInt("ElementCount", vPlan.ElementCount);
             m_GPUMultiSplitCS.SetInt("BucketCount", vPlan.BucketCount);
+            m_GPUMultiSplitCS.SetInt("GroupCount", vPlan.GroupCount);
 
+            m_GPUMultiSplitCS.SetBuffer(preScan, "DEBUG", vPlan.DEBUG);
             m_GPUMultiSplitCS.SetBuffer(preScan, "Key_R", voKey);
             m_GPUMultiSplitCS.SetBuffer(preScan, "WarpLevelHistogram_RW", vPlan.WarpLevelHistogram);
-            m_GPUMultiSplitCS.Dispatch(preScan, Mathf.CeilToInt((float)vPlan.ElementCount / Common.ThreadCount1D), 1, 1);
-            
+            m_GPUMultiSplitCS.Dispatch(preScan, vPlan.GroupCount, 1, 1);
+
             vScan.Scan(vPlan.WarpLevelHistogram, vPlan.HistogramOffset, vScanCache, vPlan.WarpCount * vPlan.BucketCount);
 
+            Vector3Int[] DebugResult = new Vector3Int[vPlan.DEBUG.count];
+            vPlan.DEBUG.GetData(DebugResult);
+
+            m_GPUMultiSplitCS.SetBuffer(postScan, "DEBUG", vPlan.DEBUG);
             m_GPUMultiSplitCS.SetBuffer(postScan, "Key_R", voKey);
             m_GPUMultiSplitCS.SetBuffer(postScan, "Value_R", voValue);
             m_GPUMultiSplitCS.SetBuffer(postScan, "WarpLevelHistogramOffset_R", vPlan.HistogramOffset);
             m_GPUMultiSplitCS.SetBuffer(postScan, "KeyBack_RW", vPlan.BackKey);
             m_GPUMultiSplitCS.SetBuffer(postScan, "ValueBack_RW", vPlan.BackValue);
-            m_GPUMultiSplitCS.SetBuffer(postScan, "DEBUG", vPlan.DEBUG);
-            m_GPUMultiSplitCS.Dispatch(postScan, Mathf.CeilToInt((float)vPlan.ElementCount / Common.ThreadCount1D), 1, 1);
+            m_GPUMultiSplitCS.Dispatch(postScan, vPlan.GroupCount, 1, 1);
+
+            vPlan.DEBUG.GetData(DebugResult);
 
             ComputeBuffer Temp = voValue;
             voValue = vPlan.BackValue;

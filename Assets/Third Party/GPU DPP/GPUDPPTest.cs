@@ -7,8 +7,9 @@ namespace GPUDPP
 {
     public class GPUDPPTest : MonoBehaviour
     {
-        [Range(0, 1000000)]
+        [Range(32, 1000000)]
         public int ElementCount = 500000;
+        public int BucketCount = 3;
         private ComputeBuffer m_Key;
         private ComputeBuffer m_Value;
         private ComputeBuffer m_Result1;
@@ -38,14 +39,14 @@ namespace GPUDPP
             m_GPUScanHillisPlan = new GPUScanHillisPlan();
 
             m_GPUMultiSplit = new GPUMultiSplit();
-            m_GPUMultiSplitPlan = new GPUMultiSplitPlan(ElementCount, 10, 32);
+            m_GPUMultiSplitPlan = new GPUMultiSplitPlan(ElementCount, BucketCount, 32);
 
             Key = new int[ElementCount];
             System.Random Rand = new System.Random();
             for (int i = 0; i < ElementCount; i++)
             {
                 //Key[i] = Rand.Next() % 10;
-                Key[i] = i % 10;
+                Key[i] = i % BucketCount;
             }
             m_Key.SetData(Key);
 
@@ -59,9 +60,9 @@ namespace GPUDPP
 
         void Update()
         {
-            Profiler.BeginSample("B Scan");
-            m_GPUScanBlelloch.Scan(m_Key, m_Result1);
-            Profiler.EndSample();
+            //Profiler.BeginSample("B Scan");
+            //m_GPUScanBlelloch.Scan(m_Key, m_Result1);
+            //Profiler.EndSample();
 
             Profiler.BeginSample("H Scan");
             m_GPUScanHillis.Scan(m_Key, m_Result2, m_GPUScanHillisPlan, ElementCount);
@@ -71,19 +72,23 @@ namespace GPUDPP
             m_GPUMultiSplit.MultiSplit(ref m_Key, ref m_Value, m_GPUMultiSplitPlan, m_GPUScanHillis, m_GPUScanHillisPlan);
             Profiler.EndSample();
 
-            uint[] Key = new uint[m_Key.count];
-            m_Key.GetData(Key);
+            uint[] KeyDebug = new uint[m_Key.count];
+            m_Key.GetData(KeyDebug);
+
+            uint[] Histogram = new uint[m_GPUMultiSplitPlan.WarpLevelHistogram.count];
+            m_GPUMultiSplitPlan.WarpLevelHistogram.GetData(Histogram);
 
             uint[] Offset = new uint[m_GPUMultiSplitPlan.HistogramOffset.count];
             m_GPUMultiSplitPlan.HistogramOffset.GetData(Offset);
 
-            Vector3Int[] Result = new Vector3Int[m_GPUMultiSplitPlan.DEBUG.count];
-            m_GPUMultiSplitPlan.DEBUG.GetData(Result);
-
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 HScanTestCase();
+                MultiSplitTestCase();
             }
+
+            m_Key.SetData(Key);
+            m_Value.SetData(Value);
         }
 
         private void HScanTestCase()
@@ -114,6 +119,53 @@ namespace GPUDPP
                 Debug.LogError("H Scan Error!");
             else
                 Debug.Log("H Scan Pass!");
+        }
+
+        private void MultiSplitTestCase()
+        {
+            bool NoError = true;
+
+            uint[] Result = new uint[ElementCount];
+            m_Key.GetData(Result);
+
+            uint[] EachBucketCount = new uint[BucketCount];
+            for (int i = 0; i < ElementCount; i++)
+            {
+                EachBucketCount[Key[i]]++;
+            }
+
+            uint[] EachBucketOffset = new uint[BucketCount + 1];
+            for (int i = 0; i < BucketCount; i++)
+            {
+                if (i != 0)
+                {
+                    EachBucketOffset[i] = EachBucketOffset[i - 1] + EachBucketCount[i - 1];
+                }
+                else
+                {
+                    EachBucketOffset[i] = 0;
+                }
+            }
+            EachBucketOffset[BucketCount] = EachBucketOffset[BucketCount - 1] + EachBucketCount[BucketCount - 1];
+
+            uint CurrentBucket = 0;
+            for(uint i = 0; i < ElementCount; i++)
+            {
+                if(Result[i] != CurrentBucket)
+                {
+                    NoError = false;
+                }
+
+                if(i == EachBucketOffset[CurrentBucket + 1] - 1)
+                {
+                    CurrentBucket++;
+                }
+            }
+
+            if (!NoError)
+                Debug.LogError("Multi Split Error!");
+            else
+                Debug.Log("Multi Split Pass!");
         }
 
         private void OnDestroy()
