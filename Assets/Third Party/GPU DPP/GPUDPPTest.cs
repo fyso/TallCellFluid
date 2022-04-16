@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -8,7 +10,7 @@ namespace GPUDPP
     public class GPUDPPTest : MonoBehaviour
     {
         [Range(32, 1000000)]
-        public int ElementCount = 500000;
+        public int ElementCount = 545;
         public int BucketCount = 3;
         private ComputeBuffer m_Key;
         private ComputeBuffer m_Value;
@@ -28,6 +30,8 @@ namespace GPUDPP
 
         void Start()
         {
+            ElementCount = 545;
+
             m_Key = new ComputeBuffer(ElementCount, sizeof(uint));
             m_Value = new ComputeBuffer(ElementCount, sizeof(uint));
             m_Result1 = new ComputeBuffer(ElementCount, sizeof(uint));
@@ -41,13 +45,14 @@ namespace GPUDPP
             m_GPUMultiSplit = new GPUMultiSplit();
             m_GPUMultiSplitPlan = new GPUMultiSplitPlan(ElementCount, BucketCount, 32);
 
-            Key = new int[ElementCount];
-            System.Random Rand = new System.Random();
-            for (int i = 0; i < ElementCount; i++)
-            {
-                //Key[i] = Rand.Next() % 10;
-                Key[i] = i % BucketCount;
-            }
+            Key = new int[545] { 2, 2, 2, 1, 2, 0, 1, 1, 2, 2, 2, 0, 0, 2, 2, 2, 2, 1, 0, 0, 2, 2, 2, 1, 2, 1, 2, 1, 0, 1, 2, 0, 0, 0, 1, 1, 1, 1, 2, 1, 0, 2, 0, 2, 1, 1, 2, 2, 1, 2, 1, 2, 2, 0, 2, 0, 1, 1, 2, 2, 2, 1, 2, 1, 1, 0, 1, 1, 2, 1, 1, 2, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 2, 1, 0, 0, 1, 2, 2, 2, 1, 1, 1, 0, 2, 2, 0, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 2, 0, 1, 2, 1, 0, 2, 2, 1, 0, 1, 0, 1, 0, 0, 1, 2, 2, 2, 0, 1, 1, 0, 2, 1, 0, 0, 1, 2, 1, 2, 1, 2, 0, 0, 2, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 2, 2, 0, 0, 2, 0, 2, 0, 2, 0, 2, 1, 1, 1, 1, 1, 0, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 1, 2, 1, 0, 2, 1, 2, 2, 0, 2, 2, 0, 1, 0, 0, 1, 2, 2, 0, 0, 0, 2, 2, 1, 2, 1, 0, 1, 1, 1, 0, 2, 1, 2, 2, 1, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 1, 2, 1, 0, 2, 2, 2, 2, 2, 0, 0, 0, 2, 1, 1, 2, 1, 0, 2, 0, 0, 2, 2, 0, 1, 2, 2, 0, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 2, 2, 0, 2, 0, 2, 1, 2, 0, 0, 1, 1, 2, 2, 1, 2, 2, 2, 0, 2, 0, 1, 1, 0, 2, 2, 0, 0, 1, 1, 1, 0, 2, 0, 1, 1, 0, 2, 2, 1, 2, 2, 0, 2, 2, 0, 2, 1, 1, 1, 0, 2, 2, 2, 2, 2, 1, 1, 0, 2, 0, 2, 1, 2, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 2, 0, 1, 2, 0, 2, 0, 2, 2, 0, 0, 0, 1, 1, 0, 1, 1, 0, 2, 0, 1, 0, 1, 1, 0, 0, 0, 2, 1, 2, 2, 0, 0, 0, 2, 2, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 2, 2, 0, 0, 2, 0, 2, 1, 2, 1, 2, 0, 0, 2, 2, 2, 1, 1, 0, 0, 2, 1, 0, 2, 1, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1, 0, 2, 1, 2, 0, 1, 0, 2, 0, 2, 1, 1, 2, 1, 2, 0, 0, 1, 0, 2, 2, 2, 1, 0, 0, 0, 2, 0, 2, 0, 0, 2, 2, 1, 2, 0, 1, 0, 0, 2, 0, 2, 1, 1, 1, 2, 2, 0, 0, 2, 0, 2, 1, 1, 2, 1, 1, 2, 2, 1, 2, 0, 1, 1, 2, 0, 0, 1, 2, 2, 2, 0, 1, 2, 0, 0, 2, 1, 0, 1, 2, 0, 0, 0, 0 };
+            //Key = new int[ElementCount];
+            //System.Random Rand = new System.Random();
+            //for (int i = 0; i < ElementCount; i++)
+            //{
+            //    //Key[i] = Rand.Next() % 10;
+            //    Key[i] = Rand.Next() % BucketCount;
+            //}
             m_Key.SetData(Key);
 
             Value = new int[ElementCount];
@@ -55,7 +60,7 @@ namespace GPUDPP
             {
                 Value[i] = i;
             }
-            m_Value.SetData(Key);
+            m_Value.SetData(Value);
         }
 
         void Update()
@@ -69,23 +74,19 @@ namespace GPUDPP
             Profiler.EndSample();
 
             Profiler.BeginSample("MultiSplit");
+            ComputeBuffer BackBuffer = m_Key;
             m_GPUMultiSplit.MultiSplit(ref m_Key, ref m_Value, m_GPUMultiSplitPlan, m_GPUScanHillis, m_GPUScanHillisPlan);
             Profiler.EndSample();
 
-            uint[] KeyDebug = new uint[m_Key.count];
-            m_Key.GetData(KeyDebug);
+            //HScanTestCase();
+            MultiSplitTestCase(BackBuffer);
 
-            uint[] Histogram = new uint[m_GPUMultiSplitPlan.WarpLevelHistogram.count];
-            m_GPUMultiSplitPlan.WarpLevelHistogram.GetData(Histogram);
-
-            uint[] Offset = new uint[m_GPUMultiSplitPlan.HistogramOffset.count];
-            m_GPUMultiSplitPlan.HistogramOffset.GetData(Offset);
-
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                HScanTestCase();
-                MultiSplitTestCase();
-            }
+            //System.Random Rand = new System.Random();
+            //for (int i = 0; i < ElementCount; i++)
+            //{
+            //    //Key[i] = Rand.Next() % 10;
+            //    Key[i] = Rand.Next() % BucketCount;
+            //}
 
             m_Key.SetData(Key);
             m_Value.SetData(Value);
@@ -121,13 +122,31 @@ namespace GPUDPP
                 Debug.Log("H Scan Pass!");
         }
 
-        private void MultiSplitTestCase()
+        private void MultiSplitTestCase(ComputeBuffer vBackBuffer)
         {
             bool NoError = true;
 
+            Vector3Int[] DEBUG = new Vector3Int[m_GPUMultiSplitPlan.DEBUG.count];
+            m_GPUMultiSplitPlan.DEBUG.GetData(DEBUG);
+
+            //Test histogram
+            uint[] Histogram = new uint[m_GPUMultiSplitPlan.WarpLevelHistogram.count];
+            m_GPUMultiSplitPlan.WarpLevelHistogram.GetData(Histogram);
+
+            uint[] RightHistogram = new uint[m_GPUMultiSplitPlan.WarpLevelHistogram.count];
+            uint WarpCount = (uint)Mathf.CeilToInt((float)ElementCount / 32);
+            for (int i = 0; i < ElementCount; i++)
+            {
+                int WarpIndex = i / 32;
+                int Bucket = Key[i];
+                RightHistogram[Bucket * WarpCount + WarpIndex]++;
+            }
+
+            //Test rseult
+            uint[] Input = new uint[ElementCount];
+            vBackBuffer.GetData(Input);
             uint[] Result = new uint[ElementCount];
             m_Key.GetData(Result);
-
             uint[] EachBucketCount = new uint[BucketCount];
             for (int i = 0; i < ElementCount; i++)
             {
@@ -163,9 +182,24 @@ namespace GPUDPP
             }
 
             if (!NoError)
+            {
+                //vBackBuffer.GetData(Key);
+                //StringBuilder sb = new StringBuilder();
+                //for (int i = 0; i < ElementCount; i++)
+                //{
+                //    sb.Append(Key[i].ToString() + ", ");
+                //}
+                //FileStream fs = new FileStream(Application.dataPath + "/save.txt", FileMode.Create);
+                //byte[] bytes = new UTF8Encoding().GetBytes(sb.ToString());
+                //fs.Write(bytes, 0, bytes.Length);
+                //fs.Close();
+
                 Debug.LogError("Multi Split Error!");
+            }
             else
+            {
                 Debug.Log("Multi Split Pass!");
+            }
         }
 
         private void OnDestroy()

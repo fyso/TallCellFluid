@@ -32,7 +32,7 @@ namespace GPUDPP
             HistogramOffset = new ComputeBuffer(WarpCount * vBucketCount, sizeof(uint));
             BackKey = new ComputeBuffer(vElementCount, vKeyTypeSize);
             BackValue = new ComputeBuffer(vElementCount, vValueTypeSize);
-            DEBUG = new ComputeBuffer(vElementCount, sizeof(uint) * 3);
+            DEBUG = new ComputeBuffer(vElementCount * 2, sizeof(uint) * 3);
         }
 
         ~GPUMultiSplitPlan()
@@ -49,6 +49,8 @@ namespace GPUDPP
     {
         public GPUMultiSplit()
         {
+            m_GPUBufferClear = new GPUBufferClear();
+
             m_GPUMultiSplitCS = Resources.Load<ComputeShader>(Common.GPUMultiSplitCSPath);
             preScan = m_GPUMultiSplitCS.FindKernel("preScan");
             postScan = m_GPUMultiSplitCS.FindKernel("postScan");
@@ -61,6 +63,9 @@ namespace GPUDPP
             if (vPlan.ElementCount != voKey.count || vPlan.KeyTypeSize != voKey.stride)
                 Debug.LogError("Unmatching MultiSplit Plane!");
 
+            m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.WarpLevelHistogram);
+            m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.HistogramOffset);
+
             m_GPUMultiSplitCS.SetInt("ElementCount", vPlan.ElementCount);
             m_GPUMultiSplitCS.SetInt("BucketCount", vPlan.BucketCount);
             m_GPUMultiSplitCS.SetInt("GroupCount", vPlan.GroupCount);
@@ -72,18 +77,12 @@ namespace GPUDPP
 
             vScan.Scan(vPlan.WarpLevelHistogram, vPlan.HistogramOffset, vScanCache, vPlan.WarpCount * vPlan.BucketCount);
 
-            Vector3Int[] DebugResult = new Vector3Int[vPlan.DEBUG.count];
-            vPlan.DEBUG.GetData(DebugResult);
-
-            m_GPUMultiSplitCS.SetBuffer(postScan, "DEBUG", vPlan.DEBUG);
             m_GPUMultiSplitCS.SetBuffer(postScan, "Key_R", voKey);
             m_GPUMultiSplitCS.SetBuffer(postScan, "Value_R", voValue);
             m_GPUMultiSplitCS.SetBuffer(postScan, "WarpLevelHistogramOffset_R", vPlan.HistogramOffset);
             m_GPUMultiSplitCS.SetBuffer(postScan, "KeyBack_RW", vPlan.BackKey);
             m_GPUMultiSplitCS.SetBuffer(postScan, "ValueBack_RW", vPlan.BackValue);
             m_GPUMultiSplitCS.Dispatch(postScan, vPlan.GroupCount, 1, 1);
-
-            vPlan.DEBUG.GetData(DebugResult);
 
             ComputeBuffer Temp = voValue;
             voValue = vPlan.BackValue;
@@ -95,6 +94,7 @@ namespace GPUDPP
         }
 
         private ComputeShader m_GPUMultiSplitCS;
+        private GPUBufferClear m_GPUBufferClear;
         private int preScan;
         private int postScan;
 
