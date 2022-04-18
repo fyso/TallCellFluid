@@ -19,9 +19,8 @@ RWStructuredBuffer<uint3> DEBUG;
 StructuredBuffer<uint> WarpLevelHistogramOffset_R;
 RWStructuredBuffer<uint> WarpLevelHistogram_RW;
 
-groupshared uint LocalWarpLevelHistogram[MAX_LANE_COUNT * MAX_BUCKET_COUNT];
+groupshared uint LocalWarpLevelHistogram[MULTI_SPLIT_BLOCK_SIZE];
 groupshared uint LocalOffset[MULTI_SPLIT_BLOCK_SIZE];
-groupshared uint LocalWarpSum[16];
 
 uint4 Mask(uint4 vInput, uint vCount)
 {
@@ -44,6 +43,9 @@ uint CountBits(uint4 vInput)
 [numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
 void preScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
+	LocalWarpLevelHistogram[ThreadIdx] = 0;
+	GroupMemoryBarrierWithGroupSync();
+    
     uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
     
     uint CurrBucket = BucketCount - 1;
@@ -71,24 +73,23 @@ void preScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
     }
     GroupMemoryBarrierWithGroupSync();
     
-    DEBUG[i].x = BallotResultBitCount.r;
-    DEBUG[i].y = CurrBucket;
-    DEBUG[i].z = CurrBucket * CurrBlockWarpCount + CurrWarpIndex;
-    
     if (ThreadIdx < CurrBlockWarpCount * BucketCount)
     {
         int WarpCount = ceil((float) CeilElementCount / CurrLaneCount);
         int WarpIndex = ThreadIdx % CurrBlockWarpCount;
         int Bucket = ThreadIdx / CurrBlockWarpCount;
         
-        WarpLevelHistogram_RW[Bucket * WarpCount + GroupIdx * PrevBlockWarpCount + WarpIndex] = LocalWarpLevelHistogram[ThreadIdx];
-    }
+		WarpLevelHistogram_RW[Bucket * WarpCount + GroupIdx * PrevBlockWarpCount + WarpIndex] = LocalWarpLevelHistogram[ThreadIdx];
+	}
 }
 
-groupshared uint LocalNoResignWarpLevelHistogram[MAX_LANE_COUNT * MAX_BUCKET_COUNT];
 [numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
 void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
+	LocalWarpLevelHistogram[ThreadIdx] = 0;
+	LocalOffset[ThreadIdx] = 0;
+	GroupMemoryBarrierWithGroupSync();
+    
     uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
     
     uint CurrBucket = BucketCount - 1;
@@ -112,7 +113,7 @@ void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
     {
         uint4 BallotResult = WaveActiveBallot(CurrBucket == c);
         if (CurrBucket == c)
-            LocalNoResignWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + c] = CountBits(BallotResult);
+			LocalWarpLevelHistogram[CurrWarpIndex * CurrLaneCount + c] = CountBits(BallotResult);
         
         if(CurrBucket == c)
         {
