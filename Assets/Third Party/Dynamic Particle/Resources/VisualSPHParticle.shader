@@ -59,6 +59,7 @@ Shader "DPParticle/Particle"
 
             StructuredBuffer<float3> _particlePositionBuffer;
             StructuredBuffer<float3> _particleVelocityBuffer;
+            StructuredBuffer<uint> _particleFilterBuffer;
 
             Varyings GenerateDepthPassVertex(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
@@ -82,7 +83,18 @@ Shader "DPParticle/Particle"
                 result.positionCS = TransformWViewToHClip(sphereCenter + float3(_ParticleRadius * result.uv, 0.0f));
                 float3 Velocity = _particleVelocityBuffer[instanceID];
                 float ClampVel = clamp(length(Velocity), 0.0f, 20.0f) / 20.0f;
-                result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 1.0f) + _ParticleColor;
+
+                uint filter = _particleFilterBuffer[instanceID];
+                if(filter == 0)
+                    result.col = float4(1.0f, 0.0f, 0.0f, 1.0f);
+                else if (filter == 1)
+                    result.col = float4(0.0f, 1.0f, 0.0f, 1.0f);
+                else if (filter == 2)
+                    result.col = float4(0.0f, 0.0f, 1.0f, 1.0f);
+                else if (filter == 3)
+                    result.col = float4(1.0f, 1.0f, 1.0f, 1.0f);
+                else
+                    result.col = float4(0.0f, 0.0f, 0.0f, 1.0f);
                 return result;
             }
 

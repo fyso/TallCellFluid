@@ -1,6 +1,7 @@
 #include "Common.hlsl"
 
 #pragma enable_d3d11_debug_symbols
+#pragma kernel markParticleByCellType
 #pragma kernel scatterParticleToGrid_Paas1
 #pragma kernel scatterParticleToGrid_Paas2
 #pragma kernel scatterParticleToGrid_Paas3
@@ -13,6 +14,75 @@ StructuredBuffer<float3> ParticleVelocity_R;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
+
+const int2 OffsetVector[3 * 3 - 1] = {
+    { -1, 0 },  { 1, 0 },
+    { 0, -1 },  { 0, 1 },   { 1, 1 },
+    { -1, -1 }, {  -1, 1 }, { 1, -1 }
+};
+
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+        return;
+    
+    float3 CurrPosition = ParticlePosition_R[i];
+    float RelativeHeight = CurrPosition.y - Min.y;
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
+    
+    float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
+    float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
+    
+    bool IsInTerrianCell = false;
+    bool IsInTallCell = false;
+    bool IsAnyTallCellHigher = false;
+    bool IsAnyTallCellLower = false;
+    
+    if (RelativeHeight < CenterTerrianHeight)
+        IsInTerrianCell = true;
+    
+    if (RelativeHeight < CenterTerrianHeight + CenterTallCellHeight && RelativeHeight >= CenterTerrianHeight)
+        IsInTallCell = true;
+    
+    for (int c = 0; c < 3 * 3 - 1; c++)
+    {
+        float SurroundTerrianHeight = TerrianHeight_R[CurrGridXZIndex + OffsetVector[c]];
+        float SurroundTallCellHeight = TallCellHeight_R[CurrGridXZIndex + OffsetVector[c]];
+        
+        if (RelativeHeight < SurroundTallCellHeight + SurroundTerrianHeight + CellLength)
+        {
+            IsAnyTallCellHigher = true;
+        }
+        
+        if (RelativeHeight > SurroundTallCellHeight + SurroundTerrianHeight - CellLength)
+        {
+            IsAnyTallCellLower = true;
+        }
+    }
+    
+    if (!IsInTallCell && !IsInTerrianCell)
+    {
+        if (IsAnyTallCellHigher)
+            ParticleFilter_RW[i] = 1;
+        else
+            ParticleFilter_RW[i] = 0;
+    }
+    else if (IsInTallCell)
+    {
+        if (!IsAnyTallCellLower)
+            ParticleFilter_RW[i] = 3;
+        else
+            ParticleFilter_RW[i] = 2;
+    }
+    else
+    {
+        ParticleFilter_RW[i] = 4;
+    }
+}
 
 Texture2D<uint> TallCellParticleCount_R;
 RWTexture2D<uint> TallCellParticleCount_RW;
@@ -60,7 +130,7 @@ void scatterParticleToGrid_Paas1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx :
     float3 CurrPosition = ParticlePosition_R[i];
     float3 CurrVelocity = ParticleVelocity_R[i];
     
-    float RelativeHeight = CurrPosition - Min.y;
+    float RelativeHeight = CurrPosition.y - Min.y;
     float2 RelativeXZ = CurrPosition.xz - Min.xz;
     uint2 CurrGridXZIndex = RelativeXZ / CellLength;
     float CurrTerrianHeight = TerrianHeight_R[CurrGridXZIndex];

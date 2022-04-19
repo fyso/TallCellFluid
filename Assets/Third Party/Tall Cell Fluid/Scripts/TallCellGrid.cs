@@ -186,9 +186,14 @@ public class TallCellGrid
 
     private void Advect()
     {
+        //split particle by cell type
+        m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_TallCellGridLayers[0]);
         m_DynamicParticle.DeleteParticleOutofRange(m_Min, m_Max, m_CellLength);
         m_DynamicParticle.OrganizeParticle();
+
+        //generate cell's particle count and offset info
         m_DynamicParticle.ZSort(m_Min, m_CellLength);
+
         //grid to particle using fine level
         //advect particle
         //Particle to grid using fine level
