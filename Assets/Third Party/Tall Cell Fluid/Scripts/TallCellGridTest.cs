@@ -36,7 +36,7 @@ public class TallCellGridTest : MonoBehaviour
     {
         if(m_TallCellGrid != null && ShowDebugInfo)
         {
-            TallCellGridLayer FineLevel = m_TallCellGrid.TallCellGridLayers[0];
+            GridPerLevel FineLevel = m_TallCellGrid.GridData[0];
             Texture2D TerrianHeight = Common.CopyRenderTextureToCPU(FineLevel.TerrrianHeight);
             Texture2D TallCellHeight = Common.CopyRenderTextureToCPU(FineLevel.TallCellHeight);
 
