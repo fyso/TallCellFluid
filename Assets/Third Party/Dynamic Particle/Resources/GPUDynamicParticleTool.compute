@@ -6,6 +6,7 @@
 #pragma kernel scatterParticleData
 #pragma kernel updateParticleNarrowCountArgment
 #pragma kernel deleteParticleOutofRange
+#pragma kernel rearrangeParticle
 
 StructuredBuffer<int> ParticleIndrectArgment_R;
 RWStructuredBuffer<int> ParticleIndrectArgment_RW;
@@ -44,7 +45,7 @@ void addParticleBlock(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID
     uint x = xp % WaterBlockResX;
     ParticlePosition_RW[CurrParticleCount + i] = WaterGeneratePos + float3(x, y, z) * ParticleRadius * 2.0f;
     ParticleVelocity_RW[CurrParticleCount + i] = ParticleInitVel;
-    ParticleFilter_RW[CurrParticleCount + i] = 1;
+    ParticleFilter_RW[CurrParticleCount + i] = 0;
 }
 
 [numthreads(1, 1, 1)]
@@ -57,6 +58,16 @@ void updateParticleCountArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : 
     ParticleIndrectArgment_RW[ParticleXGridCountArgumentOffset] = (int) ceil((float) NewParticleCount / THREAD_NUM_1D);
 }
 
+StructuredBuffer<float3> TargetParticlePosition_R;
+StructuredBuffer<float3> TargetParticleVelocity_R;
+StructuredBuffer<uint> TargetParticleFilter_R;
+
+RWStructuredBuffer<float3> NarrowParticlePosition_RW;
+RWStructuredBuffer<float3> NarrowParticleVelocity_RW;
+RWStructuredBuffer<uint> NarrowParticleFilter_RW;
+
+StructuredBuffer<uint> ParticleScatterOffset_R;
+
 [numthreads(THREAD_NUM_1D, 1, 1)]
 void deleteParticleOutofRange(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
@@ -68,19 +79,9 @@ void deleteParticleOutofRange(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV
     float3 HashGridMax = HashGridMin + HashGridCellLength * HashGridResolution;
     if (any(Postion < HashGridMin) || any(Postion >= HashGridMax))
     {
-        ParticleFilter_RW[i] = 0;
+        ParticleFilter_RW[i] = 1;
     }
 }
-
-StructuredBuffer<float3> TargetParticlePosition_R;
-StructuredBuffer<float3> TargetParticleVelocity_R;
-StructuredBuffer<uint> TargetParticleFilter_R;
-
-RWStructuredBuffer<float3> NarrowParticlePosition_RW;
-RWStructuredBuffer<float3> NarrowParticleVelocity_RW;
-RWStructuredBuffer<uint> NarrowParticleFilter_RW;
-
-StructuredBuffer<uint> ParticleScatterOffset_R;
 
 [numthreads(THREAD_NUM_1D, 1, 1)]
 void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
@@ -99,11 +100,34 @@ void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Grou
     }
 }
 
+uint DeleteParticleOffset;
 [numthreads(1, 1, 1)]
 void updateParticleNarrowCountArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint i = ParticleIndrectArgment_RW[ParticleCountArgumentOffset] - 1;
-    int NewParticleCount = ParticleScatterOffset_R[i] + TargetParticleFilter_R[i];
+    uint NewParticleCount = ParticleIndrectArgment_RW[DeleteParticleOffset];
     ParticleIndrectArgment_RW[ParticleCountArgumentOffset] = NewParticleCount;
     ParticleIndrectArgment_RW[ParticleXGridCountArgumentOffset] = (int) ceil((float) NewParticleCount / THREAD_NUM_1D);
+}
+
+StructuredBuffer<uint> NewIndex_R;
+
+StructuredBuffer<float3> OldPosition_R;
+StructuredBuffer<float3> OldVelocity_R;
+StructuredBuffer<uint> OldFilter_R;
+
+RWStructuredBuffer<float3> RearrangedPosition_RW;
+RWStructuredBuffer<float3> RearrangedVelocity_RW;
+RWStructuredBuffer<uint> RearrangedFilter_RW;
+[numthreads(THREAD_NUM_1D, 1, 1)]
+void rearrangeParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_NUM_1D;
+    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+        return;
+    
+    uint NewIndex = NewIndex_R[i];
+    
+    RearrangedPosition_RW[NewIndex] = OldPosition_R[i];
+    RearrangedVelocity_RW[NewIndex] = OldVelocity_R[i];
+    RearrangedFilter_RW[NewIndex] = OldFilter_R[i];
 }

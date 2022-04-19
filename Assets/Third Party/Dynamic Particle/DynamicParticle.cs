@@ -45,12 +45,14 @@ namespace DParticle
             m_HashOffset = new ComputeBuffer(vMaxCount * 2, sizeof(uint));
             m_InnerSortIndexCache = new ComputeBuffer(vMaxCount, sizeof(uint));
             m_ScatterOffsetCache = new ComputeBuffer(vMaxCount, sizeof(uint));
-            m_Argument = new ComputeBuffer(7, sizeof(int), ComputeBufferType.IndirectArguments);
-            int[] InitArgument = new int[7] { 1, 1, 1, 3, 0, 0, 0 };
+            m_Argument = new ComputeBuffer(9, sizeof(int), ComputeBufferType.IndirectArguments);
+            int[] InitArgument = new int[9] {1, 1, 1, 3, 0, 0, 0, 0, 0 };
             m_Argument.SetData(InitArgument);
 
             m_GPUScan = new GPUScanHillis();
             m_GPUScanHillisCache = new GPUScanHillisPlan();
+            m_MultiSplit = new GPUMultiSplit();
+            m_MultiSplitPlan = new GPUMultiSplitPlan(vMaxCount, 32, 32);
             m_GPUBufferClear = new GPUBufferClear();
 
             m_SPHVisualMaterial = Resources.Load<Material>("DrawSPHParticle");
@@ -65,6 +67,7 @@ namespace DParticle
             ScatterParticleDataKernel = GPUDynamicParticleToolCS.FindKernel("scatterParticleData");
             UpdateParticleNarrowCountArgmentKernel = GPUDynamicParticleToolCS.FindKernel("updateParticleNarrowCountArgment");
             DeleteParticleOutofRangeKernel = GPUDynamicParticleToolCS.FindKernel("deleteParticleOutofRange");
+            RearrangeParticleKernel = GPUDynamicParticleToolCS.FindKernel("rearrangeParticle");
         }
 
         ~DynamicParticle()
@@ -82,7 +85,7 @@ namespace DParticle
             m_MainParticle.Position.SetData(vPosition.ToArray(), 0, 0, vSize);
             m_MainParticle.Velocity.SetData(vVelocity.ToArray(), 0, 0, vSize);
             m_MainParticle.Filter.SetData(vFilter.ToArray(), 0, 0, vSize);
-            int[] InitArgument = new int[7] { Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1, 3, vSize, 0, 0 };
+            int[] InitArgument = new int[9] { Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1, 3, vSize, 0, 0, 0, 0 };
             m_Argument.SetData(InitArgument);
         }
 
@@ -99,7 +102,7 @@ namespace DParticle
             GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", m_HashCount);
             GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, m_Argument);
 
-            m_GPUScan.Scan(m_HashCount, m_HashOffset, m_GPUScanHillisCache, m_HashCount.count);
+            m_GPUScan.Scan(m_HashCount, m_HashOffset, m_GPUScanHillisCache);
 
             GPUCountingSortHashCS.SetBuffer(CountingSortFullKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUCountingSortHashCS.SetBuffer(CountingSortFullKernel, "ParticleCellIndex_R", m_CellIndexCache);
@@ -118,34 +121,35 @@ namespace DParticle
             m_MainParticle = Temp;
         }
 
-        public void OrganizeParticle(Vector3 vMin, Vector3 vMax, float vCellLength)
+        public void DeleteParticleOutofRange(Vector3 vMin, Vector3 vMax, float vCellLength)
         {
             GPUDynamicParticleToolCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
             GPUDynamicParticleToolCS.SetFloat("HashGridCellLength", vCellLength);
+
             Vector3 Res = (vMax - vMin) / vCellLength;
             GPUDynamicParticleToolCS.SetInts("HashGridResolution", Mathf.CeilToInt(Res.x), Mathf.CeilToInt(Res.y), Mathf.CeilToInt(Res.z));
+
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticlePosition_R", m_MainParticle.Position);
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleFilter_RW", m_MainParticle.Filter);
             GPUDynamicParticleToolCS.DispatchIndirect(DeleteParticleOutofRangeKernel, m_Argument);
+        }
 
-            m_GPUScan.Scan(m_MainParticle.Filter, m_ScatterOffsetCache, m_GPUScanHillisCache, m_MaxSize);
+        public void OrganizeParticle()
+        {
+            m_MultiSplit.ComputeNewIndex(m_MainParticle.Filter, m_MultiSplitPlan, 2, m_Argument, 4, 0, 7);
 
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleScatterOffset_R", m_ScatterOffsetCache);
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleIndrectArgment_R", m_Argument);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "ParticleIndrectArgment_R", m_Argument);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "NewIndex_R", m_MultiSplitPlan.NewIndex);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "OldPosition_R", m_MainParticle.Position);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "OldVelocity_R", m_MainParticle.Velocity);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "OldFilter_R", m_MainParticle.Filter);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "RearrangedPosition_RW", m_ParticleCache.Position);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "RearrangedVelocity_RW", m_ParticleCache.Velocity);
+            GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "RearrangedFilter_RW", m_ParticleCache.Filter);
+            GPUDynamicParticleToolCS.DispatchIndirect(RearrangeParticleKernel, m_Argument);
 
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticlePosition_R", m_MainParticle.Position);
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleVelocity_R", m_MainParticle.Velocity);
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleFilter_R", m_MainParticle.Filter);
-
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticlePosition_RW", m_ParticleCache.Position);
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleVelocity_RW", m_ParticleCache.Velocity);
-            GPUDynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleFilter_RW", m_ParticleCache.Filter);
-
-            GPUDynamicParticleToolCS.DispatchIndirect(ScatterParticleDataKernel, m_Argument);
-
-            GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleScatterOffset_R", m_ScatterOffsetCache);
-            GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "TargetParticleFilter_R", m_MainParticle.Filter);
+            GPUDynamicParticleToolCS.SetInt("DeleteParticleOffset", 7);
             GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
             GPUDynamicParticleToolCS.Dispatch(UpdateParticleNarrowCountArgmentKernel, 1, 1, 1);
 
@@ -199,6 +203,8 @@ namespace DParticle
 
         private GPUScanHillis m_GPUScan;
         private GPUScanHillisPlan m_GPUScanHillisCache;
+        private GPUMultiSplit m_MultiSplit;
+        private GPUMultiSplitPlan m_MultiSplitPlan;
         private GPUBufferClear m_GPUBufferClear;
 
         private Material m_SPHVisualMaterial;
@@ -213,5 +219,6 @@ namespace DParticle
         private int ScatterParticleDataKernel;
         private int UpdateParticleNarrowCountArgmentKernel;
         private int DeleteParticleOutofRangeKernel;
+        private int RearrangeParticleKernel;
     }
 }

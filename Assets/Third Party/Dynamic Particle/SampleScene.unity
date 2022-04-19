@@ -328,7 +328,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d59430f9e0b77b540b876b9b4ec19878, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Min: {x: 0, y: 0, z: 0}
+  m_Min: {x: 5, y: 5, z: 5}
   m_CellLength: 1
   m_Resolution: {x: 32, y: 32, z: 32}
 --- !u!4 &1574738115

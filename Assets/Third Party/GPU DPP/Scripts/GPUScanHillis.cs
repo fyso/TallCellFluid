@@ -38,21 +38,21 @@ namespace GPUDPP
             sumAcrossBlockSize = GPUScanHillisWarpCS.FindKernel("sumAcrossBlockSize");
         }
 
-        public void Scan(ComputeBuffer vCountBuffer, ComputeBuffer voOffsetBuffer, GPUScanHillisPlan vCache, int vElementCount)
+        public void Scan(ComputeBuffer vCountBuffer, ComputeBuffer voOffsetBuffer, GPUScanHillisPlan vCache)
         {
             if(vCountBuffer.count != voOffsetBuffer.count)
                 Debug.LogError("Input of Hillis Warp level scan do not have the same size!");
-            if(vCountBuffer.count != vElementCount)
-                Debug.LogError("Unmatched Hillis Warp level scan plan!");
 
-            GPUScanHillisWarpCS.SetInt("ElementCount", vElementCount);
+            int ElementCount = vCountBuffer.count;
 
-            if (vElementCount > Mathf.Pow(Common.ThreadCount1D, 2.0f) && vElementCount <= Mathf.Pow(Common.ThreadCount1D, 3.0f))
-                ScanPow3BlockSize(vCountBuffer, voOffsetBuffer, vCache, vElementCount);
-            else if (vElementCount > Common.ThreadCount1D && vElementCount <= Mathf.Pow(Common.ThreadCount1D, 2.0f))
-                ScanPow2BlockSize(vCountBuffer, voOffsetBuffer, vCache, vElementCount);
-            else if (vElementCount <= Common.ThreadCount1D)
-                ScanBlockSize(vCountBuffer, voOffsetBuffer, vCache, vElementCount);
+            GPUScanHillisWarpCS.SetInt("ElementCount", ElementCount);
+
+            if (ElementCount > Mathf.Pow(Common.ThreadCount1D, 2.0f) && ElementCount <= Mathf.Pow(Common.ThreadCount1D, 3.0f))
+                ScanPow3BlockSize(vCountBuffer, voOffsetBuffer, vCache, ElementCount);
+            else if (ElementCount > Common.ThreadCount1D && ElementCount <= Mathf.Pow(Common.ThreadCount1D, 2.0f))
+                ScanPow2BlockSize(vCountBuffer, voOffsetBuffer, vCache, ElementCount);
+            else if (ElementCount <= Common.ThreadCount1D)
+                ScanBlockSize(vCountBuffer, voOffsetBuffer, vCache, ElementCount);
             else
                 Debug.LogError("Out of max element count of Hillis Warp level scan!");
         }

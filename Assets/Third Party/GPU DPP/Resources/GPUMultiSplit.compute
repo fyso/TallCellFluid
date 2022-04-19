@@ -1,19 +1,24 @@
+#pragma enable_d3d11_debug_symbols
+
 #pragma kernel preScan
 #pragma kernel postScan
+#pragma kernel rearrangeKeyValue
+#pragma kernel updateSplitPoint32
 #pragma use_dxc
 #define MULTI_SPLIT_BLOCK_SIZE 512
-#define MAX_WARP_COUNT 32
-#define MAX_LANE_COUNT 128
-#define MAX_BUCKET_COUNT 32
 
-uint ElementCount;
 uint BucketCount;
-uint GroupCount;
+uint ElementCountOffset;
+uint GroupCountOffset;
+uint SplitPointOffset;
+
+StructuredBuffer<int> Argument_R;
+RWStructuredBuffer<int> Argument_RW;
 
 StructuredBuffer<uint> Key_R;
 StructuredBuffer<uint> Value_R;
-RWStructuredBuffer<uint> KeyBack_RW;
-RWStructuredBuffer<uint> ValueBack_RW;
+StructuredBuffer<uint> NewIndex_R;
+RWStructuredBuffer<uint> NewIndex_RW;
 RWStructuredBuffer<uint3> DEBUG;
 
 StructuredBuffer<uint> WarpLevelHistogramOffset_R;
@@ -43,6 +48,8 @@ uint CountBits(uint4 vInput)
 [numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
 void preScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
+    uint ElementCount = (uint) Argument_R[ElementCountOffset];
+    uint GroupCount = (uint) Argument_R[GroupCountOffset];
 	LocalWarpLevelHistogram[ThreadIdx] = 0;
 	GroupMemoryBarrierWithGroupSync();
     
@@ -86,6 +93,8 @@ void preScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 [numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
 void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
+    uint ElementCount = (uint) Argument_R[ElementCountOffset];
+    uint GroupCount = (uint) Argument_R[GroupCountOffset];
 	LocalWarpLevelHistogram[ThreadIdx] = 0;
 	LocalOffset[ThreadIdx] = 0;
 	GroupMemoryBarrierWithGroupSync();
@@ -135,6 +144,36 @@ void postScan(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
     if (i >= ElementCount)
         return;
     
-    KeyBack_RW[NewIndex] = Key_R[i];
-    ValueBack_RW[NewIndex] = Value_R[i];
+    NewIndex_RW[i] = NewIndex;
+}
+
+[numthreads(32, 1, 1)]
+void updateSplitPoint32(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint ElementCount = (uint) Argument_RW[ElementCountOffset];
+    uint CeilElementCount = ceil((float) ElementCount / 32) * 32;
+    uint WarpCount = ceil((float) CeilElementCount / 32);
+    
+    if (ThreadIdx < BucketCount)
+        Argument_RW[SplitPointOffset + ThreadIdx] = WarpLevelHistogramOffset_R[(ThreadIdx + 1) * WarpCount];
+    else
+        Argument_RW[SplitPointOffset + ThreadIdx] = 0;
+}
+
+StructuredBuffer<uint> OldKey_R;
+StructuredBuffer<uint> OldValue_R;
+RWStructuredBuffer<uint> NewKey_RW;
+RWStructuredBuffer<uint> NewValue_RW;
+[numthreads(MULTI_SPLIT_BLOCK_SIZE, 1, 1)]
+void rearrangeKeyValue(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint ElementCount = Argument_R[ElementCountOffset];
+    uint i = ThreadIdx + GroupIdx * MULTI_SPLIT_BLOCK_SIZE;
+    uint NewIndex = NewIndex_R[i];
+    
+    if (i >= ElementCount)
+        return;
+    
+    NewKey_RW[NewIndex] = OldKey_R[i];
+    NewValue_RW[NewIndex] = OldValue_R[i];
 }

@@ -15,6 +15,7 @@ namespace DParticle
         void Start()
         {
             m_Particle = new DynamicParticle(250000, 0.25f);
+            m_Particle.AddParticleBlock(new Vector3(0, 0, 0), new Vector3Int(64, 64, 64), new Vector3(0, 10, 0));
         }
 
         void Update()
@@ -22,7 +23,8 @@ namespace DParticle
             if (Input.GetKeyDown(KeyCode.Space))
                 m_Particle.AddParticleBlock(new Vector3(0, 0, 0), new Vector3Int(64, 64, 64), new Vector3(0, 10, 0));
 
-            m_Particle.OrganizeParticle(m_Min, m_Min + (Vector3)m_Resolution * m_CellLength, m_CellLength);
+            m_Particle.DeleteParticleOutofRange(m_Min, m_Min + (Vector3)m_Resolution * m_CellLength, m_CellLength);
+            m_Particle.OrganizeParticle();
             m_Particle.ZSort(m_Min, m_CellLength);
         }
 

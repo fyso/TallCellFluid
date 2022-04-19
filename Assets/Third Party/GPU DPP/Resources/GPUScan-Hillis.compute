@@ -1,9 +1,9 @@
+#pragma enable_d3d11_debug_symbols
+
 #pragma kernel scanInBlock
 #pragma kernel sumAcrossPow2BlockSize
 #pragma kernel sumAcrossBlockSize
 #pragma use_dxc
-
-#pragma enable_d3d11_debug_symbols
 
 #define SCAN_BLOCK_SIZE 512
 uint ElementCount;

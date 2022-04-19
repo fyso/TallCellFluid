@@ -186,7 +186,8 @@ public class TallCellGrid
 
     private void Advect()
     {
-        m_DynamicParticle.OrganizeParticle(m_Min, m_Max, m_CellLength);
+        m_DynamicParticle.DeleteParticleOutofRange(m_Min, m_Max, m_CellLength);
+        m_DynamicParticle.OrganizeParticle();
         m_DynamicParticle.ZSort(m_Min, m_CellLength);
         //grid to particle using fine level
         //advect particle

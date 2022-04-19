@@ -16,6 +16,7 @@ namespace GPUDPP
         private ComputeBuffer m_Value;
         private ComputeBuffer m_Result1;
         private ComputeBuffer m_Result2;
+        private ComputeBuffer m_Argument;
 
         private GPUScanBlelloch m_GPUScanBlelloch;
 
@@ -40,6 +41,10 @@ namespace GPUDPP
             m_GPUScanHillis = new GPUScanHillis();
             m_GPUScanHillisPlan = new GPUScanHillisPlan();
 
+            int[] ArgumentCPU = new int[7] { Mathf.CeilToInt((float)ElementCount / Common.ThreadCount1D), 1, 1, ElementCount, 0, 0, 0 };
+            m_Argument = new ComputeBuffer(7, sizeof(int), ComputeBufferType.IndirectArguments);
+            m_Argument.SetData(ArgumentCPU);
+
             m_GPUMultiSplit = new GPUMultiSplit();
             m_GPUMultiSplitPlan = new GPUMultiSplitPlan(ElementCount, BucketCount, 32);
 
@@ -62,18 +67,22 @@ namespace GPUDPP
 
         void Update()
         {
-            //Profiler.BeginSample("B Scan");
-            //m_GPUScanBlelloch.Scan(m_Key, m_Result1);
-            //Profiler.EndSample();
+            Profiler.BeginSample("B Scan");
+            m_GPUScanBlelloch.Scan(m_Key, m_Result1);
+            Profiler.EndSample();
 
             Profiler.BeginSample("H Scan");
-            m_GPUScanHillis.Scan(m_Key, m_Result2, m_GPUScanHillisPlan, ElementCount);
+            m_GPUScanHillis.Scan(m_Key, m_Result2, m_GPUScanHillisPlan);
             Profiler.EndSample();
 
             Profiler.BeginSample("MultiSplit");
             ComputeBuffer BackBuffer = m_Key;
-            m_GPUMultiSplit.MultiSplit(ref m_Key, ref m_Value, m_GPUMultiSplitPlan, m_GPUScanHillis, m_GPUScanHillisPlan);
+            m_GPUMultiSplit.ComputeNewIndex(m_Key, m_GPUMultiSplitPlan, BucketCount, m_Argument, 3, 0, 4);
+            m_GPUMultiSplit.DefaultRearrangeKeyValue(ref m_Key, ref m_Value, m_GPUMultiSplitPlan, m_Argument, 3);
             Profiler.EndSample();
+
+            int[] ArgumentCPU = new int[7];
+            m_Argument.GetData(ArgumentCPU);
 
             HScanTestCase();
             MultiSplitTestCase(BackBuffer);
@@ -121,6 +130,9 @@ namespace GPUDPP
         private void MultiSplitTestCase(ComputeBuffer vBackBuffer)
         {
             bool NoError = true;
+
+            uint[] ArgumentCPU = new uint[7];
+            m_Argument.GetData(ArgumentCPU);
 
             //Test rseult
             uint[] Input = new uint[ElementCount];
@@ -192,6 +204,7 @@ namespace GPUDPP
             m_Value.Release();
             m_Result1.Release();
             m_Result2.Release();
+            m_Argument.Release();
         }
     }
 }

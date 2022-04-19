@@ -6,43 +6,62 @@ namespace GPUDPP
 {
     public class GPUMultiSplitPlan
     {
-        public ComputeBuffer WarpLevelHistogram;
-        public ComputeBuffer HistogramOffset;
-        public ComputeBuffer BackKey;
-        public ComputeBuffer BackValue;
-        public ComputeBuffer DEBUG;
-        public int ElementCount;
-        public int BucketCount;
-        public int GroupCount;
-        public int LaneCount;
-        public int KeyTypeSize;
-        public int WarpCount;
+        public ComputeBuffer WarpLevelHistogram { get { return m_WarpLevelHistogram; } }
+        public ComputeBuffer WarpLevelHistogramOffset { get { return m_WarpLevelHistogramOffset; } }
+        public ComputeBuffer NewIndex { get { return m_NewIndex; } }
+        public ComputeBuffer BackKey { get { return m_BackKey; } }
+        public ComputeBuffer BackValue { get { return m_BackValue; } }
+        public ComputeBuffer DEBUG { get { return m_DEBUG; } }
+        public GPUScanHillis Scan { get { return m_Scan; } }
+        public GPUScanHillisPlan ScanCache { get { return m_ScanCache; } }
+        public int KeyTypeSize { get { return m_KeyTypeSize; } }
 
-        public GPUMultiSplitPlan(int vElementCount, int vBucketCount, int vLaneCount, int vKeyTypeSize = sizeof(uint), int vValueTypeSize = sizeof(uint))
+        public GPUMultiSplitPlan(int vMaxElementCount, int vMaxBucketCount, int vMinLaneCount, int vKeyTypeSize = sizeof(uint), int vValueTypeSize = sizeof(uint))
         {
-            ElementCount = vElementCount;
-            BucketCount = vBucketCount;
-            LaneCount = vLaneCount;
-            KeyTypeSize = vKeyTypeSize;
+            m_KeyTypeSize = vKeyTypeSize;
 
-            GroupCount = Mathf.CeilToInt((float)vElementCount / Common.ThreadCount1D);
+            int MaxWarpCount = Mathf.CeilToInt((float)vMaxElementCount / vMinLaneCount);
+            m_WarpLevelHistogram = new ComputeBuffer(MaxWarpCount * vMaxBucketCount, sizeof(uint));
+            m_WarpLevelHistogramOffset = new ComputeBuffer(MaxWarpCount * vMaxBucketCount, sizeof(uint));
+            m_NewIndex = new ComputeBuffer(vMaxElementCount, vKeyTypeSize);
+            m_BackKey = new ComputeBuffer(vMaxElementCount, vKeyTypeSize);
+            m_BackValue = new ComputeBuffer(vMaxElementCount, vValueTypeSize);
 
-            WarpCount = Mathf.CeilToInt((float)vElementCount / vLaneCount);
-            WarpLevelHistogram = new ComputeBuffer(WarpCount * vBucketCount, sizeof(uint));
-            HistogramOffset = new ComputeBuffer(WarpCount * vBucketCount, sizeof(uint));
-            BackKey = new ComputeBuffer(vElementCount, vKeyTypeSize);
-            BackValue = new ComputeBuffer(vElementCount, vValueTypeSize);
-            DEBUG = new ComputeBuffer(vElementCount * 2, sizeof(uint) * 3);
+            m_Scan = new GPUScanHillis();
+            m_ScanCache = new GPUScanHillisPlan();
+            m_DEBUG = new ComputeBuffer(vMaxElementCount * 2, sizeof(uint) * 3);
         }
 
         ~GPUMultiSplitPlan()
         {
-            WarpLevelHistogram.Release();
-            HistogramOffset.Release();
-            BackKey.Release();
-            BackValue.Release();
-            DEBUG.Release();
+            m_WarpLevelHistogram.Release();
+            m_WarpLevelHistogramOffset.Release();
+            m_NewIndex.Release();
+            m_BackKey.Release();
+            m_BackValue.Release();
+            m_DEBUG.Release();
         }
+
+        public void SwapBackAndFront(ref ComputeBuffer vioFrontKey, ref ComputeBuffer vioFrontValue)
+        {
+            ComputeBuffer Temp = vioFrontValue;
+            vioFrontValue = m_BackValue;
+            m_BackValue = Temp;
+
+            Temp = vioFrontKey;
+            vioFrontKey = m_BackKey;
+            m_BackKey = Temp;
+        }
+
+        private ComputeBuffer m_WarpLevelHistogram;
+        private ComputeBuffer m_WarpLevelHistogramOffset;
+        private ComputeBuffer m_NewIndex;
+        private ComputeBuffer m_BackKey;
+        private ComputeBuffer m_BackValue;
+        private ComputeBuffer m_DEBUG;
+        private GPUScanHillis m_Scan;
+        private GPUScanHillisPlan m_ScanCache;
+        private int m_KeyTypeSize;
     }
 
     public class GPUMultiSplit
@@ -54,49 +73,61 @@ namespace GPUDPP
             m_GPUMultiSplitCS = Resources.Load<ComputeShader>(Common.GPUMultiSplitCSPath);
             preScan = m_GPUMultiSplitCS.FindKernel("preScan");
             postScan = m_GPUMultiSplitCS.FindKernel("postScan");
+            rearrangeKeyValue = m_GPUMultiSplitCS.FindKernel("rearrangeKeyValue");
+            updateSplitPoint32 = m_GPUMultiSplitCS.FindKernel("updateSplitPoint32");
         }
 
-        public void MultiSplit(ref ComputeBuffer voKey, ref ComputeBuffer voValue, GPUMultiSplitPlan vPlan, GPUScanHillis vScan, GPUScanHillisPlan vScanCache)
+        public void ComputeNewIndex(ComputeBuffer vKey, GPUMultiSplitPlan vPlan, int vBucketCount, ComputeBuffer vArgument, int vElementCountOffset, int vGroupCountOffset, int vSplitPointOffset)
         {
-            if (voKey.count != voValue.count)
-                Debug.LogError("Input of MultiSplit do not have the same size!");
-            if (vPlan.ElementCount != voKey.count || vPlan.KeyTypeSize != voKey.stride)
-                Debug.LogError("Unmatching MultiSplit Plane!");
-
             m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.WarpLevelHistogram);
-            m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.HistogramOffset);
+            m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.WarpLevelHistogramOffset);
 
-            m_GPUMultiSplitCS.SetInt("ElementCount", vPlan.ElementCount);
-            m_GPUMultiSplitCS.SetInt("BucketCount", vPlan.BucketCount);
-            m_GPUMultiSplitCS.SetInt("GroupCount", vPlan.GroupCount);
+            m_GPUMultiSplitCS.SetInt("BucketCount", vBucketCount);
+            m_GPUMultiSplitCS.SetInt("ElementCountOffset", vElementCountOffset);
+            m_GPUMultiSplitCS.SetInt("GroupCountOffset", vGroupCountOffset);
+            m_GPUMultiSplitCS.SetInt("SplitPointOffset", vSplitPointOffset);
 
-            m_GPUMultiSplitCS.SetBuffer(preScan, "DEBUG", vPlan.DEBUG);
-            m_GPUMultiSplitCS.SetBuffer(preScan, "Key_R", voKey);
+            m_GPUMultiSplitCS.SetBuffer(preScan, "Argument_R", vArgument);
+            m_GPUMultiSplitCS.SetBuffer(preScan, "Key_R", vKey);
             m_GPUMultiSplitCS.SetBuffer(preScan, "WarpLevelHistogram_RW", vPlan.WarpLevelHistogram);
-            m_GPUMultiSplitCS.Dispatch(preScan, vPlan.GroupCount, 1, 1);
+            m_GPUMultiSplitCS.DispatchIndirect(preScan, vArgument, 0);
 
-            vScan.Scan(vPlan.WarpLevelHistogram, vPlan.HistogramOffset, vScanCache, vPlan.WarpCount * vPlan.BucketCount);
+            vPlan.Scan.Scan(vPlan.WarpLevelHistogram, vPlan.WarpLevelHistogramOffset, vPlan.ScanCache);
 
-            m_GPUMultiSplitCS.SetBuffer(postScan, "Key_R", voKey);
-            m_GPUMultiSplitCS.SetBuffer(postScan, "Value_R", voValue);
-            m_GPUMultiSplitCS.SetBuffer(postScan, "WarpLevelHistogramOffset_R", vPlan.HistogramOffset);
-            m_GPUMultiSplitCS.SetBuffer(postScan, "KeyBack_RW", vPlan.BackKey);
-            m_GPUMultiSplitCS.SetBuffer(postScan, "ValueBack_RW", vPlan.BackValue);
-            m_GPUMultiSplitCS.Dispatch(postScan, vPlan.GroupCount, 1, 1);
+            m_GPUMultiSplitCS.SetBuffer(postScan, "Argument_R", vArgument);
+            m_GPUMultiSplitCS.SetBuffer(postScan, "Key_R", vKey);
+            m_GPUMultiSplitCS.SetBuffer(postScan, "WarpLevelHistogramOffset_R", vPlan.WarpLevelHistogramOffset);
+            m_GPUMultiSplitCS.SetBuffer(postScan, "NewIndex_RW", vPlan.NewIndex);
+            m_GPUMultiSplitCS.DispatchIndirect(postScan, vArgument, 0);
 
-            ComputeBuffer Temp = voValue;
-            voValue = vPlan.BackValue;
-            vPlan.BackValue = Temp;
+            m_GPUMultiSplitCS.SetBuffer(updateSplitPoint32, "Argument_RW", vArgument);
+            m_GPUMultiSplitCS.SetBuffer(updateSplitPoint32, "WarpLevelHistogramOffset_R", vPlan.WarpLevelHistogramOffset);
+            m_GPUMultiSplitCS.Dispatch(updateSplitPoint32, 1, 1, 1);
+        }
 
-            Temp = voKey;
-            voKey = vPlan.BackKey;
-            vPlan.BackKey = Temp;
+        public void DefaultRearrangeKeyValue(ref ComputeBuffer vioKey, ref ComputeBuffer vioValue, GPUMultiSplitPlan vPlan, ComputeBuffer vArgument, int vElementCountOffset)
+        {
+            if (vioKey.count != vioValue.count)
+                Debug.LogError("Input of MultiSplit do not have the same size!");
+
+            m_GPUMultiSplitCS.SetInt("ElementCountOffset", vElementCountOffset);
+
+            m_GPUMultiSplitCS.SetBuffer(rearrangeKeyValue, "Argument_R", vArgument);
+            m_GPUMultiSplitCS.SetBuffer(rearrangeKeyValue, "NewIndex_R", vPlan.NewIndex);
+            m_GPUMultiSplitCS.SetBuffer(rearrangeKeyValue, "OldKey_R", vioKey);
+            m_GPUMultiSplitCS.SetBuffer(rearrangeKeyValue, "OldValue_R", vioValue);
+            m_GPUMultiSplitCS.SetBuffer(rearrangeKeyValue, "NewKey_RW", vPlan.BackKey);
+            m_GPUMultiSplitCS.SetBuffer(rearrangeKeyValue, "NewValue_RW", vPlan.BackValue);
+            m_GPUMultiSplitCS.DispatchIndirect(rearrangeKeyValue, vArgument, 0);
+
+            vPlan.SwapBackAndFront(ref vioKey, ref vioValue);
         }
 
         private ComputeShader m_GPUMultiSplitCS;
         private GPUBufferClear m_GPUBufferClear;
         private int preScan;
         private int postScan;
-
+        private int rearrangeKeyValue;
+        private int updateSplitPoint32;
     }
 }
