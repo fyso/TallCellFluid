@@ -113,7 +113,7 @@ void scatterParticleToGrid_Paas1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx :
     }
     else
     {
-        ParticleFilter_RW[i] = 0;
+        ParticleFilter_RW[i] = 1;
         return;
     }
 }
