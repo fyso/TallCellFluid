@@ -75,26 +75,32 @@ namespace GPUDPP
             m_GPUScanHillis.Scan(m_Key, m_Result2, m_GPUScanHillisPlan);
             Profiler.EndSample();
 
-            Profiler.BeginSample("MultiSplit");
             ComputeBuffer BackBuffer = m_Key;
+
+            Profiler.BeginSample("MultiSplit");
+
+            Profiler.BeginSample("ComputeNewIndex");
             m_GPUMultiSplit.ComputeNewIndex(m_Key, m_GPUMultiSplitPlan, BucketCount, m_Argument, 3, 0, 4);
+            Profiler.EndSample();
+
+            Profiler.BeginSample("DefaultRearrangeKeyValue");
             m_GPUMultiSplit.DefaultRearrangeKeyValue(ref m_Key, ref m_Value, m_GPUMultiSplitPlan, m_Argument, 3);
             Profiler.EndSample();
 
-            int[] ArgumentCPU = new int[7];
-            m_Argument.GetData(ArgumentCPU);
+            m_GPUMultiSplitPlan.SwapBackAndFront(ref m_Key, ref m_Value);
+            Profiler.EndSample();
 
-            HScanTestCase();
-            MultiSplitTestCase(BackBuffer);
+            //HScanTestCase();
+            //MultiSplitTestCase(BackBuffer);
 
-            System.Random Rand = new System.Random();
-            for (int i = 0; i < ElementCount; i++)
-            {
-                Key[i] = Rand.Next() % BucketCount;
-            }
+            //System.Random Rand = new System.Random();
+            //for (int i = 0; i < ElementCount; i++)
+            //{
+            //    Key[i] = Rand.Next() % BucketCount;
+            //}
 
-            m_Key.SetData(Key);
-            m_Value.SetData(Value);
+            //m_Key.SetData(Key);
+            //m_Value.SetData(Value);
         }
 
         private void HScanTestCase()

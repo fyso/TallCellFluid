@@ -39,6 +39,11 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.DispatchIndirect(markParticleByCellType, vParticle.Argument);
     }
 
+    public void GatherGridToParticle(DynamicParticle vParticle, TallCellGridLayer vTargetLayer)
+    {
+
+    }
+
     public void scatterParticleToGrid(DynamicParticle vInputParticle, TallCellGridLayer voTargetLayer, TallCellGridGPUCache vCache)
     {
         //m_ParticleInCellToolsCS.SetBuffer(scatterParticleToGrid_Paas1, "ParticleIndrectArgment_R", vInputParticle.Argument);

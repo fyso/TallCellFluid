@@ -2,6 +2,7 @@
 
 #pragma enable_d3d11_debug_symbols
 #pragma kernel markParticleByCellType
+#pragma kernel gatherGridToParticle
 #pragma kernel scatterParticleToGrid_Paas1
 #pragma kernel scatterParticleToGrid_Paas2
 #pragma kernel scatterParticleToGrid_Paas3
@@ -15,10 +16,14 @@ RWStructuredBuffer<uint> ParticleFilter_RW;
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 
-const int2 OffsetVector[3 * 3 - 1] = {
-    { -1, 0 },  { 1, 0 },
-    { 0, -1 },  { 0, 1 },   { 1, 1 },
-    { -1, -1 }, {  -1, 1 }, { 1, -1 }
+RWTexture3D<float3> RegularCellVelocity_RW;
+RWTexture2D<float3> TopCellVelocity_RW;
+RWTexture2D<float3> BottomCellVelocity_RW;
+
+const int2 OffsetVector[3 * 3] = {
+    { -1, 0 }, { 1, 0 },  { 0, -1 },  
+    { 0, 1 },  { 1, 1 },  { -1, -1 },
+    { -1, 1 }, { 1, -1 }, { 0, 0 }
 };
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
@@ -84,6 +89,27 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     }
 }
 
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+        return;
+    
+    float3 CurrPosition = ParticlePosition_R[i];
+    float RelativeHeight = CurrPosition.y - Min.y;
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
+    uint CurrGridYIndex = RelativeHeight / CellLength;
+    
+    float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
+    float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
+    
+    float3 CurrCenterCellPosition = float3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y) * CellLength;
+    
+}
+
 Texture2D<uint> TallCellParticleCount_R;
 RWTexture2D<uint> TallCellParticleCount_RW;
 Texture2D<int> TallCellPow2HeightSum_R;
@@ -113,10 +139,6 @@ Texture3D<int> RegularCellVelocityYTempCache_R;
 RWTexture3D<int> RegularCellVelocityYTempCache_RW;
 Texture3D<int> RegularCellVelocityZTempCache_R;
 RWTexture3D<int> RegularCellVelocityZTempCache_RW;
-
-RWTexture3D<float3> RegularCellVelocity_RW;
-RWTexture2D<float3> TopCellVelocity_RW;
-RWTexture2D<float3> BottomCellVelocity_RW;
 
 #define ZIP_INT 10000000
 
