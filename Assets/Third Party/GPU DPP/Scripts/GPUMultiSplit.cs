@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace GPUDPP
 {
@@ -87,22 +88,30 @@ namespace GPUDPP
             m_GPUMultiSplitCS.SetInt("GroupCountOffset", vGroupCountOffset);
             m_GPUMultiSplitCS.SetInt("SplitPointOffset", vSplitPointOffset);
 
+            Profiler.BeginSample("preScan");
             m_GPUMultiSplitCS.SetBuffer(preScan, "Argument_R", vArgument);
             m_GPUMultiSplitCS.SetBuffer(preScan, "Key_R", vKey);
             m_GPUMultiSplitCS.SetBuffer(preScan, "WarpLevelHistogram_RW", vPlan.WarpLevelHistogram);
             m_GPUMultiSplitCS.DispatchIndirect(preScan, vArgument, 0);
+            Profiler.EndSample();
 
+            Profiler.BeginSample("Scan");
             vPlan.Scan.Scan(vPlan.WarpLevelHistogram, vPlan.WarpLevelHistogramOffset, vPlan.ScanCache);
+            Profiler.EndSample();
 
+            Profiler.BeginSample("postScan");
             m_GPUMultiSplitCS.SetBuffer(postScan, "Argument_R", vArgument);
             m_GPUMultiSplitCS.SetBuffer(postScan, "Key_R", vKey);
             m_GPUMultiSplitCS.SetBuffer(postScan, "WarpLevelHistogramOffset_R", vPlan.WarpLevelHistogramOffset);
             m_GPUMultiSplitCS.SetBuffer(postScan, "NewIndex_RW", vPlan.NewIndex);
             m_GPUMultiSplitCS.DispatchIndirect(postScan, vArgument, 0);
+            Profiler.EndSample();
 
+            Profiler.BeginSample("updateSplitPoint32");
             m_GPUMultiSplitCS.SetBuffer(updateSplitPoint32, "Argument_RW", vArgument);
             m_GPUMultiSplitCS.SetBuffer(updateSplitPoint32, "WarpLevelHistogramOffset_R", vPlan.WarpLevelHistogramOffset);
             m_GPUMultiSplitCS.Dispatch(updateSplitPoint32, 1, 1, 1);
+            Profiler.EndSample();
         }
 
         public void DefaultRearrangeKeyValue(ref ComputeBuffer vioKey, ref ComputeBuffer vioValue, GPUMultiSplitPlan vPlan, ComputeBuffer vArgument, int vElementCountOffset)

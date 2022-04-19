@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using GPUDPP;
+using UnityEngine.Profiling;
 
 namespace DParticle
 {
@@ -45,8 +46,8 @@ namespace DParticle
             m_HashOffset = new ComputeBuffer(vMaxCount * 2, sizeof(uint));
             m_InnerSortIndexCache = new ComputeBuffer(vMaxCount, sizeof(uint));
             m_ScatterOffsetCache = new ComputeBuffer(vMaxCount, sizeof(uint));
-            m_Argument = new ComputeBuffer(9, sizeof(int), ComputeBufferType.IndirectArguments);
-            int[] InitArgument = new int[9] {1, 1, 1, 3, 0, 0, 0, 0, 0 };
+            m_Argument = new ComputeBuffer(12, sizeof(int), ComputeBufferType.IndirectArguments);
+            int[] InitArgument = new int[12] { 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0 };
             m_Argument.SetData(InitArgument);
 
             m_GPUScan = new GPUScanHillis();
@@ -85,7 +86,7 @@ namespace DParticle
             m_MainParticle.Position.SetData(vPosition.ToArray(), 0, 0, vSize);
             m_MainParticle.Velocity.SetData(vVelocity.ToArray(), 0, 0, vSize);
             m_MainParticle.Filter.SetData(vFilter.ToArray(), 0, 0, vSize);
-            int[] InitArgument = new int[9] { Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1, 3, vSize, 0, 0, 0, 0 };
+            int[] InitArgument = new int[12] { Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1, 3, vSize, 0, 0, 0, 0, 0, 0, 0 };
             m_Argument.SetData(InitArgument);
         }
 
@@ -137,8 +138,11 @@ namespace DParticle
 
         public void OrganizeParticle()
         {
-            m_MultiSplit.ComputeNewIndex(m_MainParticle.Filter, m_MultiSplitPlan, 2, m_Argument, 4, 0, 7);
+            Profiler.BeginSample("ComputeNewIndex");
+            m_MultiSplit.ComputeNewIndex(m_MainParticle.Filter, m_MultiSplitPlan, 5, m_Argument, 4, 0, 7);
+            Profiler.EndSample();
 
+            Profiler.BeginSample("RearrangeParticleKernel");
             GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "NewIndex_R", m_MultiSplitPlan.NewIndex);
             GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "OldPosition_R", m_MainParticle.Position);
@@ -148,10 +152,13 @@ namespace DParticle
             GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "RearrangedVelocity_RW", m_ParticleCache.Velocity);
             GPUDynamicParticleToolCS.SetBuffer(RearrangeParticleKernel, "RearrangedFilter_RW", m_ParticleCache.Filter);
             GPUDynamicParticleToolCS.DispatchIndirect(RearrangeParticleKernel, m_Argument);
+            Profiler.EndSample();
 
-            GPUDynamicParticleToolCS.SetInt("DeleteParticleOffset", 7);
+            Profiler.BeginSample("UpdateParticleNarrowCountArgmentKernel");
+            GPUDynamicParticleToolCS.SetInt("DeleteParticleOffset", 10);
             GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
             GPUDynamicParticleToolCS.Dispatch(UpdateParticleNarrowCountArgmentKernel, 1, 1, 1);
+            Profiler.EndSample();
 
             Particle Temp = m_ParticleCache;
             m_ParticleCache = m_MainParticle;
@@ -186,6 +193,7 @@ namespace DParticle
             m_SPHVisualMaterial.SetPass(0);
             m_SPHVisualMaterial.SetBuffer("_particlePositionBuffer", m_MainParticle.Position);
             m_SPHVisualMaterial.SetBuffer("_particleVelocityBuffer", m_MainParticle.Velocity);
+            m_SPHVisualMaterial.SetBuffer("_particleFilterBuffer", m_MainParticle.Filter);
             Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, m_Argument, 12);
         }
 

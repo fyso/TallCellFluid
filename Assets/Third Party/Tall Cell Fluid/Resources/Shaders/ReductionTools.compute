@@ -1,4 +1,3 @@
-#include "Common.hlsl"
 #pragma kernel downSampleWithFourLevels
 
 

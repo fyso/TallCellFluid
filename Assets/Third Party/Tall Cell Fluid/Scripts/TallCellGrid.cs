@@ -12,8 +12,10 @@ public class GridValuePerLevel
 
     public GridValuePerLevel(Vector2Int vResolutionXZ, int vRegularCellCount, RenderTextureFormat vDataType)
     {
-        m_RegularCellValue = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellCount, vDataType)
+        m_RegularCellValue = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
         {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vRegularCellCount,
             enableRandomWrite = true,
             filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
@@ -64,14 +66,14 @@ public class GridPerLevel
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Point,
-            wrapMode = TextureWrapMode.Clamp,
+            wrapMode = TextureWrapMode.Clamp
         };
 
         m_TallCellHeight = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RFloat)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Point,
-            wrapMode = TextureWrapMode.Clamp,
+            wrapMode = TextureWrapMode.Clamp
         };
 
         m_Velocity = new GridValuePerLevel(vResolutionXZ, vRegularCellCount, RenderTextureFormat.ARGBFloat);
@@ -162,7 +164,7 @@ public class TallCellGrid
         {
             m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, GridData[vSrcLevel + i].TerrrianHeight);
         }
-        m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
+        //m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
     }
 
     private void Remesh()
@@ -210,10 +212,29 @@ public class TallCellGrid
 
     private void Advect()
     {
-        m_DynamicParticle.DeleteParticleOutofRange(m_Min, m_Max, m_CellLength);
-        m_DynamicParticle.OrganizeParticle();
+        //generate cell's particle count and offset info
         m_DynamicParticle.ZSort(m_Min, m_CellLength);
+
+        //split particle by cell type
+        Profiler.BeginSample("MarkParticleWtihCellType");
+        m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_GridData[0]);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("DeleteParticleOutofRange");
+        m_DynamicParticle.DeleteParticleOutofRange(m_Min, m_Max, m_CellLength);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("OrganizeParticle");
+        m_DynamicParticle.OrganizeParticle();
+        Profiler.EndSample();
+
+        //generate cell's particle count and offset info
+
         //grid to particle using fine level
+        Profiler.BeginSample("GatherGridToParticle");
+        m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_GridData[0]);
+        Profiler.EndSample();
+
         //advect particle
         //Particle to grid using fine level
     }

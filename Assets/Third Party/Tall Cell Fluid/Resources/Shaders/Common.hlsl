@@ -25,6 +25,21 @@ uint computeMorton3D(uint3 vCellIndex3D)
     return (expandBits3D(vCellIndex3D.z) << 2) + (expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x);
 }
 
+float CubicKernel(float vX)
+{
+    vX = abs(vX);
+    
+    float Result = 0;
+    if (vX >= 0.0f && vX < 1.0f)
+        Result = 0.5f * pow(vX, 3.0f) - pow(vX, 2.0f) + 2.0f / 3.0f;
+    else if (vX >= 1.0f && vX < 2.0f)
+        Result = (1.0f / 6.0f) * pow((2.0f - vX), 3.0f);
+    else
+        Result = 0;
+
+    return Result;
+}
+
 void computeAdjCell3DIndex(int3 voAdjCell3DIndex[8], int XOffset, int YOffset, int ZOffset, int3 CurrCell3DIndex)
 {
     voAdjCell3DIndex[0] = CurrCell3DIndex + int3(0, YOffset, ZOffset);
