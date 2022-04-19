@@ -12,23 +12,25 @@ public class TallCellGridLayerData3D
 
     public TallCellGridLayerData3D(Vector2Int vResolutionXZ, int vRegularCellCount, RenderTextureFormat vDataType)
     {
-        m_UpperUniform = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellCount, vDataType)
+        m_UpperUniform = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
         {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vRegularCellCount,
             enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
+            filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
         m_Top = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
         {
             enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
+            filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
 
         m_Bottom = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
         {
             enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
+            filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
     }
@@ -63,14 +65,14 @@ public class TallCellGridLayer
         m_TerrrianHeight = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RFloat)
         {
             enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
+            filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
 
         m_TallCellHeight = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RFloat)
         {
             enableRandomWrite = true,
-            filterMode = FilterMode.Bilinear,
+            filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
 
@@ -187,7 +189,7 @@ public class TallCellGrid
     private void Advect()
     {
         //generate cell's particle count and offset info
-        //m_DynamicParticle.ZSort(m_Min, m_CellLength);
+        m_DynamicParticle.ZSort(m_Min, m_CellLength);
 
         //split particle by cell type
         Profiler.BeginSample("MarkParticleWtihCellType");
@@ -205,6 +207,10 @@ public class TallCellGrid
         //generate cell's particle count and offset info
 
         //grid to particle using fine level
+        Profiler.BeginSample("GatherGridToParticle");
+        m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_TallCellGridLayers[0]);
+        Profiler.EndSample();
+
         //advect particle
         //Particle to grid using fine level
     }

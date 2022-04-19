@@ -9,6 +9,7 @@ public class ParticleInCellTools
     {
         m_ParticleInCellToolsCS = Resources.Load<ComputeShader>(Common.ParticleInCellToolsCSPath);
         markParticleByCellType = m_ParticleInCellToolsCS.FindKernel("markParticleByCellType");
+        gatherGridToParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToParticle");
         scatterParticleToGrid_Paas1 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToGrid_Paas1");
         scatterParticleToGrid_Paas2 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToGrid_Paas2");
         scatterParticleToGrid_Paas3 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToGrid_Paas3");
@@ -41,7 +42,16 @@ public class ParticleInCellTools
 
     public void GatherGridToParticle(DynamicParticle vParticle, TallCellGridLayer vTargetLayer)
     {
-
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleIndrectArgment_R", vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticlePosition_R", vParticle.MainParticle.Position);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleVelocity_RW", vParticle.MainParticle.Velocity);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleFilter_RW", vParticle.MainParticle.Filter);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "TerrianHeight_R", vTargetLayer.TerrrianHeight);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "TallCellHeight_R", vTargetLayer.TallCellHeight);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "TopCellVelocity_R", vTargetLayer.Velocity.Top);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "BottomCellVelocity_R", vTargetLayer.Velocity.Bottom);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "RegularCellVelocity_R", vTargetLayer.Velocity.UpperUniform);
+        m_ParticleInCellToolsCS.DispatchIndirect(gatherGridToParticle, vParticle.Argument);
     }
 
     public void scatterParticleToGrid(DynamicParticle vInputParticle, TallCellGridLayer voTargetLayer, TallCellGridGPUCache vCache)
@@ -154,6 +164,7 @@ public class ParticleInCellTools
     private Vector3Int m_GPUGroupCount3D;
     private ComputeShader m_ParticleInCellToolsCS;
     private int markParticleByCellType;
+    private int gatherGridToParticle;
     private int scatterParticleToGrid_Paas1;
     private int scatterParticleToGrid_Paas2;
     private int scatterParticleToGrid_Paas3;

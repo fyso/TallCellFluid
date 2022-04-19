@@ -12,18 +12,62 @@ StructuredBuffer<int> ParticleIndrectArgment_R;
 
 StructuredBuffer<float3> ParticlePosition_R;
 StructuredBuffer<float3> ParticleVelocity_R;
+RWStructuredBuffer<float3> ParticleVelocity_RW;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 
+Texture3D<float3> RegularCellVelocity_R;
+Texture2D<float3> TopCellVelocity_R;
+Texture2D<float3> BottomCellVelocity_R;
 RWTexture3D<float3> RegularCellVelocity_RW;
 RWTexture2D<float3> TopCellVelocity_RW;
 RWTexture2D<float3> BottomCellVelocity_RW;
 
-const int2 OffsetVector[3 * 3] = {
-    { -1, 0 }, { 1, 0 },  { 0, -1 },  
-    { 0, 1 },  { 1, 1 },  { -1, -1 },
-    { -1, 1 }, { 1, -1 }, { 0, 0 }
+const int2 OffsetVector2D[3 * 3] =
+{
+    { -1, 0 },
+    { 1, 0 },
+    { 0, -1 },
+    { 0, 1 },
+    { 1, 1 },
+    { -1, -1 },
+    { -1, 1 },
+    { 1, -1 },
+    { 0, 0 }
+};
+
+const int3 OffsetVector3D[3 * 3 * 3] =
+{
+    { -1, 0, 0},
+    { 1, 0, 0 },
+    { 0, -1, 0 },
+    { 0, 1, 0 },
+    { 1, 1, 0 },
+    { -1, -1, 0 },
+    { -1, 1, 0 },
+    { 1, -1, 0 },
+    { 0, 0, 0 },
+    
+    { -1, 0, 1 },
+    { 1, 0, 1 },
+    { 0, -1, 1 },
+    { 0, 1, 1 },
+    { 1, 1, 1 },
+    { -1, -1, 1 },
+    { -1, 1, 1 },
+    { 1, -1, 1 },
+    { 0, 0, 1 },
+    
+    { -1, 0, -1 },
+    { 1, 0, -1 },
+    { 0, -1, -1 },
+    { 0, 1, -1 },
+    { 1, 1, -1 },
+    { -1, -1, -1 },
+    { -1, 1, -1 },
+    { 1, -1, -1 },
+    { 0, 0, -1 }
 };
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
@@ -55,8 +99,8 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     
     for (int c = 0; c < 3 * 3 - 1; c++)
     {
-        float SurroundTerrianHeight = TerrianHeight_R[CurrGridXZIndex + OffsetVector[c]];
-        float SurroundTallCellHeight = TallCellHeight_R[CurrGridXZIndex + OffsetVector[c]];
+        float SurroundTerrianHeight = TerrianHeight_R[CurrGridXZIndex + OffsetVector2D[c]];
+        float SurroundTallCellHeight = TallCellHeight_R[CurrGridXZIndex + OffsetVector2D[c]];
         
         if (RelativeHeight < SurroundTallCellHeight + SurroundTerrianHeight + CellLength)
         {
@@ -107,7 +151,34 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
     
     float3 CurrCenterCellPosition = float3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y) * CellLength;
-    
+    float WeightSum = 0.0f;
+    float3 WeightValue = float3(0, 0, 0);
+    for (int c = 0; c < 3 * 3 * 3; c++)
+    {
+        float3 AdjPoint = CurrCenterCellPosition + OffsetVector3D[c] * CellLength;
+        float Weight = CubicKernel(length(AdjPoint - CurrCenterCellPosition) / CellLength);
+        
+        float3 Value = float3(0, 0, 0);
+        if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight)
+        {
+            float3 TopValue = TopCellVelocity_R[CurrGridXZIndex];
+            float3 BottomValue = BottomCellVelocity_R[CurrGridXZIndex];
+            float RelativeHeight = (AdjPoint.y - CenterTerrianHeight) / CenterTallCellHeight;
+            Value = RelativeHeight * TopValue + (1.0f - RelativeHeight) * BottomValue;
+        }
+        else if (AdjPoint.y >= CenterTerrianHeight + CenterTallCellHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength)
+        {
+            uint YIndex = (AdjPoint.y - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
+            Value = RegularCellVelocity_R[uint3(CurrGridXZIndex.x, YIndex, CurrGridXZIndex.y)];
+        }
+        else
+        {
+            Value = float3(0, 0, 0);
+        }
+        WeightValue += Value * Weight;
+        WeightSum += Weight;
+    }
+    ParticleVelocity_RW[i] = WeightValue / WeightSum;
 }
 
 Texture2D<uint> TallCellParticleCount_R;
