@@ -33,6 +33,7 @@ void computeTerrianHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
     float2 UV = DispatchThreadID.xy / (float2) XZResolution;
     float TerrianHeight = TerrianTexture_R.SampleLevel(Sampler_Trilinear_Clamp, UV, 0);
     TerrianHeight = TerrianHeight * HeightScale;
+    TerrianHeight = ceil(TerrianHeight / CellLength) * CellLength;
     TerrianHeight_RW[DispatchThreadID.xy] = TerrianHeight;
 }
 
@@ -141,5 +142,7 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
         Max = max(Max, TallCellHeight_R.SampleLevel(Sampler_Trilinear_Clamp, UV + h * offsets[j], 0));
     }
     
-    TallCellHeightCache_RW[DispatchThreadID.xy] = min(Center, Max + D * CellLength) - TerrianHeight;
+    float FinalResult = min(Center, Max + D * CellLength) - TerrianHeight;
+    FinalResult = ceil(FinalResult / CellLength) * CellLength;
+    TallCellHeightCache_RW[DispatchThreadID.xy] = FinalResult;
 }
