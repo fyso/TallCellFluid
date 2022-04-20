@@ -1,0 +1,57 @@
+#pragma kernel downSampleWithFourLevels
+
+
+Texture2D<float> SrcTex;
+uint2 SrcResolution;
+groupshared float gs_Result[64];
+uint NumMipLevels;
+RWTexture2D<float> outMip1;
+RWTexture2D<float> outMip2;
+RWTexture2D<float> outMip3;
+RWTexture2D<float> outMip4;
+
+float reduction(float x1, float x2, float x3, float x4)
+{
+    return min(x1, min(x2, min(x3, x4)));
+}
+
+//TODO: 还有两个优化点：1、重新映射线程只需要一个warp，且不需要同步；2、使用warp级别的操作代替共享内存
+[numthread(8, 8, 1)]
+void downSampleWithFourLevels(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > SrcResolution))
+        return;
+    
+    float Src1 = reduction(SrcTex[DispatchThreadID.xy * 2], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)], SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)]);
+    outMip1[DispatchThreadID.xy] = Src1;
+    if (NumMipLevels == 1)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if ((GroupIndex & 0x9) == 0)
+    {
+        Src1 = reduction(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
+        outMip2[DispatchThreadID.xy >> 1] = Src1;
+    }
+    if (NumMipLevels == 2)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if ((GroupIndex & 0x1B) == 0)
+    {
+        Src1 = reduction(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        outMip3[DispatchThreadID.xy >> 2] = Src1;
+    }
+    if (NumMipLevels == 3)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GroupIndex == 0)
+    {
+        Src1 = reduction(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        outMip4[DispatchThreadID.xy >> 3] = Src1;        
+    }
+}

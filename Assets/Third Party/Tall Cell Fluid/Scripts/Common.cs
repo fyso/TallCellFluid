@@ -7,6 +7,7 @@ public static class Common
     public static uint ThreadCount1D = 512;
     public static uint ThreadCount2D = 32;
     public static uint ThreadCount3D = 8;
+    public static string ReductionToolsCSPath = "Shaders/ReductionTools";
     public static string RemeshToolsCSPath = "Shaders/RemeshTools";
     public static string ParticleInCellToolsCSPath = "Shaders/ParticleInCellTools";
 
