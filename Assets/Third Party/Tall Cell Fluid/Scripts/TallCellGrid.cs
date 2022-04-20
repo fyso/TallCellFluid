@@ -157,14 +157,27 @@ public class TallCellGrid
     {
         //Terrain
         m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "SrcTex", GridData[vSrcLevel].TerrrianHeight);
-        m_ReductionCS.SetInts("SrcResolution", GridData[vSrcLevel].ResolutionXZ.x, GridData[vSrcLevel].ResolutionXZ.y);//TODO:是否同步？
-        m_ReductionCS.SetInt("NumMipLevels", LeftLevel);//TODO:是否同步？
-        m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "SrcTex", GridData[vSrcLevel].TerrrianHeight);
-        for(int i = 1; i < LeftLevel; i++)
+        m_ReductionCS.SetInts("SrcResolution", GridData[vSrcLevel].ResolutionXZ.x, GridData[vSrcLevel].ResolutionXZ.y);
+        m_ReductionCS.SetInt("NumMipLevels", LeftLevel);
+        for(int i = 1; i <= 4; i++)
         {
-            m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, GridData[vSrcLevel + i].TerrrianHeight);
+            if(i <= LeftLevel) m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, GridData[vSrcLevel + i].TerrrianHeight);
+            else m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, null);
         }
-        //m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
+        m_ReductionCS.EnableKeyword("_TERRAIN");
+        m_ReductionCS.DisableKeyword("_TOPCELL");
+        m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
+
+        //TallCell
+        m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "SrcTex", GridData[vSrcLevel].TallCellHeight);
+        for (int i = 1; i <= 4; i++)
+        {
+            if (i <= LeftLevel) m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, GridData[vSrcLevel + i].TallCellHeight);
+            else m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, null);
+        }
+        m_ReductionCS.EnableKeyword("_TOPCELL");
+        m_ReductionCS.DisableKeyword("_TERRAIN");
+        m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
     }
 
     private void Remesh()
