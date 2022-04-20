@@ -1,6 +1,5 @@
 #pragma kernel downSampleWithFourLevels
 
-
 Texture2D<float> SrcTex;
 uint2 SrcResolution;
 groupshared float gs_Result[64];
@@ -15,7 +14,7 @@ float reduction(float x1, float x2, float x3, float x4)
     return min(x1, min(x2, min(x3, x4)));
 }
 
-//TODO: 还有两个优化点：1、重新映射线程只需要一个warp，且不需要同步；2、使用warp级别的操作代替共享内存
+//TODO: 1.remap thread nedd only one warp, and do not need synchronous; 2.use warp-level operation
 [numthread(8, 8, 1)]
 void downSampleWithFourLevels(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
 {

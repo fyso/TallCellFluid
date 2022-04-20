@@ -10,7 +10,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS = Resources.Load<ComputeShader>(Common.ParticleInCellToolsCSPath);
         markParticleByCellType = m_ParticleInCellToolsCS.FindKernel("markParticleByCellType");
         gatherGridToParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToParticle");
-        gatherOnlyTallCellParticleToGrid = m_ParticleInCellToolsCS.FindKernel("gatherOnlyTallCellParticleToGrid");
+        scatterOnlyTallCellParticleToGrid = m_ParticleInCellToolsCS.FindKernel("scatterOnlyTallCellParticleToGrid");
         UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vConstantCellNum);
     }
 
@@ -170,7 +170,7 @@ public class ParticleInCellTools
     private ComputeShader m_ParticleInCellToolsCS;
     private int markParticleByCellType;
     private int gatherGridToParticle;
-    private int gatherOnlyTallCellParticleToGrid;
+    private int scatterOnlyTallCellParticleToGrid;
     private int scatterParticleToGrid_Paas2;
     private int scatterParticleToGrid_Paas3;
 }
