@@ -114,6 +114,13 @@ void updateArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
     uint ThirdParticleStartIndex = ParticleIndrectArgment_RW[ParticleSplitPointArgumentOffset + 2];
     uint ForthParticleStartIndex = ParticleIndrectArgment_RW[ParticleSplitPointArgumentOffset + 3];
     uint FifthParticleStartIndex = ParticleIndrectArgment_RW[ParticleSplitPointArgumentOffset + 4];
+    
+    ParticleIndrectArgment_RW[DifferParticleCountArgumentOffset] = FirstParticleStartIndex;
+    ParticleIndrectArgment_RW[DifferParticleCountArgumentOffset + 1] = SecondParticleStartIndex - FirstParticleStartIndex;
+    ParticleIndrectArgment_RW[DifferParticleCountArgumentOffset + 2] = ThirdParticleStartIndex - SecondParticleStartIndex;
+    ParticleIndrectArgment_RW[DifferParticleCountArgumentOffset + 3] = ForthParticleStartIndex - ThirdParticleStartIndex;
+    ParticleIndrectArgment_RW[DifferParticleCountArgumentOffset + 4] = FifthParticleStartIndex - ForthParticleStartIndex;
+    
     ParticleIndrectArgment_RW[FirstParticleXGridCountArgumentOffset] = (int) ceil((float) FirstParticleStartIndex / THREAD_NUM_1D);
     ParticleIndrectArgment_RW[FirstParticleXGridCountArgumentOffset + 1] = 1;
     ParticleIndrectArgment_RW[FirstParticleXGridCountArgumentOffset + 2] = 1;

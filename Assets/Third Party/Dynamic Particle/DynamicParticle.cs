@@ -185,6 +185,8 @@ namespace DParticle
             GPUDynamicParticleToolCS.SetBuffer(UpdateArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
             GPUDynamicParticleToolCS.Dispatch(UpdateArgmentKernel, 1, 1, 1);
             Profiler.EndSample();
+            uint[] InitArgument = new uint[29];
+            m_Argument.GetData(InitArgument);
 
             Particle Temp = m_ParticleCache;
             m_ParticleCache = m_MainParticle;
