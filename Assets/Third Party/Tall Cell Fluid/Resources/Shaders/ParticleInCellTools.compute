@@ -181,11 +181,21 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
 }
 
 uint OnlyTallCellParticleCountOffset;
+//groupshared float LocalTallCellXSum[];
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i >= ParticleIndrectArgment_R[OnlyTallCellParticleCountOffset])
         return;
+    
+    float3 CurrPosition = ParticlePosition_R[i];
+    float RelativeHeight = CurrPosition.y - Min.y;
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
+    
+    float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
+    float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
     
 }

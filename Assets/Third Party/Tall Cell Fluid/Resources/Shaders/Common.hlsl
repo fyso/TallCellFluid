@@ -2,6 +2,10 @@
 #define THREAD_COUNT_2D 32
 #define THREAD_COUNT_3D 8
 
+#define MAX_RESOLUTION_X 128
+#define MAX_RESOLUTION_Z 128
+#define MAX_RESOLUTION_Z 64
+
 #define PI 3.1415926535f
 #define E 2.7182818284f
 
