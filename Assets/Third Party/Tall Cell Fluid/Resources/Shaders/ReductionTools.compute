@@ -15,7 +15,7 @@ float reduction(float x1, float x2, float x3, float x4)
 }
 
 //TODO: 1.remap thread nedd only one warp, and do not need synchronous; 2.use warp-level operation
-[numthread(8, 8, 1)]
+[numthreads(8, 8, 1)]
 void downSampleWithFourLevels(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     if (any(DispatchThreadID.xy > SrcResolution))

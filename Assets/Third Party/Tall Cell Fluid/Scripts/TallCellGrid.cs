@@ -189,7 +189,6 @@ public class TallCellGrid
             m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_GridData[0], m_SeaLevel, m_DynamicParticle);
 
         //update mark for each level
-        m_ParticleInCellTools.scatterParticleToGrid(m_DynamicParticle, m_GridData[0], m_GPUCache);
 
         //transfer data from old to new (fine level)
 
@@ -226,6 +225,7 @@ public class TallCellGrid
         Profiler.EndSample();
 
         //generate cell's particle count and offset info
+        m_DynamicParticle.ZSort(m_Min, m_CellLength, true, 3);
 
         //grid to particle using fine level
         Profiler.BeginSample("GatherGridToParticle");

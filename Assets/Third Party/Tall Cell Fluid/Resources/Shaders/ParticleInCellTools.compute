@@ -11,6 +11,7 @@ StructuredBuffer<int> ParticleIndrectArgment_R;
 
 StructuredBuffer<float3> ParticlePosition_R;
 StructuredBuffer<float3> ParticleVelocity_R;
+StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 Texture2D<float> TerrianHeight_R;
@@ -180,13 +181,57 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     ParticleVelocity_RW[i] = WeightValue / WeightSum;
 }
 
-uint OnlyTallCellParticleCountOffset;
-//groupshared float LocalTallCellXSum[];
+//RWStructuredBuffer<float3> SortedParticlePosition_RW;
+//RWStructuredBuffer<float3> SortedParticleVelocity_RW;
+//RWStructuredBuffer<uint> SortedParticleFilter_RW;
+
+//StructuredBuffer<uint> ParticleInnerSortIndex_R;
+//RWStructuredBuffer<uint> ParticleInnerSortIndex_RW;
+
+//StructuredBuffer<uint> ParticleCellIndex_R;
+//RWStructuredBuffer<uint> ParticleCellIndex_RW;
+
+//StructuredBuffer<uint> HashGridCellParticleOffset_R;
+//RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
+//[numthreads(THREAD_COUNT_1D, 1, 1)]
+//void insertParticleInto2DHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+//{
+//    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+//    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
+//        return;
+    
+//    float3 Postion = ParticlePosition_R[i];
+//    uint2 Cell3DIndex = uint2((Postion.xz - Min.xz) / CellLength);
+//    uint CellLinerIndex = computeMorton2D(Cell3DIndex);
+    
+//    ParticleCellIndex_RW[i] = CellLinerIndex;
+//    uint OriginValue;
+//    InterlockedAdd(HashGridCellParticleCount_RW[CellLinerIndex], 1, OriginValue);
+//    ParticleInnerSortIndex_RW[i] = OriginValue;
+//}
+
+//[numthreads(THREAD_COUNT_1D, 1, 1)]
+//void countingSortFull(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+//{
+//    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+//    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
+//        return;
+    
+//    uint CellLinerIndex = ParticleCellIndex_R[i];
+//    uint Offset = HashGridCellParticleOffset_R[CellLinerIndex];
+//    uint Index = ParticleInnerSortIndex_R[i];
+//    uint SortedIndex = Offset + Index;
+//    SortedParticlePosition_RW[SortedIndex] = ParticlePosition_R[i];
+//    SortedParticleVelocity_RW[SortedIndex] = ParticleVelocity_R[i];
+//    SortedParticleFilter_RW[SortedIndex] = ParticleFilter_R[i];
+//}
+
+//TODO: we can use sort and warp-level perfixsum to discard many interlocked operation
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i >= ParticleIndrectArgment_R[OnlyTallCellParticleCountOffset])
+    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
         return;
     
     float3 CurrPosition = ParticlePosition_R[i];

@@ -33,3 +33,8 @@ uint computeMorton3D(uint3 vCellIndex3D)
         (expandBits3D(vCellIndex3D.y) << 1) +
         expandBits3D(vCellIndex3D.x)) % 218357;
 }
+
+uint computeMorton2D(uint2 vCellIndex3D)
+{
+    return ((expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x)) % 218357;
+}

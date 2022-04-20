@@ -31,8 +31,7 @@ public class ParticleInCellTools
 
     public void MarkParticleWtihCellType(DynamicParticle vParticle, GridPerLevel vTargetLevel)
     {
-        m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", vParticle.ParticleCountArgumentOffset);
-        m_ParticleInCellToolsCS.SetInt("OnlyTallCellParticleCountOffset", vParticle.OnlyTallCellParticleCountArgumentOffset);
+        m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", DynamicParticle.ParticleCountArgumentOffset);
 
         m_ParticleInCellToolsCS.SetBuffer(markParticleByCellType, "ParticleIndrectArgment_R", vParticle.Argument);
         m_ParticleInCellToolsCS.SetBuffer(markParticleByCellType, "ParticlePosition_R", vParticle.MainParticle.Position);
@@ -44,8 +43,7 @@ public class ParticleInCellTools
 
     public void GatherGridToParticle(DynamicParticle vParticle, GridPerLevel vTargetLevel)
     {
-        m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", vParticle.ParticleCountArgumentOffset);
-        m_ParticleInCellToolsCS.SetInt("OnlyTallCellParticleCountOffset", vParticle.OnlyTallCellParticleCountArgumentOffset);
+        m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", DynamicParticle.ParticleCountArgumentOffset);
 
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleIndrectArgment_R", vParticle.Argument);
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticlePosition_R", vParticle.MainParticle.Position);

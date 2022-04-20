@@ -3,7 +3,7 @@
 #define THREAD_COUNT_3D 8
 
 #define MAX_RESOLUTION_X 128
-#define MAX_RESOLUTION_Z 128
+#define MAX_RESOLUTION_Y 128
 #define MAX_RESOLUTION_Z 64
 
 #define PI 3.1415926535f
@@ -13,26 +13,6 @@ float3 Min;
 float CellLength;
 uint2 XZResolution;
 uint ConstantCellNum;
-
-uint expandBits3D(uint v)
-{
-    v &= 0x000003ff;
-    v = (v ^ (v << 16)) & 0xff0000ff;
-    v = (v ^ (v << 8)) & 0x0300f00f;
-    v = (v ^ (v << 4)) & 0x030c30c3;
-    v = (v ^ (v << 2)) & 0x09249249;
-    return v;
-}
-
-uint computeMorton3D(uint3 vCellIndex3D)
-{
-    return (expandBits3D(vCellIndex3D.z) << 2) + (expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x);
-}
-
-uint computeMorton2D(uint2 vCellIndex3D)
-{
-    return (expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x);
-}
 
 float CubicKernel(float vX)
 {

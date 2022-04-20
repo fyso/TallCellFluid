@@ -4,8 +4,11 @@
 #pragma kernel insertParticleIntoHashGrid
 #pragma kernel countingSortFull
 
+#pragma multi_compile_local __ Hash2D
+
 float3 HashGridMin;
 float HashGridCellLength;
+int TargetParticleType;
 
 StructuredBuffer<uint> ParticleIndrectArgment_R;
 
@@ -29,13 +32,27 @@ RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
 [numthreads(THREAD_NUM_1D, 1, 1)]
 void insertParticleIntoHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint i = ThreadIdx + GroupIdx * THREAD_NUM_1D;
-    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+    uint TargetParticleOffset = 0;
+    uint TargetParticleCount = ParticleIndrectArgment_R[ParticleCountArgumentOffset];
+    if (TargetParticleType >= 0)
+    {
+        TargetParticleOffset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[ParticleSplitPointArgumentOffset + TargetParticleType - 1];
+        TargetParticleCount = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+    }
+    
+    uint i = TargetParticleOffset + ThreadIdx + GroupIdx * THREAD_NUM_1D;
+    if (i >= TargetParticleOffset + TargetParticleCount)
         return;
     
+#if Hash2D
+    float3 Postion = ParticlePosition_R[i];
+    uint2 Cell3DIndex = uint2((Postion.xz - HashGridMin.xz) / HashGridCellLength);
+    uint CellLinerIndex = computeMorton2D(Cell3DIndex);
+#else
     float3 Postion = ParticlePosition_R[i];
     uint3 Cell3DIndex = uint3((Postion - HashGridMin) / HashGridCellLength);
     uint CellLinerIndex = computeMorton3D(Cell3DIndex);
+#endif
     
     ParticleCellIndex_RW[i] = CellLinerIndex;
     uint OriginValue;
@@ -53,7 +70,18 @@ void countingSortFull(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID
     uint CellLinerIndex = ParticleCellIndex_R[i];
     uint Offset = HashGridCellParticleOffset_R[CellLinerIndex];
     uint Index = ParticleInnerSortIndex_R[i];
-    uint SortedIndex = Offset + Index;
+    
+    uint TargetParticleOffset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[ParticleSplitPointArgumentOffset + TargetParticleType - 1];
+    uint SortedIndex = TargetParticleOffset + Offset + Index;
+    if(TargetParticleType == -1)
+    {
+        SortedIndex = Offset + Index;
+    }
+    else
+    {
+        if(i < TargetParticleOffset)
+            SortedIndex = i;
+    }
     SortedParticlePosition_RW[SortedIndex] = ParticlePosition_R[i];
     SortedParticleVelocity_RW[SortedIndex] = ParticleVelocity_R[i];
     SortedParticleFilter_RW[SortedIndex] = ParticleFilter_R[i];
