@@ -49,12 +49,14 @@ namespace DParticle
             m_HashOffset = new ComputeBuffer(vMaxCount * 2, sizeof(uint));
             m_InnerSortIndexCache = new ComputeBuffer(vMaxCount, sizeof(uint));
             m_ScatterOffsetCache = new ComputeBuffer(vMaxCount, sizeof(uint));
-            m_Argument = new ComputeBuffer(27, sizeof(uint), ComputeBufferType.IndirectArguments);
-            uint[] InitArgument = new uint[24] {
+            m_Argument = new ComputeBuffer(29, sizeof(uint), ComputeBufferType.IndirectArguments);
+            uint[] InitArgument = new uint[29] {
                 1, 1, 1, //total particle dispatch indirect arguments
                 3, 0, 0, 0, //total particle draw indirect arguments
                 0, 0, 0, 0,  //different filter type particle split point ( max type count: 4 )
                 0, //delete particle split point
+                0, 0, 0, 0,  //different filter type particle count ( max type count: 4 )
+                0, //delete particle count
                 1, 1, 1, //first type particle dispatch indirect arguments
                 1, 1, 1, //second type same to...
                 1, 1, 1,
@@ -98,10 +100,12 @@ namespace DParticle
             m_MainParticle.Position.SetData(vPosition.ToArray(), 0, 0, vSize);
             m_MainParticle.Velocity.SetData(vVelocity.ToArray(), 0, 0, vSize);
             m_MainParticle.Filter.SetData(vFilter.ToArray(), 0, 0, vSize);
-            uint[] InitArgument = new uint[24] { 
+            uint[] InitArgument = new uint[29] { 
                 (uint)Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1,  //total particle dispatch indirect arguments
                 3, (uint)vSize, 0, 0, //total particle draw indirect arguments
                 0, 0, 0, 0,  //different filter type particle split point ( max type count: 4 )
+                0, //delete particle split point
+                0, 0, 0, 0,  //different filter type particle count ( max type count: 4 )
                 0, //delete particle split point
                 1, 1, 1, //first type particle dispatch indirect arguments
                 1, 1, 1, //second type same to...
@@ -151,10 +155,12 @@ namespace DParticle
             Vector3 Res = (vMax - vMin) / vCellLength;
             GPUDynamicParticleToolCS.SetInts("HashGridResolution", Mathf.CeilToInt(Res.x), Mathf.CeilToInt(Res.y), Mathf.CeilToInt(Res.z));
 
+            Profiler.BeginSample("DeleteParticleOutofRangeKernel");
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleIndrectArgment_R", m_Argument);
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticlePosition_R", m_MainParticle.Position);
             GPUDynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleFilter_RW", m_MainParticle.Filter);
             GPUDynamicParticleToolCS.DispatchIndirect(DeleteParticleOutofRangeKernel, m_Argument);
+            Profiler.EndSample();
         }
 
         public void OrganizeParticle()
@@ -176,17 +182,9 @@ namespace DParticle
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateParticleNarrowCountArgmentKernel");
-            GPUDynamicParticleToolCS.SetInt("FirstTypeParticleOffset", 7);
-            GPUDynamicParticleToolCS.SetInt("SecondTypeParticleOffset", 8);
-            GPUDynamicParticleToolCS.SetInt("ThirdTypeParticleOffset", 9);
-            GPUDynamicParticleToolCS.SetInt("ForthTypeParticleOffset", 10);
-            GPUDynamicParticleToolCS.SetInt("FifthTypeParticleOffset", 11);
             GPUDynamicParticleToolCS.SetBuffer(UpdateArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
             GPUDynamicParticleToolCS.Dispatch(UpdateArgmentKernel, 1, 1, 1);
             Profiler.EndSample();
-
-            uint[] InitArgument = new uint[24];
-            m_Argument.GetData(InitArgument);
 
             Particle Temp = m_ParticleCache;
             m_ParticleCache = m_MainParticle;
@@ -218,11 +216,13 @@ namespace DParticle
 
         public void VisualParticle()
         {
+            Profiler.BeginSample("VisualParticle");
             m_SPHVisualMaterial.SetPass(0);
             m_SPHVisualMaterial.SetBuffer("_particlePositionBuffer", m_MainParticle.Position);
             m_SPHVisualMaterial.SetBuffer("_particleVelocityBuffer", m_MainParticle.Velocity);
             m_SPHVisualMaterial.SetBuffer("_particleFilterBuffer", m_MainParticle.Filter);
             Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, m_Argument, 12);
+            Profiler.EndSample();
         }
 
         private float m_Radius;

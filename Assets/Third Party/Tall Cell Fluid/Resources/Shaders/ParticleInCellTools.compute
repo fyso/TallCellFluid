@@ -3,13 +3,9 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel markParticleByCellType
 #pragma kernel gatherGridToParticle
-
-#pragma kernel insertOnlyTallCellParticleIntoTallCell
-#pragma kernel countingSortOnlyTallCellParticle
-#pragma kernel gatherOnlyTallCellParticleToGrid
+#pragma kernel scatterOnlyTallCellParticleToGrid
 
 uint ParticleCountOffset;
-uint OnlyTallCellParticleCountOffset;
 
 StructuredBuffer<int> ParticleIndrectArgment_R;
 
@@ -184,52 +180,12 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     ParticleVelocity_RW[i] = WeightValue / WeightSum;
 }
 
-StructuredBuffer<uint> ParticleInnerSortIndex_R;
-RWStructuredBuffer<uint> ParticleInnerSortIndex_RW;
-StructuredBuffer<uint> ParticleCellIndex_R;
-RWStructuredBuffer<uint> ParticleCellIndex_RW;
-StructuredBuffer<uint> HashGridCellParticleOffset_R;
-RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
-
+uint OnlyTallCellParticleCountOffset;
 [numthreads(THREAD_COUNT_1D, 1, 1)]
-void insertOnlyTallCellParticleIntoTallCell(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
-        return;
-    
-    float2 Postion = ParticlePosition_R[i].xz;
-    uint2 Cell2DIndex = uint2((Postion - Min.xz) / CellLength);
-    uint CellLinerIndex = computeMorton2D(Cell2DIndex);
-    
-    ParticleCellIndex_RW[i] = CellLinerIndex;
-    uint OriginValue;
-    InterlockedAdd(HashGridCellParticleCount_RW[CellLinerIndex], 1, OriginValue);
-    ParticleInnerSortIndex_RW[i] = OriginValue;
-}
-
-RWStructuredBuffer<float3> SortedParticlePosition_RW;
-RWStructuredBuffer<float3> SortedParticleVelocity_RW;
-[numthreads(THREAD_COUNT_1D, 1, 1)]
-void countingSortOnlyTallCellParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
-{
-    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
-        return;
-    
-    uint CellLinerIndex = ParticleCellIndex_R[i];
-    uint Offset = HashGridCellParticleOffset_R[CellLinerIndex];
-    uint Index = ParticleInnerSortIndex_R[i];
-    uint SortedIndex = Offset + Index;
-    SortedParticlePosition_RW[SortedIndex] = ParticlePosition_R[i];
-    SortedParticleVelocity_RW[SortedIndex] = ParticleVelocity_R[i];
-}
-
-[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
-void gatherOnlyTallCellParticleToGrid(uint3 DispatchThreadID : SV_DispatchThreadID)
-{
-    uint OnlyTallCellParticleCount = ParticleIndrectArgment_R[OnlyTallCellParticleCountOffset];
-    if (any(DispatchThreadID.xy > XZResolution))
+    if (i >= ParticleIndrectArgment_R[OnlyTallCellParticleCountOffset])
         return;
     
 }

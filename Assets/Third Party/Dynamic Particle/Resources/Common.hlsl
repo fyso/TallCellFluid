@@ -2,11 +2,13 @@
 #define THREAD_NUM_2D 32
 
 #define ParticleXGridCountArgumentOffset 0
-#define FirstParticleXGridCountArgumentOffset 12
-#define SecondParticleXGridCountArgumentOffset 15
-#define ThirdParticleXGridCountArgumentOffset 18
-#define ForthParticleXGridCountArgumentOffset 21
 #define ParticleCountArgumentOffset 4
+#define ParticleSplitPointArgumentOffset 7
+#define DifferParticleCountArgumentOffset 11
+#define FirstParticleXGridCountArgumentOffset 16
+#define SecondParticleXGridCountArgumentOffset 19
+#define ThirdParticleXGridCountArgumentOffset 22
+#define ForthParticleXGridCountArgumentOffset 25
 #define EPSILON 1e-7f
 #define PI 3.14159274F
 #define FLT_MAX 3.402823466e+38F

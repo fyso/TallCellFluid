@@ -189,9 +189,6 @@ public class TallCellGrid
 
     private void Advect()
     {
-        //generate cell's particle count and offset info
-        m_DynamicParticle.ZSort(m_Min, m_CellLength);
-
         //split particle by cell type
         Profiler.BeginSample("MarkParticleWtihCellType");
         m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_TallCellGridLayers[0]);
