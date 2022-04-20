@@ -1,0 +1,121 @@
+#pragma kernel reduction
+#pragma kernel downSampleRegularCell
+#pragma kernel downSampleTallCell
+#pragma multi_compile _REDUCTION_MIN _REDUCTION_MAX
+
+groupshared float gs_Result[64];
+uint NumMipLevels;
+
+Texture2D<float> SrcTex;
+RWTexture2D<float> OutMip1;
+RWTexture2D<float> OutMip2;
+RWTexture2D<float> OutMip3;
+RWTexture2D<float> OutMip4;
+
+float fourInOne(float x1, float x2, float x3, float x4)
+{
+#ifdef _REDUCTION_MIN
+    return min(x1, min(x2, min(x3, x4)));
+#elif  _REDUCTION_MAX
+    return max(x1, max(x2, max(x3, x4)));
+#endif
+    return 0;
+}
+
+//TODO: 1.Remap the latter thread to only one warp, and do not need synchronous; 2.use warp-level operation
+[numthreads(8, 8, 1)]
+void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
+{    
+    float Src1 = fourInOne(SrcTex[DispatchThreadID.xy * 2], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)], SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)]);
+    OutMip1[DispatchThreadID.xy] = Src1;
+    if (NumMipLevels == 1)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if ((GroupIndex & 0x9) == 0)
+    {
+        Src1 = fourInOne(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
+        OutMip2[DispatchThreadID.xy >> 1] = Src1;
+    }
+    if (NumMipLevels == 2)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if ((GroupIndex & 0x1B) == 0)
+    {
+        Src1 = fourInOne(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        OutMip3[DispatchThreadID.xy >> 2] = Src1;
+    }
+    if (NumMipLevels == 3)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GroupIndex == 0)
+    {
+        Src1 = fourInOne(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        OutMip4[DispatchThreadID.xy >> 3] = Src1;        
+    }
+}
+
+#include "Common.hlsl"
+Texture2D<float> NextLevelTallCell;
+Texture2D<float> TallCell;
+Texture3D<float3> SrcRegularCell;
+Texture3D<int> SrcRegularMark; //TODO: Provisional: water is 1, air is 0
+float SrcRegularCellLength;
+RWTexture3D<float3> OutRegularCell;
+RWTexture3D<int> OutRegularMark;
+uint3 OutResolution;
+
+[numthreads(4, 4, 4)]
+void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xyz > OutResolution))
+        return;
+    
+    float NextLevelHeight = NextLevelTallCell[DispatchThreadID.xy] + 0.5 * SrcRegularCellLength;
+    uint2 TallCallIndex = DispatchThreadID.xy << 1;
+    uint3 Index[8] = { uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0) };
+    Index[0] = uint3(TallCallIndex.x, 0, TallCallIndex.y);
+    Index[1] = uint3(TallCallIndex.x + 1, 0, TallCallIndex.y);
+    Index[2] = uint3(TallCallIndex.x, 0, TallCallIndex.y + 1);
+    Index[3] = uint3(TallCallIndex.x + 1, 0, TallCallIndex.y + 1);
+    for (uint i = 0; i < 4; i++)
+    {
+        Index[i + 4].y = (NextLevelHeight - TallCell[Index[i].xz]) / SrcRegularCellLength;
+        Index[i + 4].y += 1;
+    }
+    
+    float3 result = 0;
+    int weight = 0;
+    for (uint k = 0; k < 8; k++)
+    {
+        if (SrcRegularMark[Index[k]] == 1)
+        {
+            result += SrcRegularCell[Index[k]];
+            weight++;
+        }
+    }
+    if (weight == 0) OutRegularMark[DispatchThreadID] = 0;
+    else
+    {
+        OutRegularMark[DispatchThreadID] = 1;
+        OutRegularCell[DispatchThreadID] = result / weight;
+    }
+}
+
+Texture3D<float3> SrcTallCellTop;
+Texture3D<float3> SrcTallCellBottom;
+RWTexture3D<float3> OutTallCellTop;
+RWTexture3D<float3> OutTallCellBottom;
+[numthreads(8, 8, 1)]
+void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xyz > OutResolution))
+        return;
+    
+    
+}

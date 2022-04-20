@@ -6,8 +6,8 @@ public class TallCellGridTest : MonoBehaviour
 {
     public Texture m_Terrian;
     public Vector3 m_Min;
-    public Vector2Int m_ResolutionXZ;
-    public int m_RegularCellCount;
+    public Vector2Int m_ResolutionXZ;//TODO: The number with exponent 2
+    public int m_RegularCellCount;//TODO: The number with exponent 2
     public float m_Celllength;
     public float m_SeaLevel;
     public int m_MaxParticleCount;

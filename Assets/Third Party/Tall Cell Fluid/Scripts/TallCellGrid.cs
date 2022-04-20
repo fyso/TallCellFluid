@@ -9,17 +9,18 @@ public class GridValuePerLevel
     public RenderTexture RegularCellValue { get { return m_RegularCellValue; } }
     public RenderTexture TallCellTopValue { get { return m_TallCellTopValue; } }
     public RenderTexture TallCellBottomValue { get { return m_TallCellBottomValue; } }
-
+    
     public GridValuePerLevel(Vector2Int vResolutionXZ, int vRegularCellCount, RenderTextureFormat vDataType)
     {
-        m_RegularCellValue = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
+        m_RegularCellValue = new RenderTexture(vResolutionXZ.x, vRegularCellCount, 0, vDataType)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
-            volumeDepth = vRegularCellCount,
+            volumeDepth = vResolutionXZ.y,
             enableRandomWrite = true,
             filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
+
         m_TallCellTopValue = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
         {
             enableRandomWrite = true,
@@ -51,10 +52,19 @@ public class GridPerLevel
 {
     public RenderTexture TerrrianHeight { get { return m_TerrrianHeight; } }
     public RenderTexture TallCellHeight { get { return m_TallCellHeight; } }
+    public RenderTexture RegularCellMark { get { return m_RegularCellMark; } }
     public GridValuePerLevel Velocity { get { return m_Velocity; } }
     public GridValuePerLevel Pressure { get { return m_Pressure; } }
     public Vector2Int ResolutionXZ { get { return m_ResolutionXZ; } }
+    public int RegularCellCount { get { return m_RegularCellCount; } }
+
     public float CellLength { get { return m_CellLength; } }
+
+    public void ClearMark(int clearValue = 0)
+    {
+        Graphics.SetRenderTarget(m_RegularCellMark);
+        GL.Clear(true, true, new Color(clearValue, clearValue, clearValue, clearValue));
+    }
 
     public GridPerLevel(Vector2Int vResolutionXZ, int vRegularCellCount, float vCellLength)
     {
@@ -76,6 +86,16 @@ public class GridPerLevel
             wrapMode = TextureWrapMode.Clamp
         };
 
+        m_RegularCellMark = new RenderTexture(vResolutionXZ.x, vRegularCellCount, 0, RenderTextureFormat.R8)
+        {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vResolutionXZ.y,
+            enableRandomWrite = true,
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+        ClearMark(1);
+
         m_Velocity = new GridValuePerLevel(vResolutionXZ, vRegularCellCount, RenderTextureFormat.ARGBFloat);
         m_Pressure = new GridValuePerLevel(vResolutionXZ, vRegularCellCount, RenderTextureFormat.RFloat);
     }
@@ -84,6 +104,7 @@ public class GridPerLevel
     {
         m_TerrrianHeight.Release();
         m_TallCellHeight.Release();
+        m_RegularCellMark.Release();
     }
 
     private Vector2Int m_ResolutionXZ;
@@ -92,6 +113,7 @@ public class GridPerLevel
 
     private RenderTexture m_TerrrianHeight;
     private RenderTexture m_TallCellHeight;
+    private RenderTexture m_RegularCellMark;
     private GridValuePerLevel m_Velocity;
     private GridValuePerLevel m_Pressure;
 }
@@ -116,9 +138,9 @@ public class TallCellGrid
         for (int i = 0; i < m_HierarchicalLevel; i++)
         {
             Vector2Int LayerResolutionXZ = vResolutionXZ / (int)Mathf.Pow(2, i);
-            int LayerRegularCellCount = vRegularCellCount / (int)Mathf.Pow(2, i);
+            int RegularCellCount = vRegularCellCount / (int)Mathf.Pow(2, i);
             float CellLength = vCellLength * Mathf.Pow(2, i);
-            GridPerLevel Temp = new GridPerLevel(LayerResolutionXZ, LayerRegularCellCount, CellLength);
+            GridPerLevel Temp = new GridPerLevel(LayerResolutionXZ, RegularCellCount, CellLength);
             m_GridData.Add(Temp);
         }
 
@@ -129,8 +151,7 @@ public class TallCellGrid
 
         m_GPUCache = new TallCellGridGPUCache(vResolutionXZ, vCellLength, vRegularCellCount);
 
-        m_ReductionCS = Resources.Load<ComputeShader>(Common.ReductionToolsCSPath);
-        DownSampleWithFourLevelsKernelIndex = m_ReductionCS.FindKernel("downSampleWithFourLevels");
+        InitDownSampleTools();
     }
 
     public void Step(float vTimeStep)
@@ -153,32 +174,88 @@ public class TallCellGrid
     }
 
 
+
+    #region DownSample
+    private ComputeShader m_DownsampleCS;
+    private int m_ReductionKernelIndex;
+    private int m_DownSampleRegularCellKernelIndex;
+    private int m_DownSampleTallCellKernelIndex;
+
+    private void InitDownSampleTools()
+    {
+        m_DownsampleCS = Resources.Load<ComputeShader>(Common.DownsampleToolsCSPath);
+        m_ReductionKernelIndex = m_DownsampleCS.FindKernel("reduction");
+        m_DownSampleRegularCellKernelIndex = m_DownsampleCS.FindKernel("downSampleRegularCell");
+        m_DownSampleTallCellKernelIndex = m_DownsampleCS.FindKernel("downSampleTallCell");
+    }
+
     private void DownSampleWithFourLevels(int vSrcLevel, int LeftLevel)
     {
         //Terrain
-        m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "SrcTex", GridData[vSrcLevel].TerrrianHeight);
-        m_ReductionCS.SetInts("SrcResolution", GridData[vSrcLevel].ResolutionXZ.x, GridData[vSrcLevel].ResolutionXZ.y);
-        m_ReductionCS.SetInt("NumMipLevels", LeftLevel);
+        m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "SrcTex", GridData[vSrcLevel].TerrrianHeight);
+        m_DownsampleCS.SetInts("SrcResolution", GridData[vSrcLevel].ResolutionXZ.x, GridData[vSrcLevel].ResolutionXZ.y);
+        m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
         for(int i = 1; i <= 4; i++)
         {
-            if(i <= LeftLevel) m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, GridData[vSrcLevel + i].TerrrianHeight);
-            else m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, null);
+            if(i <= LeftLevel) m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "OutMip" + i, GridData[vSrcLevel + i].TerrrianHeight);
+            else m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "OutMip" + i, null);
         }
-        m_ReductionCS.EnableKeyword("_TERRAIN");
-        m_ReductionCS.DisableKeyword("_TOPCELL");
-        m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
+        m_DownsampleCS.EnableKeyword("_REDUCTION_MAX");
+        m_DownsampleCS.DisableKeyword("_REDUCTION_MIN");
+        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, 8, 8, 1);
 
         //TallCell
-        m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "SrcTex", GridData[vSrcLevel].TallCellHeight);
+        m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "SrcTex", GridData[vSrcLevel].TallCellHeight);
         for (int i = 1; i <= 4; i++)
         {
-            if (i <= LeftLevel) m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, GridData[vSrcLevel + i].TallCellHeight);
-            else m_ReductionCS.SetTexture(DownSampleWithFourLevelsKernelIndex, "outMip" + i, null);
+            if (i <= LeftLevel) m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "OutMip" + i, GridData[vSrcLevel + i].TallCellHeight);
+            else m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "OutMip" + i, null);
         }
-        m_ReductionCS.EnableKeyword("_TOPCELL");
-        m_ReductionCS.DisableKeyword("_TERRAIN");
-        m_ReductionCS.Dispatch(DownSampleWithFourLevelsKernelIndex, 8, 8, 1);
+        m_DownsampleCS.EnableKeyword("_REDUCTION_MAX");
+        m_DownsampleCS.DisableKeyword("_REDUCTION_MIN");
+        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, 8, 8, 1);
     }
+
+    private void DownSample()
+    {
+        //down sample TerrianHeight/TallCellHeight/Mark to coarse level
+        for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
+        {
+            DownSampleWithFourLevels(i, m_HierarchicalLevel - i - 1);
+        }
+
+        //down sample regular cell velocity to coarse level
+        for (int i = 0; i < m_HierarchicalLevel - 1; i++)
+        {
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCell", GridData[i + 1].TallCellHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "TallCell", GridData[i].TallCellHeight);
+            m_DownsampleCS.SetFloat("SrcRegularCellLength", GridData[i].CellLength);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "SrcRegularMark", GridData[i].RegularCellMark);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "SrcRegularCell", GridData[i].Velocity.RegularCellValue);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "OutRegularCell", GridData[i + 1].Velocity.RegularCellValue);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "OutRegularMark", GridData[i + 1].RegularCellMark);
+            m_DownsampleCS.SetInts("OutResolution", GridData[i + 1].ResolutionXZ.x, GridData[i + 1].RegularCellCount, GridData[i + 1].ResolutionXZ.y);
+            m_DownsampleCS.Dispatch(m_DownSampleRegularCellKernelIndex, 4, 4, 4);
+        }
+
+        //down sample tall cell velocity to coarse level
+        for (int i = 0; i < m_HierarchicalLevel - 1; i++)
+        {
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "NextLevelTallCell", GridData[i + 1].TallCellHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "TallCell", GridData[i].TallCellHeight);
+            m_DownsampleCS.SetFloat("SrcRegularCellLength", GridData[i].CellLength);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "SrcRegularMark", GridData[i].RegularCellMark);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "SrcRegularCell", GridData[i].Velocity.RegularCellValue);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "SrcTallCellTop", GridData[i].Velocity.TallCellTopValue);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "SrcTallCellBottom", GridData[i].Velocity.TallCellBottomValue);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "OutTallCellTop", GridData[i + 1].Velocity.TallCellTopValue);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "OutTallCellBottom", GridData[i + 1].Velocity.TallCellBottomValue);
+            m_DownsampleCS.SetInts("OutResolution", GridData[i + 1].ResolutionXZ.x, GridData[i + 1].RegularCellCount, GridData[i + 1].ResolutionXZ.y);
+            m_DownsampleCS.Dispatch(m_DownSampleTallCellKernelIndex, 8, 8, 1);
+        }
+    }
+    #endregion
+
 
     private void Remesh()
     {
@@ -206,12 +283,8 @@ public class TallCellGrid
 
         //transfer data from old to new (fine level)
 
-        //down sample TerrianHeight and TallCellHeight to coarse level
-        //TODO：只支持2的指数量的分辨率
-        for(int i = 0; i < m_HierarchicalLevel - 1; i += 4)
-        {
-            DownSampleWithFourLevels(i, m_HierarchicalLevel - i - 1);
-        }
+        //down sample for each level
+        DownSample();
 
         if (!m_IsInit) m_IsInit = true;
     }
@@ -266,8 +339,6 @@ public class TallCellGrid
 
     private RemeshTools m_RemeshTools;
     private ParticleInCellTools m_ParticleInCellTools;
-    private ComputeShader m_ReductionCS;
-    private int DownSampleWithFourLevelsKernelIndex;
 
     //Temp cache
     private TallCellGridGPUCache m_GPUCache;
