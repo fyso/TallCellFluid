@@ -10,14 +10,13 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS = Resources.Load<ComputeShader>(Common.ParticleInCellToolsCSPath);
         markParticleByCellType = m_ParticleInCellToolsCS.FindKernel("markParticleByCellType");
         gatherGridToParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToParticle");
-        scatterParticleToGrid_Paas1 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToGrid_Paas1");
-        scatterParticleToGrid_Paas2 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToGrid_Paas2");
-        scatterParticleToGrid_Paas3 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToGrid_Paas3");
+        gatherOnlyTallCellParticleToGrid = m_ParticleInCellToolsCS.FindKernel("gatherOnlyTallCellParticleToGrid");
         UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vConstantCellNum);
     }
 
     public void UpdateGlobalParma(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
     {
+        m_ParticleInCellToolsCS.SetFloats("Min", vMin.x, vMin.y, vMin.z);
         m_ParticleInCellToolsCS.SetInts("XZResolution", vResolutionXZ.x, vResolutionXZ.y);
         m_ParticleInCellToolsCS.SetFloat("CellLength", vCellLength);
         m_ParticleInCellToolsCS.SetInt("ConstantCellNum", vConstantCellNum);
@@ -32,6 +31,9 @@ public class ParticleInCellTools
 
     public void MarkParticleWtihCellType(DynamicParticle vParticle, TallCellGridLayer vTargetLayer)
     {
+        m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", vParticle.ParticleCountArgumentOffset);
+        m_ParticleInCellToolsCS.SetInt("OnlyTallCellParticleCountOffset", vParticle.OnlyTallCellParticleCountArgumentOffset);
+
         m_ParticleInCellToolsCS.SetBuffer(markParticleByCellType, "ParticleIndrectArgment_R", vParticle.Argument);
         m_ParticleInCellToolsCS.SetBuffer(markParticleByCellType, "ParticlePosition_R", vParticle.MainParticle.Position);
         m_ParticleInCellToolsCS.SetBuffer(markParticleByCellType, "ParticleFilter_RW", vParticle.MainParticle.Filter);
@@ -42,6 +44,9 @@ public class ParticleInCellTools
 
     public void GatherGridToParticle(DynamicParticle vParticle, TallCellGridLayer vTargetLayer)
     {
+        m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", vParticle.ParticleCountArgumentOffset);
+        m_ParticleInCellToolsCS.SetInt("OnlyTallCellParticleCountOffset", vParticle.OnlyTallCellParticleCountArgumentOffset);
+
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleIndrectArgment_R", vParticle.Argument);
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticlePosition_R", vParticle.MainParticle.Position);
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleVelocity_RW", vParticle.MainParticle.Velocity);
@@ -165,7 +170,7 @@ public class ParticleInCellTools
     private ComputeShader m_ParticleInCellToolsCS;
     private int markParticleByCellType;
     private int gatherGridToParticle;
-    private int scatterParticleToGrid_Paas1;
+    private int gatherOnlyTallCellParticleToGrid;
     private int scatterParticleToGrid_Paas2;
     private int scatterParticleToGrid_Paas3;
 }

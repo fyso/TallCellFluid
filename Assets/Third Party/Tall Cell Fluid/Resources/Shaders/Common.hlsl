@@ -25,6 +25,11 @@ uint computeMorton3D(uint3 vCellIndex3D)
     return (expandBits3D(vCellIndex3D.z) << 2) + (expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x);
 }
 
+uint computeMorton2D(uint2 vCellIndex3D)
+{
+    return (expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x);
+}
+
 float CubicKernel(float vX)
 {
     vX = abs(vX);

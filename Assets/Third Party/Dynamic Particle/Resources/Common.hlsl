@@ -2,8 +2,10 @@
 #define THREAD_NUM_2D 32
 
 #define ParticleXGridCountArgumentOffset 0
-#define ParticleYGridCountArgumentOffset 1
-#define ParticleZGridCountArgumentOffset 2
+#define FirstParticleXGridCountArgumentOffset 12
+#define SecondParticleXGridCountArgumentOffset 15
+#define ThirdParticleXGridCountArgumentOffset 18
+#define ForthParticleXGridCountArgumentOffset 21
 #define ParticleCountArgumentOffset 4
 #define EPSILON 1e-7f
 #define PI 3.14159274F

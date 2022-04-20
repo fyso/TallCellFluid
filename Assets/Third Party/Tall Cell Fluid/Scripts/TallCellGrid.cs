@@ -20,6 +20,7 @@ public class TallCellGridLayerData3D
             filterMode = FilterMode.Point,
             wrapMode = TextureWrapMode.Clamp
         };
+
         m_Top = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, vDataType)
         {
             enableRandomWrite = true,

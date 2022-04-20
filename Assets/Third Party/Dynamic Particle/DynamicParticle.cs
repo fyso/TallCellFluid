@@ -34,6 +34,9 @@ namespace DParticle
     {
         public ComputeBuffer Argument { get { return m_Argument; } }
         public Particle MainParticle { get { return m_MainParticle; } }
+        public int ParticleCountArgumentOffset { get { return m_ParticleCountArgumentOffset; } }
+        public int GroupCountArgumentOffset { get { return m_GroupCountArgumentOffset; } }
+        public int OnlyTallCellParticleCountArgumentOffset { get { return m_OnlyTallCellParticleCountArgumentOffset; } }
 
         public DynamicParticle(int vMaxCount, float vRadius)
         {
@@ -46,8 +49,17 @@ namespace DParticle
             m_HashOffset = new ComputeBuffer(vMaxCount * 2, sizeof(uint));
             m_InnerSortIndexCache = new ComputeBuffer(vMaxCount, sizeof(uint));
             m_ScatterOffsetCache = new ComputeBuffer(vMaxCount, sizeof(uint));
-            m_Argument = new ComputeBuffer(12, sizeof(int), ComputeBufferType.IndirectArguments);
-            int[] InitArgument = new int[12] { 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0 };
+            m_Argument = new ComputeBuffer(27, sizeof(uint), ComputeBufferType.IndirectArguments);
+            uint[] InitArgument = new uint[24] {
+                1, 1, 1, //total particle dispatch indirect arguments
+                3, 0, 0, 0, //total particle draw indirect arguments
+                0, 0, 0, 0,  //different filter type particle split point ( max type count: 4 )
+                0, //delete particle split point
+                1, 1, 1, //first type particle dispatch indirect arguments
+                1, 1, 1, //second type same to...
+                1, 1, 1,
+                1, 1, 1
+            };
             m_Argument.SetData(InitArgument);
 
             m_GPUScan = new GPUScanHillis();
@@ -66,7 +78,7 @@ namespace DParticle
             AddParticleBlockKernel = GPUDynamicParticleToolCS.FindKernel("addParticleBlock");
             UpdateParticleCountArgmentKernel = GPUDynamicParticleToolCS.FindKernel("updateParticleCountArgment");
             ScatterParticleDataKernel = GPUDynamicParticleToolCS.FindKernel("scatterParticleData");
-            UpdateParticleNarrowCountArgmentKernel = GPUDynamicParticleToolCS.FindKernel("updateParticleNarrowCountArgment");
+            UpdateArgmentKernel = GPUDynamicParticleToolCS.FindKernel("updateArgment");
             DeleteParticleOutofRangeKernel = GPUDynamicParticleToolCS.FindKernel("deleteParticleOutofRange");
             RearrangeParticleKernel = GPUDynamicParticleToolCS.FindKernel("rearrangeParticle");
         }
@@ -86,7 +98,16 @@ namespace DParticle
             m_MainParticle.Position.SetData(vPosition.ToArray(), 0, 0, vSize);
             m_MainParticle.Velocity.SetData(vVelocity.ToArray(), 0, 0, vSize);
             m_MainParticle.Filter.SetData(vFilter.ToArray(), 0, 0, vSize);
-            int[] InitArgument = new int[12] { Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1, 3, vSize, 0, 0, 0, 0, 0, 0, 0 };
+            uint[] InitArgument = new uint[24] { 
+                (uint)Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1,  //total particle dispatch indirect arguments
+                3, (uint)vSize, 0, 0, //total particle draw indirect arguments
+                0, 0, 0, 0,  //different filter type particle split point ( max type count: 4 )
+                0, //delete particle split point
+                1, 1, 1, //first type particle dispatch indirect arguments
+                1, 1, 1, //second type same to...
+                1, 1, 1,
+                1, 1, 1
+            };
             m_Argument.SetData(InitArgument);
         }
 
@@ -139,7 +160,7 @@ namespace DParticle
         public void OrganizeParticle()
         {
             Profiler.BeginSample("ComputeNewIndex");
-            m_MultiSplit.ComputeNewIndex(m_MainParticle.Filter, m_MultiSplitPlan, 5, m_Argument, 4, 0, 7);
+            m_MultiSplit.ComputeNewIndex(m_MainParticle.Filter, m_MultiSplitPlan, 5, m_Argument, m_ParticleCountArgumentOffset, m_GroupCountArgumentOffset, 7);
             Profiler.EndSample();
 
             Profiler.BeginSample("RearrangeParticleKernel");
@@ -155,10 +176,17 @@ namespace DParticle
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateParticleNarrowCountArgmentKernel");
-            GPUDynamicParticleToolCS.SetInt("DeleteParticleOffset", 10);
-            GPUDynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
-            GPUDynamicParticleToolCS.Dispatch(UpdateParticleNarrowCountArgmentKernel, 1, 1, 1);
+            GPUDynamicParticleToolCS.SetInt("FirstTypeParticleOffset", 7);
+            GPUDynamicParticleToolCS.SetInt("SecondTypeParticleOffset", 8);
+            GPUDynamicParticleToolCS.SetInt("ThirdTypeParticleOffset", 9);
+            GPUDynamicParticleToolCS.SetInt("ForthTypeParticleOffset", 10);
+            GPUDynamicParticleToolCS.SetInt("FifthTypeParticleOffset", 11);
+            GPUDynamicParticleToolCS.SetBuffer(UpdateArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
+            GPUDynamicParticleToolCS.Dispatch(UpdateArgmentKernel, 1, 1, 1);
             Profiler.EndSample();
+
+            uint[] InitArgument = new uint[24];
+            m_Argument.GetData(InitArgument);
 
             Particle Temp = m_ParticleCache;
             m_ParticleCache = m_MainParticle;
@@ -199,6 +227,9 @@ namespace DParticle
 
         private float m_Radius;
         private int m_MaxSize;
+        private int m_ParticleCountArgumentOffset = 4;
+        private int m_GroupCountArgumentOffset = 0;
+        private int m_OnlyTallCellParticleCountArgumentOffset = 10;
 
         private Particle m_MainParticle;
         private Particle m_ParticleCache;
@@ -225,7 +256,7 @@ namespace DParticle
         private int AddParticleBlockKernel;
         private int UpdateParticleCountArgmentKernel;
         private int ScatterParticleDataKernel;
-        private int UpdateParticleNarrowCountArgmentKernel;
+        private int UpdateArgmentKernel;
         private int DeleteParticleOutofRangeKernel;
         private int RearrangeParticleKernel;
     }

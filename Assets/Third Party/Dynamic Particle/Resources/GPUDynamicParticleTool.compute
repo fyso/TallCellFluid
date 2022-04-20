@@ -4,12 +4,12 @@
 #pragma kernel addParticleBlock
 #pragma kernel updateParticleCountArgment
 #pragma kernel scatterParticleData
-#pragma kernel updateParticleNarrowCountArgment
+#pragma kernel updateArgment
 #pragma kernel deleteParticleOutofRange
 #pragma kernel rearrangeParticle
 
-StructuredBuffer<int> ParticleIndrectArgment_R;
-RWStructuredBuffer<int> ParticleIndrectArgment_RW;
+StructuredBuffer<uint> ParticleIndrectArgment_R;
+RWStructuredBuffer<uint> ParticleIndrectArgment_RW;
 
 StructuredBuffer<float3> ParticlePosition_R;
 RWStructuredBuffer<float3> ParticlePosition_RW;
@@ -100,13 +100,40 @@ void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Grou
     }
 }
 
-uint DeleteParticleOffset;
+uint FirstTypeParticleOffset;
+uint SecondTypeParticleOffset;
+uint ThirdTypeParticleOffset;
+uint ForthTypeParticleOffset;
+uint FifthTypeParticleOffset;
 [numthreads(1, 1, 1)]
-void updateParticleNarrowCountArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void updateArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint NewParticleCount = ParticleIndrectArgment_RW[DeleteParticleOffset];
+    uint NewParticleCount = ParticleIndrectArgment_RW[ForthTypeParticleOffset];
     ParticleIndrectArgment_RW[ParticleCountArgumentOffset] = NewParticleCount;
     ParticleIndrectArgment_RW[ParticleXGridCountArgumentOffset] = (int) ceil((float) NewParticleCount / THREAD_NUM_1D);
+    ParticleIndrectArgment_RW[ParticleXGridCountArgumentOffset + 1] = 1;
+    ParticleIndrectArgment_RW[ParticleXGridCountArgumentOffset + 2] = 1;
+    
+    uint FirstParticleStartIndex = ParticleIndrectArgment_RW[FirstTypeParticleOffset];
+    uint SecondParticleStartIndex = ParticleIndrectArgment_RW[SecondTypeParticleOffset];
+    uint ThirdParticleStartIndex = ParticleIndrectArgment_RW[ThirdTypeParticleOffset];
+    uint ForthParticleStartIndex = ParticleIndrectArgment_RW[ForthTypeParticleOffset];
+    uint FifthParticleStartIndex = ParticleIndrectArgment_RW[FifthTypeParticleOffset];
+    ParticleIndrectArgment_RW[FirstParticleXGridCountArgumentOffset] = (int) ceil((float) FirstParticleStartIndex / THREAD_NUM_1D);
+    ParticleIndrectArgment_RW[FirstParticleXGridCountArgumentOffset + 1] = 1;
+    ParticleIndrectArgment_RW[FirstParticleXGridCountArgumentOffset + 2] = 1;
+    
+    ParticleIndrectArgment_RW[SecondParticleXGridCountArgumentOffset] = (int) ceil((float) (SecondParticleStartIndex - FirstParticleStartIndex) / THREAD_NUM_1D);
+    ParticleIndrectArgment_RW[SecondParticleXGridCountArgumentOffset + 1] = 1;
+    ParticleIndrectArgment_RW[SecondParticleXGridCountArgumentOffset + 2] = 1;
+    
+    ParticleIndrectArgment_RW[ThirdParticleXGridCountArgumentOffset] = (int) ceil((float) (ThirdParticleStartIndex - SecondParticleStartIndex) / THREAD_NUM_1D);
+    ParticleIndrectArgment_RW[ThirdParticleXGridCountArgumentOffset + 1] = 1;
+    ParticleIndrectArgment_RW[ThirdParticleXGridCountArgumentOffset + 2] = 1;
+    
+    ParticleIndrectArgment_RW[ForthParticleXGridCountArgumentOffset] = (int) ceil((float) (ForthParticleStartIndex - ThirdParticleStartIndex) / THREAD_NUM_1D);
+    ParticleIndrectArgment_RW[ForthParticleXGridCountArgumentOffset + 1] = 1;
+    ParticleIndrectArgment_RW[ForthParticleXGridCountArgumentOffset + 2] = 1;
 }
 
 StructuredBuffer<uint> NewIndex_R;
