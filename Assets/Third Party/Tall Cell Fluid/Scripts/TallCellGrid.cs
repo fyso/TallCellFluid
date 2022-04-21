@@ -202,7 +202,7 @@ public class TallCellGrid
         }
         m_DownsampleCS.EnableKeyword("_REDUCTION_MAX");
         m_DownsampleCS.DisableKeyword("_REDUCTION_MIN");
-        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, 8, 8, 1);
+        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, Mathf.Max(GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
 
         //TallCell
         m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "SrcTex", GridData[vSrcLevel].TallCellHeight);
@@ -213,7 +213,7 @@ public class TallCellGrid
         }
         m_DownsampleCS.EnableKeyword("_REDUCTION_MAX");
         m_DownsampleCS.DisableKeyword("_REDUCTION_MIN");
-        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, 8, 8, 1);
+        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, Mathf.Max(GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
     }
 
     private void DownSample()
@@ -235,7 +235,10 @@ public class TallCellGrid
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "OutRegularCell", GridData[i + 1].Velocity.RegularCellValue);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "OutRegularMark", GridData[i + 1].RegularCellMark);
             m_DownsampleCS.SetInts("OutResolution", GridData[i + 1].ResolutionXZ.x, GridData[i + 1].RegularCellCount, GridData[i + 1].ResolutionXZ.y);
-            m_DownsampleCS.Dispatch(m_DownSampleRegularCellKernelIndex, 4, 4, 4);
+            m_DownsampleCS.Dispatch(m_DownSampleRegularCellKernelIndex, 
+                Mathf.Max(GridData[i + 1].ResolutionXZ.x / 4, 1),
+                Mathf.Max(GridData[i + 1].RegularCellCount / 4, 1),
+                Mathf.Max(GridData[i + 1].ResolutionXZ.y / 4, 1));
         }
 
         //down sample tall cell velocity to coarse level
@@ -253,7 +256,10 @@ public class TallCellGrid
             m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "OutTallCellTop", GridData[i + 1].Velocity.TallCellTopValue);
             m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "OutTallCellBottom", GridData[i + 1].Velocity.TallCellBottomValue);
             m_DownsampleCS.SetInts("OutResolution", GridData[i + 1].ResolutionXZ.x, GridData[i + 1].RegularCellCount, GridData[i + 1].ResolutionXZ.y);
-            m_DownsampleCS.Dispatch(m_DownSampleTallCellKernelIndex, 8, 8, 1);
+            m_DownsampleCS.Dispatch(m_DownSampleTallCellKernelIndex,
+                Mathf.Max(GridData[i + 1].ResolutionXZ.x / 8, 1),
+                Mathf.Max(GridData[i + 1].ResolutionXZ.y / 8, 1),
+                1);
         }
     }
     #endregion
