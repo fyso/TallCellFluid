@@ -233,6 +233,7 @@ void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint Grou
     
     //calculate current block XSum, YSum, XXSum, XYSum
     
+    
     //interlocked to global memory
     if(MaskBit)
     {
