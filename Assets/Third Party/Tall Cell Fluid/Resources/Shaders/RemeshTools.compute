@@ -143,6 +143,6 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
     }
     
     float FinalResult = min(Center, Max + D * CellLength) - TerrianHeight;
-    FinalResult = ceil(FinalResult / CellLength) * CellLength;
+    FinalResult = (ceil(FinalResult / CellLength) + 2) * CellLength;
     TallCellHeightCache_RW[DispatchThreadID.xy] = FinalResult;
 }

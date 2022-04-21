@@ -32,7 +32,6 @@ namespace DParticle
 
     public class DynamicParticle
     {
-
         public static int BucketCount { get { return 5; } }
         public static int ParticleXGridCountArgumentOffset { get { return 0; } }
         public static int ParticleCountArgumentOffset { get { return 4; } }
@@ -41,6 +40,8 @@ namespace DParticle
         public static int DifferParticleXGridCountArgumentOffset { get { return 17; } }
 
         public ComputeBuffer Argument { get { return m_Argument; } }
+        public ComputeBuffer HashCount { get { return m_HashCount; } }
+        public ComputeBuffer HashOffset { get { return m_HashOffset; } }
         public Particle MainParticle { get { return m_MainParticle; } }
 
         public DynamicParticle(int vMaxCount, float vRadius)
@@ -213,8 +214,6 @@ namespace DParticle
             GPUDynamicParticleToolCS.SetBuffer(UpdateArgmentKernel, "ParticleIndrectArgment_RW", m_Argument);
             GPUDynamicParticleToolCS.Dispatch(UpdateArgmentKernel, 1, 1, 1);
             Profiler.EndSample();
-            uint[] InitArgument = new uint[29];
-            m_Argument.GetData(InitArgument);
 
             Particle Temp = m_ParticleCache;
             m_ParticleCache = m_MainParticle;

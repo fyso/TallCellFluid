@@ -179,11 +179,13 @@ public class TallCellGrid
             //ComputeH1H2WithMark
         }
 
+        Profiler.BeginSample("generate fine level tallcellgrid");
         m_RemeshTools.ComputeTallCellHeight(m_GridData[0].TerrrianHeight, m_GPUCache.H1H2Cahce, m_GPUCache.MaxMinCahce, m_GridData[0].TallCellHeight);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_GridData[0].TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_GPUCache.BackTallCellHeightCahce, m_GridData[0].TallCellHeight);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_GridData[0].TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
         m_RemeshTools.EnforceDCondition(m_GridData[0].TerrrianHeight, m_GPUCache.BackTallCellHeightCahce, m_GridData[0].TallCellHeight);
+        Profiler.EndSample();
 
         if (!m_IsInit)
             m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_GridData[0], m_SeaLevel, m_DynamicParticle);
@@ -194,10 +196,12 @@ public class TallCellGrid
 
         //down sample TerrianHeight and TallCellHeight to coarse level
         //TODO：只支持2的指数量的分辨率
-        for(int i = 0; i < m_HierarchicalLevel - 1; i += 4)
+        Profiler.BeginSample("DownSampleWithFourLevels");
+        for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
         {
             DownSampleWithFourLevels(i, m_HierarchicalLevel - i - 1);
         }
+        Profiler.EndSample();
 
         if (!m_IsInit) m_IsInit = true;
     }
@@ -224,16 +228,23 @@ public class TallCellGrid
         m_DynamicParticle.OrganizeParticle();
         Profiler.EndSample();
 
-        //generate cell's particle count and offset info
-        m_DynamicParticle.ZSort(m_Min, m_CellLength, true, 3);
-
         //grid to particle using fine level
-        Profiler.BeginSample("GatherGridToParticle");
+        Profiler.BeginSample("Gather Grid To Particle");
         m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_GridData[0]);
         Profiler.EndSample();
 
         //advect particle
-        //Particle to grid using fine level
+
+        //generate OnlyTallCell particle count and offset info
+        Profiler.BeginSample("ZSort OnlyTallCell particle");
+        m_DynamicParticle.ZSort(m_Min, m_CellLength, true, 3);
+        Profiler.EndSample();
+
+        //Profiler.BeginSample("Gather OnlyTallCell Particle To Grid");
+        //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_GridData[0]);
+        //Profiler.EndSample();
+
+        //OnlyTallCell Particle to grid using fine level
     }
 
     private void SparseMultiGridRedBlackGaussSeidel()
