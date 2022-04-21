@@ -137,8 +137,8 @@ void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
         Sumy += SrcTallCellTop[Index] + SrcTallCellBottom[Index];
         Sumxy += TopHeight * SrcTallCellTop[Index] + BottomHeight * SrcTallCellBottom[Index];
         
-        float RegularCellCount = (NextLevelHeight - TallCellHeight) / SrcRegularCellLength;
-        for (uint k = 0; k < RegularCellCount; k++)
+        float RegularCellYCount = (NextLevelHeight - TallCellHeight) / SrcRegularCellLength;
+        for (uint k = 0; k < RegularCellYCount; k++)
         {
             float RegularCellHeight = TopHeight + (k + 1) * SrcRegularCellLength;
             uint3 RegularIndex = uint3(Index.x, k, Index.y);

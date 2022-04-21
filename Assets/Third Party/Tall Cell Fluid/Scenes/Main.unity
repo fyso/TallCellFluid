@@ -331,7 +331,7 @@ MonoBehaviour:
   m_Terrian: {fileID: 2800000, guid: 7664b6f69431dfb4cbaf3e1ef3122f15, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
-  m_RegularCellCount: 16
+  m_RegularCellYCount: 16
   m_Celllength: 1
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000

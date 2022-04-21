@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TallCellGridGPUCache
+public class GridGPUCache
 {
-    public TallCellGridGPUCache(Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
+    public GridGPUCache(Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
     {
         H1H2Cahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RGFloat)
         {
@@ -119,7 +119,7 @@ public class TallCellGridGPUCache
         };
     }
 
-    ~TallCellGridGPUCache()
+    ~GridGPUCache()
     {
         H1H2Cahce.Release();
         MaxMinCahce.Release();
