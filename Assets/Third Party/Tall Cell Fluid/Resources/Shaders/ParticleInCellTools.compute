@@ -249,51 +249,51 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
 //    }
 //}
 
-uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
-{
-    uint Result = 0;
+//uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
+//{
+//    uint Result = 0;
     
-    uint Index = vTargetBit / 32;
-    uint Offset = vTargetBit % 32;
+//    uint Index = vTargetBit / 32;
+//    uint Offset = vTargetBit % 32;
     
-    uint Pointer = Offset;
-    for (uint k = Index; k < 4; k++)
-    {
-        for (; Pointer < 32; Pointer++)
-        {
-            if (vInput[k] & (0X01 << Pointer))
-                Result++;
-            else
-                break;
-        }
-        Pointer = 0;
-    }
+//    uint Pointer = Offset;
+//    for (uint k = Index; k < 4; k++)
+//    {
+//        for (; Pointer < 32; Pointer++)
+//        {
+//            if (vInput[k] & (0X01 << Pointer))
+//                Result++;
+//            else
+//                break;
+//        }
+//        Pointer = 0;
+//    }
     
-    return Result;
-}
+//    return Result;
+//}
 
-uint doCLZHighToLow(uint4 vInput, uint vTargetBit)
-{
-    uint Result = 0;
+//uint doCLZHighToLow(uint4 vInput, uint vTargetBit)
+//{
+//    uint Result = 0;
     
-    uint Index = vTargetBit / 32;
-    uint Offset = vTargetBit % 32;
+//    uint Index = vTargetBit / 32;
+//    uint Offset = vTargetBit % 32;
     
-    uint Pointer = Offset;
-    for (uint k = Index; k >= 0; k--)
-    {
-        for (; Pointer >= 0; Pointer--)
-        {
-            if (vInput[k] & (0X01 << Pointer))
-                Result++;
-            else
-                break;
-        }
-        Pointer = 31;
-    }
+//    uint Pointer = Offset;
+//    for (uint k = Index; k >= 0; k--)
+//    {
+//        for (; Pointer >= 0; Pointer--)
+//        {
+//            if (vInput[k] & (0X01 << Pointer))
+//                Result++;
+//            else
+//                break;
+//        }
+//        Pointer = 31;
+//    }
     
-    return Result;
-}
+//    return Result;
+//}
 
 RWStructuredBuffer<uint3> DEBUG;
 [numthreads(THREAD_COUNT_1D, 1, 1)]
@@ -316,11 +316,11 @@ void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint Grou
     uint NextTallCellLinerIndex = ThreadIdx == CurrLaneCount - 1 ? 0 : WaveReadLaneAt(CurrTallCellLinerIndex, CurrLaneIndex + 1);
     
     //r: Lane31~Lane0, g: Lane63~Lane32...
-    uint4 BallotResult1 = WaveActiveBallot(!(ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex));
-    uint4 BallotResult2 = WaveActiveBallot(!(ThreadIdx == CurrLaneCount - 1 || NextTallCellLinerIndex != CurrTallCellLinerIndex));
-    uint RegionLength = doCLZLowToHigh(BallotResult1, CurrLaneIndex) + doCLZHighToLow(BallotResult2, CurrLaneIndex);
-    DEBUG[i].x = CurrTallCellLinerIndex;
-    DEBUG[i].y = RegionLength;
+    //uint4 BallotResult1 = WaveActiveBallot(!(ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex));
+    //uint4 BallotResult2 = WaveActiveBallot(!(ThreadIdx == CurrLaneCount - 1 || NextTallCellLinerIndex != CurrTallCellLinerIndex));
+    //uint RegionLength = doCLZLowToHigh(BallotResult1, CurrLaneIndex) + doCLZHighToLow(BallotResult2, CurrLaneIndex);
+    //DEBUG[i].x = CurrTallCellLinerIndex;
+    //DEBUG[i].y = RegionLength;
     //reduce
     
 }

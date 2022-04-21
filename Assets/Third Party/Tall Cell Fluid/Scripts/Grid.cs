@@ -253,7 +253,6 @@ public class Grid
 
         //Profiler.BeginSample("Gather OnlyTallCell Particle To Grid");
         //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_GridData[0]);
-        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_GridData[0], 3);
         //Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("DownSample");

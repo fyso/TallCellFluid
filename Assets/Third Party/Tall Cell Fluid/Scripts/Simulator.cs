@@ -43,7 +43,6 @@ public class Simulator
         Profiler.EndSample();
     }
 
-    //TODO: move Advect() to DynamicParticle if possible, and replace comments with more accurate function name.
     private void Advect()
     {
         //split particle by cell type
@@ -59,20 +58,20 @@ public class Simulator
         m_DynamicParticle.OrganizeParticle();
         Profiler.EndSample();
 
-        //grid to particle using fine level
-        Profiler.BeginSample("Gather Grid To Particle");
+        Profiler.BeginSample("GatherGridToParticle");
         m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
         //TODO: advect particle
 
         //generate OnlyTallCell particle count and offset info
-        Profiler.BeginSample("ZSort OnlyTallCell particle");
+        Profiler.BeginSample("ZSortOnlyTallCellparticle");
         m_DynamicParticle.ZSort(m_Min, m_CellLength, true, 3);
         Profiler.EndSample();
 
-        //Profiler.BeginSample("Gather OnlyTallCell Particle To Grid");
-        //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_GridData[0]);
+        //Profiler.BeginSample("GatherOnlyTallCellParticleToGrid");
+        //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid.FineGrid);
+        //m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid.FineGrid, 3);
         //Profiler.EndSample();
 
         //OnlyTallCell Particle to grid using fine level
@@ -89,7 +88,6 @@ public class Simulator
 
     private Grid m_Grid;
 
-    //TODO: move ParticleInCellTools into DynamicParticle
     private DynamicParticle m_DynamicParticle;
     private ParticleInCellTools m_ParticleInCellTools;
 }
