@@ -342,6 +342,7 @@ public class TallCellGrid
 
         //Profiler.BeginSample("Gather OnlyTallCell Particle To Grid");
         //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_GridData[0]);
+        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_GridData[0], 3);
         //Profiler.EndSample();
 
         //OnlyTallCell Particle to grid using fine level
