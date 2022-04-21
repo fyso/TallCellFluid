@@ -66,10 +66,10 @@ Texture2D<float> TallCell;
 Texture3D<float3> SrcRegularCell;
 Texture3D<int> SrcRegularMark; //TODO: Provisional: water is 1, air is 0
 float SrcRegularCellLength;
+int SaveMoreAir;
+uint3 OutResolution;
 RWTexture3D<float3> OutRegularCell;
 RWTexture3D<int> OutRegularMark;
-uint3 OutResolution;
-
 [numthreads(4, 4, 4)]
 void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
@@ -99,8 +99,9 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
             CellNumWithFluid++;
         }
     }
-    OutRegularMark[DispatchThreadID] = CellNumWithFluid != 0;
     OutRegularCell[DispatchThreadID] = Result / 8;
+    
+    OutRegularMark[DispatchThreadID] = SaveMoreAir ? CellNumWithFluid == 8 : CellNumWithFluid != 0;
 }
 
 Texture2D<float3> SrcTallCellTop;
