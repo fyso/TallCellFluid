@@ -43,6 +43,7 @@ namespace DParticle
         public ComputeBuffer HashCount { get { return m_HashCount; } }
         public ComputeBuffer HashOffset { get { return m_HashOffset; } }
         public Particle MainParticle { get { return m_MainParticle; } }
+        public float Radius { get { return m_Radius; } }
 
         public DynamicParticle(int vMaxCount, float vRadius)
         {

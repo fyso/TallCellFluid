@@ -144,7 +144,7 @@ public class TallCellGrid
             m_GridData.Add(Temp);
         }
 
-        m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 8.0f);
+        m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
 
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellCount);
         m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellCount);

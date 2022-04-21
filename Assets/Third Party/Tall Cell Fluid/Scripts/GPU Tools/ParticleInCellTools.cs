@@ -78,6 +78,7 @@ public class ParticleInCellTools
         List<Vector3> Position = new List<Vector3>();
         List<Vector3> Velocity = new List<Vector3>();
         List<int> Filter = new List<int>();
+        int ParticleInCellRes = Mathf.FloorToInt(vFineLayer.CellLength / (voTarget.Radius * 2.0f));
         for (int x = 0; x < vFineLayer.ResolutionXZ.x; x++)
         {
             for (int z = 0; z < vFineLayer.ResolutionXZ.y; z++)
@@ -90,7 +91,7 @@ public class ParticleInCellTools
                 Vector3 TallCellSliceMin = new Vector3(x * vFineLayer.CellLength, CurrTerrianHeight, z * vFineLayer.CellLength);
                 for (int c = 0; c < TallCellSlice; c++)
                 {
-                    addParticleInCell(TallCellSliceMin, vFineLayer.CellLength, 2, CurrTerrianHeight + CurrTallCellHeight, ref Position, ref Velocity, ref Filter);
+                    addParticleInCell(TallCellSliceMin, vFineLayer.CellLength, ParticleInCellRes, CurrTerrianHeight + CurrTallCellHeight, ref Position, ref Velocity, ref Filter);
                     TallCellSliceMin.y += vFineLayer.CellLength;
                 }
 
@@ -100,7 +101,7 @@ public class ParticleInCellTools
                 Vector3 RegularCellSliceMin = new Vector3(x * vFineLayer.CellLength, CurrTerrianHeight + CurrTallCellHeight, z * vFineLayer.CellLength);
                 for (int c = 0; c < RegularCellSlice; c++)
                 {
-                    addParticleInCell(RegularCellSliceMin, vFineLayer.CellLength, 2, vSeaLevel, ref Position, ref Velocity, ref Filter);
+                    addParticleInCell(RegularCellSliceMin, vFineLayer.CellLength, ParticleInCellRes, vSeaLevel, ref Position, ref Velocity, ref Filter);
                     RegularCellSliceMin.y += vFineLayer.CellLength;
                 }
             }

@@ -3,7 +3,9 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel markParticleByCellType
 #pragma kernel gatherGridToParticle
+#pragma kernel scatterOnlyTallCellParticleToGrid
 #pragma kernel gatherOnlyTallCellParticleToGrid
+#pragma use_dxc
 
 uint ParticleCountOffset;
 
@@ -14,6 +16,8 @@ StructuredBuffer<float3> ParticleVelocity_R;
 StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
 RWStructuredBuffer<uint> ParticleFilter_RW;
+StructuredBuffer<uint> HashGridCellParticleCount_R;
+StructuredBuffer<uint> HashGridCellParticleOffset_R;
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 
@@ -143,10 +147,8 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     float3 CurrPosition = ParticlePosition_R[i];
     float RelativeHeight = CurrPosition.y - Min.y;
     float2 RelativeXZ = CurrPosition.xz - Min.xz;
-    
     uint2 CurrGridXZIndex = RelativeXZ / CellLength;
     uint CurrGridYIndex = RelativeHeight / CellLength;
-    
     
     float3 CurrCenterCellPosition = float3(CurrGridXZIndex.x + 0.5f, CurrGridYIndex + 0.5f, CurrGridXZIndex.y + 0.5f) * CellLength;
     float WeightSum = 0.0f;
@@ -198,9 +200,52 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     ParticleVelocity_RW[i] = WeightValue / WeightSum;
 }
 
+groupshared int LocalTallCellIndex[THREAD_COUNT_1D];
+groupshared float LocalX[THREAD_COUNT_1D];
+groupshared float3 LocalY[THREAD_COUNT_1D];
+groupshared uint LocalMark[THREAD_COUNT_1D / 32];
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
+        return;
+    
+    float3 CurrVelocity = ParticleVelocity_R[i];
+    LocalY[ThreadIdx] = CurrVelocity;
+    
+    float3 CurrPosition = ParticlePosition_R[i];
+    float RelativeHeight = CurrPosition.y - Min.y;
+    LocalX[ThreadIdx] = RelativeHeight;
+    
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
+    uint CurrTallCellLinerIndex = computeMorton2D(RelativeXZ / CellLength);
+    LocalTallCellIndex[ThreadIdx] = CurrTallCellLinerIndex;
+    
+    GroupMemoryBarrierWithGroupSync();
+    
+    uint PrevTallCellLinerIndex = ThreadIdx == 0 ? 0 : LocalTallCellIndex[ThreadIdx - 1];
+    bool MaskBit =  ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex;
+    uint Mask = ((uint) MaskBit) << (ThreadIdx % 32);
+    LocalMark[ThreadIdx / 32] |= Mask;
+    GroupMemoryBarrierWithGroupSync();
+    
+    //calculate current block XSum, YSum, XXSum, XYSum
+    
+    //interlocked to global memory
+    if(MaskBit)
+    {
+        //scale sum for each adjective tall cell
+        for (int c = 0; c < 3 * 3; c++)
+        {
+            uint2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
+            
+        }
+    }
+}
+
 //TODO: we can use sort and warp-level perfixsum to discard many interlocked operation
-StructuredBuffer<uint> HashGridCellParticleCount_R;
-StructuredBuffer<uint> HashGridCellParticleOffset_R;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void gatherOnlyTallCellParticleToGrid(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
