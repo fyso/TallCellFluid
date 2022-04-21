@@ -89,22 +89,18 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
         Index[i + 4].y += 1;
     }
     
-    float3 result = 0;
-    int weight = 0;
+    float3 Result = 0;
+    int CellNumWithFluid = 0;
     for (uint k = 0; k < 8; k++)
     {
         if (SrcRegularMark[Index[k]] == 1)
         {
-            result += SrcRegularCell[Index[k]];
-            weight++;
+            Result += SrcRegularCell[Index[k]];
+            CellNumWithFluid++;
         }
     }
-    if (weight == 0) OutRegularMark[DispatchThreadID] = 0;
-    else
-    {
-        OutRegularMark[DispatchThreadID] = 1;
-        OutRegularCell[DispatchThreadID] = result / weight;
-    }
+    OutRegularMark[DispatchThreadID] = CellNumWithFluid != 0;
+    OutRegularCell[DispatchThreadID] = Result / 8;
 }
 
 Texture2D<float3> SrcTallCellTop;
@@ -147,12 +143,13 @@ void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
             uint3 RegularIndex = uint3(Index.x, k, Index.y);
             if (SrcRegularMark[RegularIndex] == 1)
             {
-                Sumx += RegularCellHeight;
-                Sumx2 += RegularCellHeight * RegularCellHeight;
                 Sumy += SrcRegularCell[RegularIndex];
                 Sumxy += RegularCellHeight * SrcRegularCell[RegularIndex];
-                m++;
             }
+            
+            Sumx += RegularCellHeight;
+            Sumx2 += RegularCellHeight * RegularCellHeight;
+            m++;
         }
     }
     
