@@ -218,13 +218,13 @@ public class TallCellGrid
 
     private void DownSample()
     {
-        //down sample TerrianHeight/TallCellHeight/Mark to coarse level
+        //down sample TerrianHeight/TallCellHeight to coarse level
         for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
         {
             DownSampleWithFourLevels(i, m_HierarchicalLevel - i - 1);
         }
 
-        //down sample regular cell velocity to coarse level
+        //down sample regular cell velocity/Mark  to coarse level
         for (int i = 0; i < m_HierarchicalLevel - 1; i++)
         {
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCell", GridData[i + 1].TallCellHeight);
@@ -241,8 +241,10 @@ public class TallCellGrid
         //down sample tall cell velocity to coarse level
         for (int i = 0; i < m_HierarchicalLevel - 1; i++)
         {
-            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "NextLevelTallCell", GridData[i + 1].TallCellHeight);
             m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "TallCell", GridData[i].TallCellHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "NextLevelTallCell", GridData[i + 1].TallCellHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "Terrain", GridData[i].TerrrianHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "NextLevelTerrain", GridData[i + 1].TerrrianHeight);
             m_DownsampleCS.SetFloat("SrcRegularCellLength", GridData[i].CellLength);
             m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "SrcRegularMark", GridData[i].RegularCellMark);
             m_DownsampleCS.SetTexture(m_DownSampleTallCellKernelIndex, "SrcRegularCell", GridData[i].Velocity.RegularCellValue);
