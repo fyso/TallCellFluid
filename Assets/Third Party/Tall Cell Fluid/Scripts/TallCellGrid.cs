@@ -224,9 +224,11 @@ public class TallCellGrid
             DownSampleWithFourLevels(i, m_HierarchicalLevel - i - 1);
         }
 
-        //down sample regular cell velocity/Mark  to coarse level
+        //down sample regular cell velocity/Mark to coarse level
         for (int i = 0; i < m_HierarchicalLevel - 1; i++)
         {
+            if (i < 4) m_DownsampleCS.SetInt("SaveMoreAir", 1);
+            else m_DownsampleCS.SetInt("SaveMoreAir", 0);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCell", GridData[i + 1].TallCellHeight);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "TallCell", GridData[i].TallCellHeight);
             m_DownsampleCS.SetFloat("SrcRegularCellLength", GridData[i].CellLength);
