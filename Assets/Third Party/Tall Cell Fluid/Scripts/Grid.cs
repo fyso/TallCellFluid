@@ -62,7 +62,7 @@ public class GridPerLevel
         GL.Clear(true, true, new Color(clearValue, clearValue, clearValue, clearValue));
     }
 
-    public GridPerLevel(Vector2Int vResolutionXZ, int vRegularCellYCount, float vCellLength)
+    public GridPerLevel(Vector2Int vResolutionXZ, int vRegularCellYCount, float vCellLength, bool isFine = false)
     {
         m_CellLength = vCellLength;
         m_ResolutionXZ = vResolutionXZ;
@@ -94,6 +94,8 @@ public class GridPerLevel
 
         m_Velocity = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
         m_Pressure = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
+        m_RigidBodyPercentage = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
+        if(isFine) m_RigidBodyVelocity = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat); // No downsampling required
     }
 
     ~GridPerLevel()
@@ -112,6 +114,8 @@ public class GridPerLevel
     private RenderTexture m_RegularCellMark;
     private GridValuePerLevel m_Velocity;
     private GridValuePerLevel m_Pressure;
+    private GridValuePerLevel m_RigidBodyPercentage;
+    private GridValuePerLevel m_RigidBodyVelocity;
 }
 
 public class Grid
@@ -210,7 +214,7 @@ public class Grid
             Vector2Int LayerResolutionXZ = vResolutionXZ / (int)Mathf.Pow(2, i);
             int RegularCellYCount = vRegularCellYCount / (int)Mathf.Pow(2, i);
             float CellLength = vCellLength * Mathf.Pow(2, i);
-            m_GridData[i] = new GridPerLevel(LayerResolutionXZ, RegularCellYCount, CellLength);
+            m_GridData[i] = new GridPerLevel(LayerResolutionXZ, RegularCellYCount, CellLength, i == 0);
         }
 
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellYCount);
@@ -247,9 +251,17 @@ public class Grid
         }
     }
 
+    public void UpdateRigidbody()
+    {
+        //TODO: tall cell has not been considered
+
+    }
+
     public void UpdateGridValue()
     {
-        //TODO: update mark for each level
+        UnityEngine.Profiling.Profiler.BeginSample("Update Rigidbody");
+        UpdateRigidbody();
+        UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("DownSample");
         DownSample();
