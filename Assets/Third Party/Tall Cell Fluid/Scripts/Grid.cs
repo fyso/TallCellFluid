@@ -116,6 +116,8 @@ public class GridPerLevel
 
 public class Grid
 {
+    public GridGPUCache GPUCache { get { return m_GPUCache; } }
+
     #region DownSample
     private ComputeShader m_DownsampleCS;
     private int m_ReductionKernelIndex;

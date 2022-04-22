@@ -9,6 +9,8 @@
 #define PI 3.1415926535f
 #define E 2.7182818284f
 
+#define MIN_WARP_COUNT 32
+
 float3 Min;
 float CellLength;
 uint2 XZResolution;

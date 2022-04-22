@@ -70,10 +70,11 @@ public class Simulator
         Profiler.EndSample();
 
         //OnlyTallCell Particle to grid using fine level
-        //Profiler.BeginSample("GatherOnlyTallCellParticleToGrid");
-        //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid.FineGrid);
-        //m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid.FineGrid, 3);
-        //Profiler.EndSample();
+        Profiler.BeginSample("OnlyTallCellParticleToGrid");
+        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, 3);
+        Profiler.EndSample();
+
+        //TODO: update mark for fine level
     }
 
     private void SparseMultiGridRedBlackGaussSeidel()
