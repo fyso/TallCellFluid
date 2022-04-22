@@ -3,14 +3,19 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel markParticleByCellType
 #pragma kernel gatherGridToParticle
-#pragma kernel scatterOnlyTallCellParticleToGrid
+#pragma kernel scatterOnlyTallCellParticleToGrid_Pass1
+#pragma kernel scatterOnlyTallCellParticleToGrid_Pass2
 #pragma kernel gatherOnlyTallCellParticleToGrid
+#pragma kernel scatterOtherParticleToGrid_Pass1
+#pragma kernel scatterOtherParticleToGrid_Pass2
+#pragma kernel scatterOtherParticleToGrid_Pass3
 #pragma use_dxc
 
 uint ParticleCountOffset;
 uint ParticleCountArgumentIndex;
 uint ParticleOffsetArgumentIndex;
 uint OnlyTallCellParticleType;
+uint RegularCellParticleType;
 
 StructuredBuffer<int> ParticleIndrectArgment_R;
 
@@ -20,15 +25,17 @@ StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 StructuredBuffer<uint> HashGridCellParticleCount_R;
+RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
 StructuredBuffer<uint> HashGridCellParticleOffset_R;
+RWStructuredBuffer<uint> HashGridCellParticleOffset_RW;
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 
 Texture3D<float3> RegularCellVelocity_R;
-Texture2D<float3> TopCellVelocity_R;
-Texture2D<float3> BottomCellVelocity_R;
 RWTexture3D<float3> RegularCellVelocity_RW;
+Texture2D<float3> TopCellVelocity_R;
 RWTexture2D<float3> TopCellVelocity_RW;
+Texture2D<float3> BottomCellVelocity_R;
 RWTexture2D<float3> BottomCellVelocity_RW;
 
 int2 OffsetVector2D[3 * 3] =
@@ -101,7 +108,7 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     if (RelativeHeight < CenterTerrianHeight)
         IsInTerrianCell = true;
     
-    if (RelativeHeight < CenterTerrianHeight + CenterTallCellHeight && RelativeHeight >= CenterTerrianHeight)
+    if (RelativeHeight < CenterTerrianHeight + CenterTallCellHeight - CellLength && RelativeHeight >= CenterTerrianHeight)
         IsInTallCell = true;
     
     for (int c = 0; c < 3 * 3 - 1; c++)
@@ -122,17 +129,14 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     
     if (!IsInTallCell && !IsInTerrianCell)
     {
-        if (IsAnyTallCellHigher)
-            ParticleFilter_RW[i] = 1;
-        else
-            ParticleFilter_RW[i] = 0;
+        ParticleFilter_RW[i] = 0;
     }
-    else if (IsInTallCell)
+    else if (IsInTallCell && !IsInTerrianCell)
     {
         if (!IsAnyTallCellLower)
             ParticleFilter_RW[i] = 3;
         else
-            ParticleFilter_RW[i] = 1;
+            ParticleFilter_RW[i] = 0;
     }
     else
     {
@@ -171,6 +175,10 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
             uint YIndex = (AdjPoint.y - 0.5f * CellLength - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
             Value = RegularCellVelocity_R[uint3(AdjXZ.x, YIndex, AdjXZ.y)];
         }
+        else if (AdjPoint.y >= CenterTerrianHeight + CenterTallCellHeight - CellLength && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight)
+        {
+            Value = TopCellVelocity_R[AdjXZ];
+        }
         else
         {
             Value = float3(0, 0, 0);
@@ -189,11 +197,11 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         float Weight = CubicKernel(length(AdjPoint - CurrCenterCellPosition) / CellLength);
         
         float3 Value = float3(0, 0, 0);
-        if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight)
+        if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight - CellLength)
         {
             float3 TopValue = TopCellVelocity_R[AdjXZ];
             float3 BottomValue = BottomCellVelocity_R[AdjXZ];
-            float RelativeHeight = (AdjPoint.y - (CenterTerrianHeight + 0.5f * CellLength)) / (CenterTallCellHeight - CellLength);
+            float RelativeHeight = (AdjPoint.y - CenterTerrianHeight) / CenterTallCellHeight;
             Value = RelativeHeight * TopValue + (1.0f - RelativeHeight) * BottomValue;
         }
         WeightValue += Value * Weight;
@@ -203,52 +211,6 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     ParticleVelocity_RW[i] = WeightValue / WeightSum;
 }
 
-//groupshared int LocalTallCellIndex[THREAD_COUNT_1D];
-//groupshared float LocalX[THREAD_COUNT_1D];
-//groupshared float3 LocalY[THREAD_COUNT_1D];
-//groupshared uint LocalMark[THREAD_COUNT_1D / 32];
-//[numthreads(THREAD_COUNT_1D, 1, 1)]
-//void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
-//{
-//    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-//    if (i >= ParticleIndrectArgment_R[ParticleCountOffset])
-//        return;
-    
-//    float3 CurrVelocity = ParticleVelocity_R[i];
-//    LocalY[ThreadIdx] = CurrVelocity;
-    
-//    float3 CurrPosition = ParticlePosition_R[i];
-//    float RelativeHeight = CurrPosition.y - Min.y;
-//    LocalX[ThreadIdx] = RelativeHeight;
-    
-//    float2 RelativeXZ = CurrPosition.xz - Min.xz;
-//    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
-//    uint CurrTallCellLinerIndex = computeMorton2D(RelativeXZ / CellLength);
-//    LocalTallCellIndex[ThreadIdx] = CurrTallCellLinerIndex;
-    
-//    GroupMemoryBarrierWithGroupSync();
-    
-//    uint PrevTallCellLinerIndex = ThreadIdx == 0 ? 0 : LocalTallCellIndex[ThreadIdx - 1];
-//    bool MaskBit =  ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex;
-//    uint Mask = ((uint) MaskBit) << (ThreadIdx % 32);
-//    LocalMark[ThreadIdx / 32] |= Mask;
-//    GroupMemoryBarrierWithGroupSync();
-    
-//    //calculate current block XSum, YSum, XXSum, XYSum
-    
-    
-//    //interlocked to global memory
-//    if(MaskBit)
-//    {
-//        //scale sum for each adjective tall cell
-//        for (int c = 0; c < 3 * 3; c++)
-//        {
-//            uint2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
-            
-//        }
-//    }
-//}
-
 uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
 {
     uint Result = 0;
@@ -256,19 +218,23 @@ uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
     uint Index = vTargetBit / 32;
     uint Offset = vTargetBit % 32;
     
-    uint Pointer = Offset;
-    for (uint k = Index; k < 4; k++)
+    for (int c = Index; c < 4; c++)
     {
-        for (; Pointer < 32; Pointer++)
+        if (c == Index)
+            vInput[c] &= ~(0xFFFFFFFF >> (32 - Offset - 1));
+        
+        uint FirstIndex = firstbitlow(vInput[c]);
+        if (FirstIndex != 0xFFFFFFFF)
         {
-            if (vInput[k] & (0X01 << Pointer))
-                Result++;
-            else
-                break;
+            Result += FirstIndex - Offset - 1;
+            break;
         }
-        Pointer = 0;
+        else
+        {
+            Result += 32 - Offset - 1;
+            Offset = -1;
+        }
     }
-    
     return Result;
 }
 
@@ -279,36 +245,84 @@ uint doCLZHighToLow(uint4 vInput, uint vTargetBit)
     uint Index = vTargetBit / 32;
     uint Offset = vTargetBit % 32;
     
-    uint Pointer = Offset;
-    for (uint k = Index; k >= 0; k--)
+    for (int c = Index; c >= 0; c--)
     {
-        for (; Pointer >= 0; Pointer--)
+        if (c == Index)
+            vInput[c] &= ~((0xFFFFFFFF >> Offset) << Offset);
+        
+        uint FirstIndex = firstbithigh(vInput[c]);
+        if (FirstIndex != 0xFFFFFFFF)
         {
-            if (vInput[k] & (0X01 << Pointer))
-                Result++;
-            else
-                break;
+            Result += Offset - FirstIndex - 1;
+            break;
         }
-        Pointer = 31;
+        else
+        {
+            Result += Offset;
+            Offset = 32;
+        }
     }
-    
     return Result;
 }
 
 RWStructuredBuffer<uint3> DEBUG;
+groupshared uint LocalParticleCount[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
+groupshared float LocalXSum[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
+groupshared float LocalXXSum[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
+groupshared float3 LocalYSum[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
+groupshared float3 LocalXYSum[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
+
+#define ZIP 10000000
+Texture2D<uint> ParticleCount_R;
+RWTexture2D<uint> ParticleCount_RW;
+Texture2D<int> XSum_R;
+RWTexture2D<int> XSum_RW;
+Texture2D<int> XXSum_R;
+RWTexture2D<int> XXSum_RW;
+Texture2D<int> YSum_R_R;
+RWTexture2D<int> YSum_R_RW;
+Texture2D<int> YSum_G_R;
+RWTexture2D<int> YSum_G_RW;
+Texture2D<int> YSum_B_R;
+RWTexture2D<int> YSum_B_RW;
+Texture2D<int> XYSum_R_R;
+RWTexture2D<int> XYSum_R_RW;
+Texture2D<int> XYSum_G_R;
+RWTexture2D<int> XYSum_G_RW;
+Texture2D<int> XYSum_B_R;
+RWTexture2D<int> XYSum_B_RW;
+
 [numthreads(THREAD_COUNT_1D, 1, 1)]
-void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
+    if (ThreadIdx < THREAD_COUNT_1D / MIN_WARP_COUNT)
+    {
+        for (int k = 0; k < 9; k++)
+        {
+            LocalXSum[ThreadIdx][k] = 0;
+            LocalXXSum[ThreadIdx][k] = 0;
+            LocalYSum[ThreadIdx][k] = 0;
+            LocalXYSum[ThreadIdx][k] = 0;
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
+    
+    uint CurrLaneIndex = WaveGetLaneIndex();
+    uint CurrLaneCount = WaveGetLaneCount();
+    uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    
+    float3 CurrPosition = float3(0, 0, 0);
+    float3 CurrVelocity = float3(0, 0, 0);
+    
     uint Count = ParticleIndrectArgment_R[ParticleCountArgumentIndex + OnlyTallCellParticleType];
     uint Offset = OnlyTallCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[ParticleOffsetArgumentIndex + OnlyTallCellParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i >= Count)
-        return;
+    {
+        CurrPosition = ParticlePosition_R[i];
+        CurrVelocity = ParticleVelocity_R[i];
+    }
     
-    uint CurrLaneIndex = WaveGetLaneIndex();
-    uint CurrLaneCount = WaveGetLaneCount();
-    
-    float3 CurrPosition = ParticlePosition_R[i];
     float2 RelativeXZ = CurrPosition.xz - Min.xz;
     uint2 CurrGridXZIndex = RelativeXZ / CellLength;
     uint CurrTallCellLinerIndex = computeMorton2D(RelativeXZ / CellLength);
@@ -319,14 +333,139 @@ void scatterOnlyTallCellParticleToGrid(uint ThreadIdx : SV_GroupIndex, uint Grou
     uint4 BallotResult1 = WaveActiveBallot(!(ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex));
     uint4 BallotResult2 = WaveActiveBallot(!(ThreadIdx == CurrLaneCount - 1 || NextTallCellLinerIndex != CurrTallCellLinerIndex));
     uint RegionLength = doCLZLowToHigh(BallotResult1, CurrLaneIndex) + doCLZHighToLow(BallotResult2, CurrLaneIndex);
-    DEBUG[i].x = CurrTallCellLinerIndex;
-    DEBUG[i].y = RegionLength;
     
-    //reduce
+    //warp level reduce
+    for (int c = 0; c < 9; c++)
+    {
+        int2 CurrOffset = OffsetVector2D[c];
+        uint2 AdjTallCell2DIndex = CurrGridXZIndex + CurrOffset;
+        
+        if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
+            continue;
+        
+        float AdjTerrianHeight = TerrianHeight_R[AdjTallCell2DIndex];
+        float X = CurrPosition.y - Min.y - AdjTerrianHeight;
+        if(X < 0)
+            continue;
+        float XX = X * X;
+        
+        float Weight = CubicKernel(length(RelativeXZ - ((float2) AdjTallCell2DIndex * CellLength + float2(0.5f, 0.5f) * CellLength)));
+        float3 Y = Weight * CurrVelocity;
+        float3 XY = X * Y;
+        
+        uint Offset = RegionLength;
+        for (int k = 0; k < ceil(log2(RegionLength)); k++)
+        {
+            Offset = ceil(Offset / 2.0f);
+            if (CurrLaneIndex + Offset < RegionLength)
+            {
+                X += WaveReadLaneAt(X, CurrLaneIndex + RegionLength);
+                Y += WaveReadLaneAt(Y, CurrLaneIndex + RegionLength);
+                XY += WaveReadLaneAt(XY, CurrLaneIndex + RegionLength);
+                XY += WaveReadLaneAt(XY, CurrLaneIndex + RegionLength);
+            }
+        }
+        
+        if(CurrLaneIndex == 0)
+        {
+            LocalXSum[CurrWarpIndex][c] = X;
+            LocalXXSum[CurrWarpIndex][c] = XX;
+            LocalYSum[CurrWarpIndex][c] = Y;
+            LocalXYSum[CurrWarpIndex][c] = XY;
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
     
+    //block level reduce
+    uint ReductionRegionLength = THREAD_COUNT_1D / MIN_WARP_COUNT;
+    if (ThreadIdx < ReductionRegionLength)
+    {
+        for (c = 0; c < 9; c++)
+        {
+            uint2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
+        
+            if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
+                continue;
+            
+            float XSum = LocalXSum[ThreadIdx][c];
+            float XXSum = LocalXXSum[ThreadIdx][c];
+            float3 YSum = LocalYSum[ThreadIdx][c];
+            float3 XYSum = LocalXYSum[ThreadIdx][c];
+            uint Offset = ReductionRegionLength;
+            for (int k = 0; k < ceil(log2(ReductionRegionLength)); k++)
+            {
+                Offset = ceil(Offset / 2.0f);
+                if (ThreadIdx + Offset < ReductionRegionLength)
+                {
+                    XSum += LocalXSum[ThreadIdx + Offset][c];
+                    XXSum += LocalXXSum[ThreadIdx + Offset][c];
+                    YSum += LocalYSum[ThreadIdx + Offset][c];
+                    XYSum += LocalXYSum[ThreadIdx + Offset][c];
+                }
+            }
+            
+            //interlocked add to global memeory
+            if(ThreadIdx == 0)
+            {
+                InterlockedAdd(XSum_RW[AdjTallCell2DIndex], XSum * ZIP);
+                InterlockedAdd(XXSum_RW[AdjTallCell2DIndex], XXSum * ZIP);
+                InterlockedAdd(YSum_R_RW[AdjTallCell2DIndex], YSum.x * ZIP);
+                InterlockedAdd(YSum_G_RW[AdjTallCell2DIndex], YSum.y * ZIP);
+                InterlockedAdd(YSum_B_RW[AdjTallCell2DIndex], YSum.z * ZIP);
+                InterlockedAdd(XYSum_R_RW[AdjTallCell2DIndex], XYSum.x * ZIP);
+                InterlockedAdd(XYSum_G_RW[AdjTallCell2DIndex], XYSum.y * ZIP);
+                InterlockedAdd(XYSum_B_RW[AdjTallCell2DIndex], XYSum.z * ZIP);
+            }
+        }
+    }
 }
 
-//TODO: we can use sort and warp-level perfixsum to discard many interlocked operation
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void scatterOnlyTallCellParticleToGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
+    
+    float XSum = XSum_R[DispatchThreadID.xy] / (float) ZIP;
+    float XXSum = XXSum_R[DispatchThreadID.xy] / (float) ZIP;
+    float3 YSum = float3(
+        YSum_R_R[DispatchThreadID.xy] / (float) ZIP, 
+        YSum_G_R[DispatchThreadID.xy] / (float) ZIP,
+        YSum_B_R[DispatchThreadID.xy] / (float) ZIP
+    );
+    float3 XYSum = float3(
+        XYSum_R_R[DispatchThreadID.xy] / (float) ZIP,
+        XYSum_G_R[DispatchThreadID.xy] / (float) ZIP,
+        XYSum_B_R[DispatchThreadID.xy] / (float) ZIP
+    );
+    
+    uint M = 0;
+    for (int c = 0; c < 9; c++)
+    {
+        int2 CurrOffset = OffsetVector2D[c];
+        uint2 AdjTallCell2DIndex = DispatchThreadID.xy + CurrOffset;
+        
+        if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
+            continue;
+
+        uint AdjTallCellLinerIndex = computeMorton2D(AdjTallCell2DIndex);
+        uint IntraParticleCount = HashGridCellParticleCount_R[AdjTallCellLinerIndex];
+        
+        M += IntraParticleCount;
+    }
+    
+    float3 Sigma0 = (XXSum * YSum - XSum * XYSum) / (M * XXSum - pow(XSum, 2));
+    float3 Sigma1 = (M * XYSum - XSum * YSum) / (M * XXSum - pow(XSum, 2));
+    
+    float CenterTerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    float CenterTallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
+    float3 TopValue = Sigma0 + Sigma1 * (CenterTallCellHeight - 0.5f * CellLength);
+    float3 BottomValue = Sigma0 + Sigma1 * 0.5f * CellLength;
+    
+    TopCellVelocity_RW[DispatchThreadID.xy] = TopValue;
+    BottomCellVelocity_RW[DispatchThreadID.xy] = BottomValue;
+}
+
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void gatherOnlyTallCellParticleToGrid(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
@@ -377,4 +516,184 @@ void gatherOnlyTallCellParticleToGrid(uint3 DispatchThreadID : SV_DispatchThread
     
     TopCellVelocity_RW[DispatchThreadID.xy] = TopValue;
     BottomCellVelocity_RW[DispatchThreadID.xy] = BottomValue;
+}
+
+Texture3D<int> RegularCellWeight_R;
+Texture3D<int> RegularCellWeightedVelocity_R_R;
+Texture3D<int> RegularCellWeightedVelocity_G_R;
+Texture3D<int> RegularCellWeightedVelocity_B_R;
+Texture2D<int> TopCellWeight_R;
+Texture2D<int> TopCellWeightedVelocity_R_R;
+Texture2D<int> TopCellWeightedVelocity_G_R;
+Texture2D<int> TopCellWeightedVelocity_B_R;
+
+RWTexture3D<int> RegularCellWeight_RW;
+RWTexture3D<int> RegularCellWeightedVelocity_R_RW;
+RWTexture3D<int> RegularCellWeightedVelocity_G_RW;
+RWTexture3D<int> RegularCellWeightedVelocity_B_RW;
+RWTexture2D<int> TopCellWeight_RW;
+RWTexture2D<int> TopCellWeightedVelocity_R_RW;
+RWTexture2D<int> TopCellWeightedVelocity_G_RW;
+RWTexture2D<int> TopCellWeightedVelocity_B_RW;
+
+groupshared float LocalWeightSum[THREAD_COUNT_1D / MIN_WARP_COUNT][27];
+groupshared float3 LocalWeightedVelocitySum[THREAD_COUNT_1D / MIN_WARP_COUNT][27];
+
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void scatterOtherParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    if (ThreadIdx < THREAD_COUNT_1D / MIN_WARP_COUNT)
+    {
+        for (int k = 0; k < 27; k++)
+        {
+            LocalWeightSum[ThreadIdx][k] = 0;
+            LocalWeightedVelocitySum[ThreadIdx][k] = 0;
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
+    
+    uint CurrLaneIndex = WaveGetLaneIndex();
+    uint CurrLaneCount = WaveGetLaneCount();
+    uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    
+    float3 CurrPosition = float3(0, 0, 0);
+    float3 CurrVelocity = float3(0, 0, 0);
+    
+    uint Count = ParticleIndrectArgment_R[ParticleCountArgumentIndex + RegularCellParticleType];
+    uint Offset = RegularCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[ParticleOffsetArgumentIndex + RegularCellParticleType - 1];
+    uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= Count)
+    {
+        CurrPosition = ParticlePosition_R[i];
+        CurrVelocity = ParticleVelocity_R[i];
+    }
+    
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    
+    uint CurrTallCellLinerIndex = computeMorton2D(RelativeXZ / CellLength);
+    uint PrevTallCellLinerIndex = ThreadIdx == 0 ? 0 : WaveReadLaneAt(CurrTallCellLinerIndex, CurrLaneIndex - 1);
+    uint NextTallCellLinerIndex = ThreadIdx == CurrLaneCount - 1 ? 0 : WaveReadLaneAt(CurrTallCellLinerIndex, CurrLaneIndex + 1);
+    
+    //r: Lane31~Lane0, g: Lane63~Lane32...
+    uint4 BallotResult1 = WaveActiveBallot(!(ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex));
+    uint4 BallotResult2 = WaveActiveBallot(!(ThreadIdx == CurrLaneCount - 1 || NextTallCellLinerIndex != CurrTallCellLinerIndex));
+    uint RegionLength = doCLZLowToHigh(BallotResult1, CurrLaneIndex) + doCLZHighToLow(BallotResult2, CurrLaneIndex);
+    
+    //warp level reduce
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
+    float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
+    float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
+    uint CurrGridYIndex = (CurrPosition.y - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
+    float3 CenterGridPosition = uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y) * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+    
+    for (int c = 0; c < 27; c++)
+    {
+        int3 CurrOffset = OffsetVector3D[c];
+        float3 AdjContributePoint = CenterGridPosition + CurrOffset * CellLength;
+        int AdjContributePointYIndex = (AdjContributePoint.y - CenterTerrianHeight - CenterTallCellHeight + CellLength) / CellLength;
+        int2 AdjContributePointXZIndex = AdjContributePoint.xz / CellLength;
+        int3 AdjContributePoint3DIndex = int3(AdjContributePointXZIndex.x, AdjContributePointYIndex, AdjContributePointXZIndex.y);
+        if (any(AdjContributePoint3DIndex < 0) || any(AdjContributePointXZIndex >= XZResolution) || AdjContributePointYIndex > ConstantCellNum)
+            continue;
+        
+        float Weight = CubicKernel(length(CurrPosition - AdjContributePoint));
+        float3 WeightVelocity = Weight * CurrVelocity;
+        
+        uint Offset = RegionLength;
+        for (int k = 0; k < ceil(log2(RegionLength)); k++)
+        {
+            Offset = ceil(Offset / 2.0f);
+            if (CurrLaneIndex + Offset < RegionLength)
+            {
+                Weight += WaveReadLaneAt(Weight, CurrLaneIndex + RegionLength);
+                WeightVelocity += WaveReadLaneAt(WeightVelocity, CurrLaneIndex + RegionLength);
+            }
+        }
+        
+        if (CurrLaneIndex == 0)
+        {
+            LocalWeightSum[CurrWarpIndex][c] = Weight;
+            LocalWeightedVelocitySum[CurrWarpIndex][c] = WeightVelocity;
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
+    
+    //block level reduce
+    uint ReductionRegionLength = THREAD_COUNT_1D / MIN_WARP_COUNT;
+    if (ThreadIdx < ReductionRegionLength)
+    {
+        for (c = 0; c < 27; c++)
+        {
+            int3 CurrOffset = OffsetVector3D[c];
+            float3 AdjContributePoint = CenterGridPosition + CurrOffset * CellLength;
+            int AdjContributePointYIndex = (AdjContributePoint.y - CenterTerrianHeight - CenterTallCellHeight + CellLength) / CellLength;
+            int2 AdjContributePointXZIndex = AdjContributePoint.xz / CellLength;
+            int3 AdjContributePoint3DIndex = int3(AdjContributePointXZIndex.x, AdjContributePointYIndex, AdjContributePointXZIndex.y);
+            if (any(AdjContributePoint3DIndex < 0) || any(AdjContributePointXZIndex >= XZResolution) || AdjContributePointYIndex > ConstantCellNum)
+                continue;
+            
+            float Weight = LocalWeightSum[ThreadIdx][c];
+            float3 WeightVelocity = LocalWeightedVelocitySum[ThreadIdx][c];
+            for (int k = 0; k < ceil(log2(ReductionRegionLength)); k++)
+            {
+                Offset = ceil(Offset / 2.0f);
+                if (ThreadIdx + Offset < ReductionRegionLength)
+                {
+                    Weight += LocalWeightSum[ThreadIdx + Offset][c];
+                    WeightVelocity += LocalWeightedVelocitySum[ThreadIdx + Offset][c];
+                }
+            }
+            
+            //interlocked add to global memeory
+            if (ThreadIdx == 0)
+            {
+                if (AdjContributePoint.y <= (CenterTerrianHeight + CenterTallCellHeight))
+                {
+                    InterlockedAdd(TopCellWeight_RW[AdjContributePointXZIndex], Weight * ZIP);
+                    InterlockedAdd(TopCellWeightedVelocity_R_RW[AdjContributePointXZIndex], WeightVelocity.x * ZIP);
+                    InterlockedAdd(TopCellWeightedVelocity_G_RW[AdjContributePointXZIndex], WeightVelocity.y * ZIP);
+                    InterlockedAdd(TopCellWeightedVelocity_B_RW[AdjContributePointXZIndex], WeightVelocity.z * ZIP);
+                }
+                else
+                {
+                    InterlockedAdd(RegularCellWeight_RW[AdjContributePoint3DIndex], Weight * ZIP);
+                    InterlockedAdd(RegularCellWeightedVelocity_R_RW[AdjContributePoint3DIndex], WeightVelocity.x * ZIP);
+                    InterlockedAdd(RegularCellWeightedVelocity_G_RW[AdjContributePoint3DIndex], WeightVelocity.y * ZIP);
+                    InterlockedAdd(RegularCellWeightedVelocity_B_RW[AdjContributePoint3DIndex], WeightVelocity.z * ZIP);
+                }
+            }
+        }
+    }
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void scatterOtherParticleToGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xz > XZResolution) || DispatchThreadID.y > RegularCellParticleType)
+        return;
+    
+    float Weight = RegularCellWeight_R[DispatchThreadID] / (float) ZIP;
+    float3 WeightedVelocity = float3(
+        RegularCellWeightedVelocity_R_R[DispatchThreadID] / (float) ZIP,
+        RegularCellWeightedVelocity_G_R[DispatchThreadID] / (float) ZIP,
+        RegularCellWeightedVelocity_B_R[DispatchThreadID] / (float) ZIP
+    );
+    
+    RegularCellVelocity_RW[DispatchThreadID] = WeightedVelocity / Weight;
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void scatterOtherParticleToGrid_Pass3(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy > XZResolution))
+        return;
+    
+    float Weight = TopCellWeight_R[DispatchThreadID.xy] / (float) ZIP;
+    float3 WeightedVelocity = float3(
+        TopCellWeightedVelocity_R_R[DispatchThreadID.xy] / (float) ZIP,
+        TopCellWeightedVelocity_G_R[DispatchThreadID.xy] / (float) ZIP,
+        TopCellWeightedVelocity_B_R[DispatchThreadID.xy] / (float) ZIP
+    );
+    
+    TopCellVelocity_RW[DispatchThreadID.xy] += WeightedVelocity / Weight;
 }

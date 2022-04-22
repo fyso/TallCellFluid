@@ -43,10 +43,10 @@ public class Move : MonoBehaviour
         {
             m_Rigidbody.velocity = (new Vector3(0.0f, 0.0f, -1.0f) * m_ControllerForceFactor);
         }
-
+        
         RigidbodyInfo rigidbodyInfo = new RigidbodyInfo();
-        rigidbodyInfo.m_Max = GetComponent<MeshFilter>().mesh.bounds.max;
-        rigidbodyInfo.m_Min = GetComponent<MeshFilter>().mesh.bounds.min;
+        rigidbodyInfo.m_Max = transform.localToWorldMatrix * GetComponent<MeshFilter>().mesh.bounds.max;
+        rigidbodyInfo.m_Min = transform.localToWorldMatrix * GetComponent<MeshFilter>().mesh.bounds.min;
         rigidbodyInfo.m_Pos = m_Rigidbody.position;
         rigidbodyInfo.m_Velocity = m_Rigidbody.velocity;
         rigidbodyInfo.m_AngularVelocity = m_Rigidbody.angularVelocity;
