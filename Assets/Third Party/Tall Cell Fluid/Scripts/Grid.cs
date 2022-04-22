@@ -222,7 +222,7 @@ public class Grid
 
     public void InitMesh(Texture vTerrian, float vSeaLevel)
     {
-        m_RemeshTools.ComputeTerrianHeight(vTerrian, m_GridData[0].TerrrianHeight, 10.0f);
+        m_RemeshTools.ComputeTerrianHeight(vTerrian, m_GridData[0].TerrrianHeight, 20.0f);
         m_RemeshTools.ComputeH1H2WithSeaLevel(m_GridData[0].TerrrianHeight, m_GPUCache.H1H2Cahce, vSeaLevel);
 
         Remesh(true);

@@ -25,7 +25,6 @@ namespace DParticle
 
             m_Particle.DeleteParticleOutofRange(m_Min, m_Min + (Vector3)m_Resolution * m_CellLength, m_CellLength);
             m_Particle.OrganizeParticle();
-            m_Particle.ZSort(m_Min, m_CellLength);
         }
 
         private void OnRenderObject()

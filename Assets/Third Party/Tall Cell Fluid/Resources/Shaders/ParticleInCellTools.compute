@@ -21,15 +21,17 @@ StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 StructuredBuffer<uint> HashGridCellParticleCount_R;
+RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
 StructuredBuffer<uint> HashGridCellParticleOffset_R;
+RWStructuredBuffer<uint> HashGridCellParticleOffset_RW;
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 
 Texture3D<float3> RegularCellVelocity_R;
-Texture2D<float3> TopCellVelocity_R;
-Texture2D<float3> BottomCellVelocity_R;
 RWTexture3D<float3> RegularCellVelocity_RW;
+Texture2D<float3> TopCellVelocity_R;
 RWTexture2D<float3> TopCellVelocity_RW;
+Texture2D<float3> BottomCellVelocity_R;
 RWTexture2D<float3> BottomCellVelocity_RW;
 
 int2 OffsetVector2D[3 * 3] =
@@ -123,17 +125,14 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     
     if (!IsInTallCell && !IsInTerrianCell)
     {
-        if (IsAnyTallCellHigher)
-            ParticleFilter_RW[i] = 1;
-        else
-            ParticleFilter_RW[i] = 0;
+        ParticleFilter_RW[i] = 0;
     }
     else if (IsInTallCell)
     {
         if (!IsAnyTallCellLower)
             ParticleFilter_RW[i] = 3;
         else
-            ParticleFilter_RW[i] = 1;
+            ParticleFilter_RW[i] = 0;
     }
     else
     {
@@ -203,7 +202,6 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     
     ParticleVelocity_RW[i] = WeightValue / WeightSum;
 }
-
 
 uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
 {
@@ -285,9 +283,6 @@ Texture2D<int> XYSum_G_R;
 RWTexture2D<int> XYSum_G_RW;
 Texture2D<int> XYSum_B_R;
 RWTexture2D<int> XYSum_B_RW;
-
-RWTexture2D<float3> Top_RW;
-RWTexture2D<float3> Bottom_RW;
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
@@ -515,4 +510,21 @@ void gatherOnlyTallCellParticleToGrid(uint3 DispatchThreadID : SV_DispatchThread
     
     TopCellVelocity_RW[DispatchThreadID.xy] = TopValue;
     BottomCellVelocity_RW[DispatchThreadID.xy] = BottomValue;
+}
+
+Texture3D<float> RegularCellWeight_R;
+RWTexture3D<float> RegularCelWeigh_RW;
+Texture3D<float3> RegularCellWeightedVelocity_R;
+RWTexture3D<float3> RegularCelWeightedlVelocity_RW;
+Texture2D<float> TopCellWeigh_R;
+RWTexture2D<float> TopCellWeight_RW;
+Texture2D<float3> TopCellWeightedVelocity_R;
+RWTexture2D<float3> TopCellWeightedVelocity_RW;
+groupshared float LocalWeightSum[THREAD_COUNT_1D / MIN_WARP_COUNT][27];
+groupshared float3 LocalWeightedVelocitySum[THREAD_COUNT_1D / MIN_WARP_COUNT][27];
+
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void scatterOtherParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+
 }
