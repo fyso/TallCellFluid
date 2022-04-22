@@ -1,0 +1,93 @@
+#include "../../../../../Resources/ShaderLibrary/Common.hlsl"
+#include "../../../../../Resources/ShaderLibrary/RayTracing.hlsl"
+
+#define PI_2 PI*2
+#define GoldenRatio 0.618f
+
+RWTexture2D<float4> RenderTarget;
+RWStructuredBuffer<float> _OutputBuffer;
+vector<float,3> _VolumeSize;
+vector<float,3> _VoxelSize;
+vector<float,3> _HalfVoxel;
+matrix<float,4,4> _LocalToWorld;
+int3 _Dimensions;
+int _RaySamples;
+
+#pragma max_recursion_depth 1
+
+inline float3 uniformSampleOnSphere(int vIndex, int vNum)
+{
+	float Z = (2.0f * vIndex) / vNum - 1.0f;
+	float SrqtOneSubZ2 = sqrt(1 - Z * Z);
+	float Theta = 2.0f * PI * vIndex * GoldenRatio;
+	float X = SrqtOneSubZ2 * cos(Theta);
+	float Y = SrqtOneSubZ2 * sin(Theta);
+	return float3(X, Y, Z);
+}
+
+[shader("raygeneration")]
+void SDFRayGen()
+{
+	const uint3 dispatchIdx = DispatchRaysIndex().xyz;
+	int voxelIdx = dispatchIdx.z*_Dimensions.y*_Dimensions.x + dispatchIdx.y*_Dimensions.x + dispatchIdx.x;
+
+	SDFRayIntersection rayIntersection;
+	rayIntersection.positionWS = float3(111.0f,111.0f,111.0f);
+
+	float minDis = 10000.0f;
+	uint hitKind = 0;
+
+	RayDesc rayDes;
+	rayDes.TMin = 0.0f;
+	rayDes.TMax = 10000.0f;
+
+	float3 voxelOriginPos = float3(
+		dispatchIdx.x/(float)_Dimensions.x-0.5f,
+		dispatchIdx.y/(float)_Dimensions.y-0.5f,
+		dispatchIdx.z/(float)_Dimensions.z-0.5f
+		);
+
+	voxelOriginPos = voxelOriginPos * _VolumeSize;
+
+	float3 _VoxelCenter = mul(_LocalToWorld,float4(voxelOriginPos,1.0f)).xyz + _HalfVoxel;
+
+	rayDes.Origin = _VoxelCenter;
+
+	for(int i=0;i<_RaySamples;i++)
+	{
+		rayDes.Direction = normalize(uniformSampleOnSphere(i,_RaySamples));
+		TraceRay(_AccelerationStructure,RAY_FLAG_NONE,0xFF,0,1,0,rayDes,rayIntersection);
+		if(minDis > distance(_VoxelCenter,rayIntersection.positionWS))
+		{
+			minDis = distance(_VoxelCenter,rayIntersection.positionWS);
+			hitKind = rayIntersection.hitKind;
+		}
+	}
+
+	if(hitKind == 254)
+	{
+		_OutputBuffer[voxelIdx] = minDis;
+	}
+	else
+	{
+		_OutputBuffer[voxelIdx] = -minDis;
+	}
+
+	//_OutputBuffer[voxelIdx] = _VoxelCenter;
+
+	//_OutputBuffer[0] = _LocalToWorld[0][0];
+	//_OutputBuffer[1] = _LocalToWorld[0][3];
+	//_OutputBuffer[2] = _LocalToWorld[1][1];
+	//_OutputBuffer[3] = _LocalToWorld[1][3];
+	//_OutputBuffer[4] = _LocalToWorld[2][2];
+	//_OutputBuffer[5] = _LocalToWorld[2][3];
+	//_OutputBuffer[6] = _LocalToWorld[3][3];
+	//_OutputBuffer[7] = _LocalToWorld[3][3];
+
+}
+
+[shader("miss")]
+void MissShader(inout SDFRayIntersection rayIntersection : SV_RayPayload)
+{
+	rayIntersection.positionWS=11111.0f;
+}
