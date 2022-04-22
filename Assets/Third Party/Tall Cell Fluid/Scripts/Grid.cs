@@ -51,6 +51,8 @@ public class GridPerLevel
     public RenderTexture RegularCellMark { get { return m_RegularCellMark; } }
     public GridValuePerLevel Velocity { get { return m_Velocity; } }
     public GridValuePerLevel Pressure { get { return m_Pressure; } }
+    public GridValuePerLevel RigidBodyPercentage { get { return m_RigidBodyPercentage; } }
+    public GridValuePerLevel RigidBodyVelocity { get { return m_RigidBodyVelocity; } }
     public Vector2Int ResolutionXZ { get { return m_ResolutionXZ; } }
     public int RegularCellYCount { get { return m_RegularCellYCount; } }
 
@@ -254,7 +256,7 @@ public class Grid
     public void UpdateRigidbody()
     {
         //TODO: tall cell has not been considered
-
+        m_RemeshTools.UpdateSolidInfos(FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage.RegularCellValue, FineGrid.RigidBodyVelocity.RegularCellValue);
     }
 
     public void UpdateGridValue()

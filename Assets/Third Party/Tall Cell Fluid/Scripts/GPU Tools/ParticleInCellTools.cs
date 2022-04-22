@@ -5,29 +5,29 @@ using DParticle;
 
 public class ParticleInCellTools
 {
-    public ParticleInCellTools(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
+    public ParticleInCellTools(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vRegularCellYCount)
     {
         m_ParticleInCellToolsCS = Resources.Load<ComputeShader>(Common.ParticleInCellToolsCSPath);
         markParticleByCellType = m_ParticleInCellToolsCS.FindKernel("markParticleByCellType");
         gatherGridToParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToParticle");
         scatterOnlyTallCellParticleToGrid = m_ParticleInCellToolsCS.FindKernel("scatterOnlyTallCellParticleToGrid");
         gatherOnlyTallCellParticleToGrid = m_ParticleInCellToolsCS.FindKernel("gatherOnlyTallCellParticleToGrid");
-        UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vConstantCellNum);
+        UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
     }
 
-    public void UpdateGlobalParma(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
+    public void UpdateGlobalParma(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vRegularCellYCount)
     {
         m_ParticleInCellToolsCS.SetFloats("Min", vMin.x, vMin.y, vMin.z);
         m_ParticleInCellToolsCS.SetInts("XZResolution", vResolutionXZ.x, vResolutionXZ.y);
         m_ParticleInCellToolsCS.SetFloat("CellLength", vCellLength);
-        m_ParticleInCellToolsCS.SetInt("ConstantCellNum", vConstantCellNum);
+        m_ParticleInCellToolsCS.SetInt("ConstantCellNum", vRegularCellYCount);
 
         m_GPUGroupCount2D.x = Mathf.CeilToInt((float)vResolutionXZ.x / Common.ThreadCount2D);
         m_GPUGroupCount2D.y = Mathf.CeilToInt((float)vResolutionXZ.y / Common.ThreadCount2D);
 
         m_GPUGroupCount3D.x = Mathf.CeilToInt((float)vResolutionXZ.x / Common.ThreadCount3D);
         m_GPUGroupCount3D.y = Mathf.CeilToInt((float)vResolutionXZ.y / Common.ThreadCount3D);
-        m_GPUGroupCount3D.z = Mathf.CeilToInt((float)vConstantCellNum / Common.ThreadCount3D);
+        m_GPUGroupCount3D.z = Mathf.CeilToInt((float)vRegularCellYCount / Common.ThreadCount3D);
     }
 
     public void MarkParticleWtihCellType(DynamicParticle vParticle, GridPerLevel vTargetLevel)

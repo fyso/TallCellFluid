@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GridGPUCache
 {
-    public GridGPUCache(Vector2Int vResolutionXZ, float vCellLength, int vConstantCellNum)
+    public GridGPUCache(Vector2Int vResolutionXZ, float vCellLength, int vRegularCellYCount)
     {
         H1H2Cahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RGFloat)
         {
@@ -90,28 +90,28 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellWeightTempCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vConstantCellNum, RenderTextureFormat.RInt)
+        RegularCellWeightTempCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVelocityXTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vConstantCellNum, RenderTextureFormat.RInt)
+        RegularCellVelocityXTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVelocityYTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vConstantCellNum, RenderTextureFormat.RInt)
+        RegularCellVelocityYTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVelocityZTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vConstantCellNum, RenderTextureFormat.RInt)
+        RegularCellVelocityZTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,

@@ -10,7 +10,7 @@ public class Move : MonoBehaviour
     private void Start()
     {
         m_Rigidbody = GetComponent<Rigidbody>();
-        RigidBodyDataManager m_RigidBodyDataManager = GameObject.FindGameObjectsWithTag("Simulator")[0].GetComponent<RigidBodyDataManager>();
+        m_RigidBodyDataManager = GameObject.FindGameObjectsWithTag("Simulator")[0].GetComponent<RigidBodyDataManager>();
 
         RigidbodyInfo rigidbodyInfo = new RigidbodyInfo();
         rigidbodyInfo.m_Max = GetComponent<MeshFilter>().mesh.bounds.max;

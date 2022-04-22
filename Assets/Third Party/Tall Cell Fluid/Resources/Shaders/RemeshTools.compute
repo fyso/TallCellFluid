@@ -6,6 +6,7 @@
 #pragma kernel computeTallCellHeight
 #pragma kernel smoothTallCellHeight
 #pragma kernel enforceDCondition
+#pragma kernel updateSolidInfos
 
 Texture2D<float> TerrianTexture_R;
 
@@ -145,4 +146,73 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
     float FinalResult = min(Center, Max + D * CellLength) - TerrianHeight;
     FinalResult = (ceil(FinalResult / CellLength) + 2) * CellLength;
     TallCellHeightCache_RW[DispatchThreadID.xy] = FinalResult;
+}
+
+int RigidbodyNum;
+Texture3D<float> SDF0;
+Texture3D<float> SDF1;
+Texture3D<float> SDF2;
+Texture3D<float> SDF3;
+struct RigidbodyInfo
+{
+    float4 m_Min;
+    float4 m_Max;
+    float4 m_Pos;
+    float4 m_Velocity;
+    float4 m_AngularVelocity;
+};
+RigidbodyInfo RigidbodyInfo0;
+RigidbodyInfo RigidbodyInfo1;
+RigidbodyInfo RigidbodyInfo2;
+RigidbodyInfo RigidbodyInfo3;
+RWTexture3D<float> OutRegularCellRigidBodyPercentage;
+RWTexture3D<float3> OutRegularCellRigidbodyVelocity;
+
+float4 updateSolidInfo(Texture3D<float> SDF, RigidbodyInfo RigidbodyInfo)
+{
+    return float4(0, 0, 0, 0);
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void updateSolidInfos(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    float RigidbodyPercentage = 0;
+    float3 RigidbodyVelocity = float3(0, 0, 0);
+    float4 info;
+    info = updateSolidInfo(SDF0, RigidbodyInfo0);
+    RigidbodyVelocity += info.xyz;
+    RigidbodyPercentage += info.w;
+    if (RigidbodyNum < 2)
+    {
+        OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
+        OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
+        return;
+    }
+    
+    info = updateSolidInfo(SDF1, RigidbodyInfo1);
+    RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
+    RigidbodyPercentage += info.w;
+
+    if (RigidbodyNum < 3)
+    {
+        OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
+        OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
+        return;
+    }
+    
+    info = updateSolidInfo(SDF2, RigidbodyInfo2);
+    RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
+    RigidbodyPercentage += info.w;
+    if (RigidbodyNum < 4)
+    {
+        OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
+        OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
+        return;
+    }
+    
+    info = updateSolidInfo(SDF3, RigidbodyInfo3);
+    RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
+    RigidbodyPercentage += info.w;
+    
+
 }
