@@ -26,15 +26,15 @@ public class Simulator
 
     public void Step(float vTimeStep)
     {
+        Profiler.BeginSample("ParticleInCell");
+        ParticleInCell();
+        Profiler.EndSample();
+
         Profiler.BeginSample("Remesh");
         m_Grid.Remesh();
         Profiler.EndSample();
 
-        Profiler.BeginSample("Advect");
-        Advect();
-        Profiler.EndSample();
-
-        Profiler.BeginSample("Remesh");
+        Profiler.BeginSample("UpdateGridValue");
         m_Grid.UpdateGridValue();
         Profiler.EndSample();
 
@@ -43,7 +43,7 @@ public class Simulator
         Profiler.EndSample();
     }
 
-    private void Advect()
+    private void ParticleInCell()
     {
         //split particle by cell type
         Profiler.BeginSample("MarkParticleWtihCellType");
@@ -69,12 +69,11 @@ public class Simulator
         m_DynamicParticle.ZSort(m_Min, m_CellLength, true, 3);
         Profiler.EndSample();
 
+        //OnlyTallCell Particle to grid using fine level
         //Profiler.BeginSample("GatherOnlyTallCellParticleToGrid");
         //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid.FineGrid);
         //m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid.FineGrid, 3);
         //Profiler.EndSample();
-
-        //OnlyTallCell Particle to grid using fine level
     }
 
     private void SparseMultiGridRedBlackGaussSeidel()
