@@ -112,6 +112,10 @@ public class Simulator
         m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
         Profiler.EndSample();
 
+        Profiler.BeginSample("SortRegularCellParticle");
+        m_ParticleInCellTools.ScatterOtherParticleToGrid(m_DynamicParticle, m_Grid);
+        Profiler.EndSample();
+
         //TODO: update mark for fine level
     }
 

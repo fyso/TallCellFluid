@@ -34,85 +34,93 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellPow2HeightSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellScalarCahce2 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellHeightSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellScalarCahce1 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellHeightVelocityXSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellVectorXCahce2 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellHeightVelocityYSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellVectorYCahce2 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellHeightVelocityZSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellVectorZCahce2 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellVelocityXSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellVectorXCahce1 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellVelocityYSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellVectorYCahce1 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        TallCellVelocityZSumCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        TallCellVectorZCahce1 = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
         {
             enableRandomWrite = true,
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellWeightTempCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
+        RegularCellScalarCahce = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
         {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vResolutionXZ.y,
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVelocityXTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
+        RegularCellVectorXCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
         {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vResolutionXZ.y,
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVelocityYTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
+        RegularCellVelocityYCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
         {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vResolutionXZ.y,
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVelocityZTempCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, vRegularCellYCount, RenderTextureFormat.RInt)
+        RegularCellVelocityZCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
         {
+            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
+            volumeDepth = vResolutionXZ.y,
             enableRandomWrite = true,
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
@@ -126,19 +134,19 @@ public class GridGPUCache
         BackTallCellHeightCahce.Release();
 
         TallCellParticleCountCahce.Release();
-        TallCellPow2HeightSumCahce.Release();
-        TallCellHeightSumCahce.Release();
-        TallCellHeightVelocityXSumCahce.Release();
-        TallCellHeightVelocityYSumCahce.Release();
-        TallCellHeightVelocityZSumCahce.Release();
-        TallCellVelocityXSumCahce.Release();
-        TallCellVelocityYSumCahce.Release();
-        TallCellVelocityZSumCahce.Release();
+        TallCellScalarCahce2.Release();
+        TallCellScalarCahce1.Release();
+        TallCellVectorXCahce2.Release();
+        TallCellVectorYCahce2.Release();
+        TallCellVectorZCahce2.Release();
+        TallCellVectorXCahce1.Release();
+        TallCellVectorYCahce1.Release();
+        TallCellVectorZCahce1.Release();
 
-        RegularCellWeightTempCahce.Release();
-        RegularCellVelocityXTempCache.Release();
-        RegularCellVelocityYTempCache.Release();
-        RegularCellVelocityZTempCache.Release();
+        RegularCellScalarCahce.Release();
+        RegularCellVectorXCache.Release();
+        RegularCellVelocityYCache.Release();
+        RegularCellVelocityZCache.Release();
     }
 
     //Temp cache
@@ -147,17 +155,17 @@ public class GridGPUCache
     public RenderTexture BackTallCellHeightCahce;
 
     public RenderTexture TallCellParticleCountCahce;
-    public RenderTexture TallCellPow2HeightSumCahce;
-    public RenderTexture TallCellHeightSumCahce;
-    public RenderTexture TallCellHeightVelocityXSumCahce;
-    public RenderTexture TallCellHeightVelocityYSumCahce;
-    public RenderTexture TallCellHeightVelocityZSumCahce;
-    public RenderTexture TallCellVelocityXSumCahce;
-    public RenderTexture TallCellVelocityYSumCahce;
-    public RenderTexture TallCellVelocityZSumCahce;
+    public RenderTexture TallCellScalarCahce2;
+    public RenderTexture TallCellScalarCahce1;
+    public RenderTexture TallCellVectorXCahce2;
+    public RenderTexture TallCellVectorYCahce2;
+    public RenderTexture TallCellVectorZCahce2;
+    public RenderTexture TallCellVectorXCahce1;
+    public RenderTexture TallCellVectorYCahce1;
+    public RenderTexture TallCellVectorZCahce1;
 
-    public RenderTexture RegularCellWeightTempCahce;
-    public RenderTexture RegularCellVelocityXTempCache;
-    public RenderTexture RegularCellVelocityYTempCache;
-    public RenderTexture RegularCellVelocityZTempCache;
+    public RenderTexture RegularCellScalarCahce;
+    public RenderTexture RegularCellVectorXCache;
+    public RenderTexture RegularCellVelocityYCache;
+    public RenderTexture RegularCellVelocityZCache;
 }
