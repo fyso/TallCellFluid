@@ -6,6 +6,8 @@
 #define MAX_RESOLUTION_Y 128
 #define MAX_RESOLUTION_Z 64
 
+#define SDF_RESOLUTION 32
+
 #define PI 3.1415926535f
 #define E 2.7182818284f
 

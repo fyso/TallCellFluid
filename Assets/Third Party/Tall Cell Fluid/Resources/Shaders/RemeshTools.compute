@@ -150,69 +150,87 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 int RigidbodyNum;
 Texture3D<float> SDF0;
-Texture3D<float> SDF1;
-Texture3D<float> SDF2;
-Texture3D<float> SDF3;
+//Texture3D<float> SDF1;
+//Texture3D<float> SDF2;
+//Texture3D<float> SDF3;
 struct RigidbodyInfo
 {
-    float4 m_Min;
-    float4 m_Max;
-    float4 m_Pos;
-    float4 m_Velocity;
-    float4 m_AngularVelocity;
+    float4x4 m_WorldToObject;
+    float3 m_Min;
+    float3 m_BoundSize;
+    float3 m_Pos;
+    float3 m_Velocity;
+    float3 m_AngularVelocity;
 };
-RigidbodyInfo RigidbodyInfo0;
-RigidbodyInfo RigidbodyInfo1;
-RigidbodyInfo RigidbodyInfo2;
-RigidbodyInfo RigidbodyInfo3;
+StructuredBuffer<RigidbodyInfo> RigidbodyInfos;
+
 RWTexture3D<float> OutRegularCellRigidBodyPercentage;
 RWTexture3D<float3> OutRegularCellRigidbodyVelocity;
 
-float4 updateSolidInfo(Texture3D<float> SDF, RigidbodyInfo RigidbodyInfo)
+float4 updateSolidInfo(float3 SamplePos, Texture3D<float> SDF, RigidbodyInfo RigidbodyInfo)
 {
-    return float4(0, 0, 0, 0);
+    uint3 uvw = (mul(RigidbodyInfo.m_WorldToObject, float4(SamplePos, 1)).xyz - RigidbodyInfo.m_Min) / RigidbodyInfo.m_BoundSize * SDF_RESOLUTION;
+    float4 Result = float4(0, 0, 0, 0);
+    if (any(uvw > SDF_RESOLUTION - 1))
+        return Result;
+    Result.w = clamp((-SDF[uvw] + 0.5 * CellLength) / CellLength, 0, 1);
+    if (Result.w > 0.01)
+    {
+        Result.xyz = RigidbodyInfo.m_Velocity + cross(RigidbodyInfo.m_AngularVelocity, (SamplePos - RigidbodyInfo.m_Pos));
+    }
+    return Result;
 }
 
+//TODO: ugly
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void updateSolidInfos(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     float RigidbodyPercentage = 0;
     float3 RigidbodyVelocity = float3(0, 0, 0);
+    float3 SamplePos = Min + (DispatchThreadID + float3(0.5, 0.5, 0.5)) * CellLength;
+    SamplePos.y += TallCellHeight_R[DispatchThreadID.xz];
+    
     float4 info;
-    info = updateSolidInfo(SDF0, RigidbodyInfo0);
-    RigidbodyVelocity += info.xyz;
-    RigidbodyPercentage += info.w;
-    if (RigidbodyNum < 2)
+    if (RigidbodyNum > 0)
     {
-        OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
-        OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
-        return;
+        info = updateSolidInfo(SamplePos, SDF0, RigidbodyInfos[0]);
+        if (info.w > 0.01)
+        {
+            RigidbodyVelocity += info.xyz;
+            RigidbodyPercentage += info.w;
+        }
     }
     
-    info = updateSolidInfo(SDF1, RigidbodyInfo1);
-    RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
-    RigidbodyPercentage += info.w;
-
-    if (RigidbodyNum < 3)
-    {
-        OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
-        OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
-        return;
-    }
+    //if (RigidbodyNum > 1)
+    //{
+    //    info = updateSolidInfo(SamplePos, SDF1, RigidbodyInfos[1]);
+    //    if (info.w > 0.01)
+    //    {
+    //        RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
+    //        RigidbodyPercentage += info.w;
+    //    }
+    //}
     
-    info = updateSolidInfo(SDF2, RigidbodyInfo2);
-    RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
-    RigidbodyPercentage += info.w;
-    if (RigidbodyNum < 4)
-    {
-        OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
-        OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
-        return;
-    }
+    //if (RigidbodyNum > 2)
+    //{
+    //    info = updateSolidInfo(SamplePos, SDF2, RigidbodyInfos[2]);
+    //    if (info.w > 0.01)
+    //    {
+    //        RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
+    //        RigidbodyPercentage += info.w;
+    //    }
+    //}
     
-    info = updateSolidInfo(SDF3, RigidbodyInfo3);
-    RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
-    RigidbodyPercentage += info.w;
+    //if (RigidbodyNum > 3)
+    //{
+    //    info = updateSolidInfo(SamplePos, SDF3, RigidbodyInfos[3]);
+    //    if (info.w > 0.01)
+    //    {
+    //        RigidbodyVelocity = (RigidbodyVelocity * RigidbodyPercentage + info.xyz * info.w) / (RigidbodyPercentage + info.w);
+    //        RigidbodyPercentage += info.w;
+    //    }
+    //}
     
-
+    OutRegularCellRigidbodyVelocity[DispatchThreadID] = RigidbodyVelocity;
+    OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidbodyPercentage;
 }

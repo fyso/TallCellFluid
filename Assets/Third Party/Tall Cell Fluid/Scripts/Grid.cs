@@ -258,7 +258,7 @@ public class Grid
     public void UpdateRigidbody()
     {
         //TODO: tall cell has not been considered
-        //m_RemeshTools.UpdateSolidInfos(FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage.RegularCellValue, FineGrid.RigidBodyVelocity.RegularCellValue);
+        m_RemeshTools.UpdateSolidInfos(FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage.RegularCellValue, FineGrid.RigidBodyVelocity.RegularCellValue);
     }
 
     public void UpdateGridValue()

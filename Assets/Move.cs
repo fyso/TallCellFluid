@@ -13,14 +13,19 @@ public class Move : MonoBehaviour
         m_RigidBodyDataManager = GameObject.FindGameObjectsWithTag("Simulator")[0].GetComponent<RigidBodyDataManager>();
 
         RigidbodyInfo rigidbodyInfo = new RigidbodyInfo();
-        rigidbodyInfo.m_Max = GetComponent<MeshFilter>().mesh.bounds.max;
-        rigidbodyInfo.m_Min = GetComponent<MeshFilter>().mesh.bounds.min;
+        rigidbodyInfo.m_WorldToObject = transform.worldToLocalMatrix;
+        rigidbodyInfo.m_Min = GetComponent<SDFr.SDFBaker>().sdfData.bounds.min;
+        rigidbodyInfo.m_BoundSize = GetComponent<SDFr.SDFBaker>().sdfData.bounds.extents * 2;
         rigidbodyInfo.m_Pos = m_Rigidbody.position;
         rigidbodyInfo.m_Velocity = m_Rigidbody.velocity;
         rigidbodyInfo.m_AngularVelocity = m_Rigidbody.angularVelocity;
         m_RigidBodyID = m_RigidBodyDataManager.RegisterRigidBody(GetComponent<SDFr.SDFBaker>().sdfData.sdfTexture, rigidbodyInfo);
     }
 
+    private Vector3 Vector3Division(Vector3 a, Vector3 b)
+    {
+        return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
+    }
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Return))
@@ -45,8 +50,9 @@ public class Move : MonoBehaviour
         }
         
         RigidbodyInfo rigidbodyInfo = new RigidbodyInfo();
-        rigidbodyInfo.m_Max = transform.localToWorldMatrix * GetComponent<MeshFilter>().mesh.bounds.max;
-        rigidbodyInfo.m_Min = transform.localToWorldMatrix * GetComponent<MeshFilter>().mesh.bounds.min;
+        rigidbodyInfo.m_WorldToObject = transform.worldToLocalMatrix;
+        rigidbodyInfo.m_Min = Vector3Division(GetComponent<SDFr.SDFBaker>().sdfData.bounds.min, transform.localScale);
+        rigidbodyInfo.m_BoundSize = Vector3Division(GetComponent<SDFr.SDFBaker>().sdfData.bounds.extents * 2, transform.localScale);
         rigidbodyInfo.m_Pos = m_Rigidbody.position;
         rigidbodyInfo.m_Velocity = m_Rigidbody.velocity;
         rigidbodyInfo.m_AngularVelocity = m_Rigidbody.angularVelocity;
