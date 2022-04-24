@@ -17,17 +17,15 @@ uint ParticleOffsetArgumentIndex;
 uint OnlyTallCellParticleType;
 uint RegularCellParticleType;
 
+RWStructuredBuffer<float3> DEBUG;
+
 StructuredBuffer<int> ParticleIndrectArgment_R;
 
 StructuredBuffer<float3> ParticlePosition_R;
+
 StructuredBuffer<float3> ParticleVelocity_R;
-StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
-RWStructuredBuffer<uint> ParticleFilter_RW;
-StructuredBuffer<uint> HashGridCellParticleCount_R;
-RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
-StructuredBuffer<uint> HashGridCellParticleOffset_R;
-RWStructuredBuffer<uint> HashGridCellParticleOffset_RW;
+
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 
@@ -37,6 +35,14 @@ Texture2D<float3> TopCellVelocity_R;
 RWTexture2D<float3> TopCellVelocity_RW;
 Texture2D<float3> BottomCellVelocity_R;
 RWTexture2D<float3> BottomCellVelocity_RW;
+
+StructuredBuffer<uint> ParticleFilter_R;
+RWStructuredBuffer<uint> ParticleFilter_RW;
+
+StructuredBuffer<uint> HashGridCellParticleCount_R;
+RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
+StructuredBuffer<uint> HashGridCellParticleOffset_R;
+RWStructuredBuffer<uint> HashGridCellParticleOffset_RW;
 
 int2 OffsetVector2D[3 * 3] =
 {
@@ -160,14 +166,24 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     float3 CurrCenterCellPosition = float3(CurrGridXZIndex.x + 0.5f, CurrGridYIndex + 0.5f, CurrGridXZIndex.y + 0.5f) * CellLength;
     float WeightSum = 0.0f;
     float3 WeightValue = float3(0, 0, 0);
-    for (int c = 0; c < 3 * 3 * 3; c++)
+    for (int c = 0; c < 3 * 3 * 3 + 3 * 3; c++)
     {
-        uint2 AdjXZ = CurrGridXZIndex + OffsetVector3D[c].xz;
+        int2 AdjXZ = CurrGridXZIndex + OffsetVector3D[c].xz;
+        
+        if (any(AdjXZ < 0) || any(AdjXZ >= XZResolution))
+            continue;
+        
         float CenterTerrianHeight = TerrianHeight_R[AdjXZ];
         float CenterTallCellHeight = TallCellHeight_R[AdjXZ];
         
         float3 AdjPoint = CurrCenterCellPosition + OffsetVector3D[c] * CellLength;
-        float Weight = CubicKernel(length(AdjPoint - CurrCenterCellPosition) / CellLength);
+        float Weight = CubicKernel(length(AdjPoint - CurrPosition) / CellLength);
+        
+        if(c >= 3 * 3 * 3)
+        {
+            float2 AdjPointXZ = CurrCenterCellPosition.xz + OffsetVector2D[c] * CellLength;
+            AdjPoint = float3(AdjPointXZ.x, CurrPosition.y, AdjPointXZ.y);
+        }
         
         float3 Value = float3(0, 0, 0);
         if (AdjPoint.y >= CenterTerrianHeight + CenterTallCellHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength)
@@ -175,40 +191,30 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
             uint YIndex = (AdjPoint.y - 0.5f * CellLength - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
             Value = RegularCellVelocity_R[uint3(AdjXZ.x, YIndex, AdjXZ.y)];
         }
-        else if (AdjPoint.y >= CenterTerrianHeight + CenterTallCellHeight - CellLength && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight)
+        else if (AdjPoint.y >= CenterTerrianHeight + CenterTallCellHeight - CellLength && CenterTerrianHeight + CenterTallCellHeight)
         {
             Value = TopCellVelocity_R[AdjXZ];
+        }
+        else if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight - CellLength)
+        {
+            float3 TopValue = TopCellVelocity_R[AdjXZ];
+            float3 BottomValue = BottomCellVelocity_R[AdjXZ];
+            float RelativeHeight = (AdjPoint.y - CenterTerrianHeight) / (CenterTallCellHeight - CellLength);
+            Value = RelativeHeight * TopValue + (1.0f - RelativeHeight) * BottomValue;
         }
         else
         {
             Value = float3(0, 0, 0);
+            Weight = 0;
         }
         WeightValue += Value * Weight;
         WeightSum += Weight;
     }
     
-    for (c = 0; c < 3 * 3; c++)
-    {
-        uint2 AdjXZ = CurrGridXZIndex + OffsetVector2D[c];
-        float CenterTerrianHeight = TerrianHeight_R[AdjXZ];
-        float CenterTallCellHeight = TallCellHeight_R[AdjXZ];
-        
-        float3 AdjPoint = CurrPosition + float3(OffsetVector2D[c].x, 0, OffsetVector2D[c].y) * CellLength;
-        float Weight = CubicKernel(length(AdjPoint - CurrCenterCellPosition) / CellLength);
-        
-        float3 Value = float3(0, 0, 0);
-        if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight - CellLength)
-        {
-            float3 TopValue = TopCellVelocity_R[AdjXZ];
-            float3 BottomValue = BottomCellVelocity_R[AdjXZ];
-            float RelativeHeight = (AdjPoint.y - CenterTerrianHeight) / CenterTallCellHeight;
-            Value = RelativeHeight * TopValue + (1.0f - RelativeHeight) * BottomValue;
-        }
-        WeightValue += Value * Weight;
-        WeightSum += Weight;
-    }
-    
-    ParticleVelocity_RW[i] = WeightValue / WeightSum;
+    float3 FinalValue = float3(0, 0, 0);
+    if (WeightSum != 0)
+        FinalValue = WeightValue / WeightSum;
+    ParticleVelocity_RW[i] = FinalValue;
 }
 
 uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
@@ -265,7 +271,6 @@ uint doCLZHighToLow(uint4 vInput, uint vTargetBit)
     return Result;
 }
 
-RWStructuredBuffer<uint3> DEBUG;
 groupshared uint LocalParticleCount[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
 groupshared float LocalXSum[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
 groupshared float LocalXXSum[THREAD_COUNT_1D / MIN_WARP_COUNT][9];
@@ -338,7 +343,7 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     for (int c = 0; c < 9; c++)
     {
         int2 CurrOffset = OffsetVector2D[c];
-        uint2 AdjTallCell2DIndex = CurrGridXZIndex + CurrOffset;
+        int2 AdjTallCell2DIndex = CurrGridXZIndex + CurrOffset;
         
         if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
             continue;
@@ -349,7 +354,7 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
             continue;
         float XX = X * X;
         
-        float Weight = CubicKernel(length(RelativeXZ - ((float2) AdjTallCell2DIndex * CellLength + float2(0.5f, 0.5f) * CellLength)));
+        float Weight = CubicKernel(length(RelativeXZ - ((float2) AdjTallCell2DIndex * CellLength + float2(0.5f, 0.5f) * CellLength)) / CellLength);
         float3 Y = Weight * CurrVelocity;
         float3 XY = X * Y;
         
@@ -382,7 +387,7 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     {
         for (c = 0; c < 9; c++)
         {
-            uint2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
+            int2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
         
             if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
                 continue;
@@ -443,7 +448,7 @@ void scatterOnlyTallCellParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatc
     for (int c = 0; c < 9; c++)
     {
         int2 CurrOffset = OffsetVector2D[c];
-        uint2 AdjTallCell2DIndex = DispatchThreadID.xy + CurrOffset;
+        int2 AdjTallCell2DIndex = DispatchThreadID.xy + CurrOffset;
         
         if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
             continue;
@@ -480,7 +485,7 @@ void gatherOnlyTallCellParticleToGrid(uint3 DispatchThreadID : SV_DispatchThread
     for (int c = 0; c < 9; c++)
     {
         int2 CurrOffset = OffsetVector2D[c];
-        uint2 AdjTallCell2DIndex = DispatchThreadID.xy + CurrOffset;
+        int2 AdjTallCell2DIndex = DispatchThreadID.xy + CurrOffset;
         
         if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
             continue;
@@ -596,7 +601,7 @@ void scatterOtherParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint Group
         if (any(AdjContributePoint3DIndex < 0) || any(AdjContributePointXZIndex >= XZResolution) || AdjContributePointYIndex > ConstantCellNum)
             continue;
         
-        float Weight = CubicKernel(length(CurrPosition - AdjContributePoint));
+        float Weight = CubicKernel(length(CurrPosition - AdjContributePoint) / CellLength);
         float3 WeightVelocity = Weight * CurrVelocity;
         
         uint Offset = RegionLength;
@@ -679,7 +684,10 @@ void scatterOtherParticleToGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThread
         RegularCellWeightedVelocity_B_R[DispatchThreadID] / (float) ZIP
     );
     
-    RegularCellVelocity_RW[DispatchThreadID] = WeightedVelocity / Weight;
+    float3 FinalValue = float3(0, 0, 0);
+    if (Weight != 0)
+        FinalValue = WeightedVelocity / Weight;
+    RegularCellVelocity_RW[DispatchThreadID] = FinalValue;
 }
 
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
@@ -695,5 +703,8 @@ void scatterOtherParticleToGrid_Pass3(uint3 DispatchThreadID : SV_DispatchThread
         TopCellWeightedVelocity_B_R[DispatchThreadID.xy] / (float) ZIP
     );
     
-    TopCellVelocity_RW[DispatchThreadID.xy] += WeightedVelocity / Weight;
+    float3 FinalValue = float3(0, 0, 0);
+    if (Weight != 0)
+        FinalValue = WeightedVelocity / Weight;
+    TopCellVelocity_RW[DispatchThreadID.xy] += FinalValue;
 }

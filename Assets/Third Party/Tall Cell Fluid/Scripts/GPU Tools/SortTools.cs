@@ -8,7 +8,7 @@ public class ParticleSortTools
     {
         m_GPUBufferClear = new GPUBufferClear();
 
-        GPUCountingSortHashCS = Resources.Load<ComputeShader>("Shaders/GPUCountingSortHash");
+        GPUCountingSortHashCS = Resources.Load<ComputeShader>("Shaders/GPUCountingSortHashTools");
         InsertParticleIntoHashGridKernel = GPUCountingSortHashCS.FindKernel("insertParticleIntoHashGrid");
         CountingSortFullKernel = GPUCountingSortHashCS.FindKernel("countingSortFull");
     }

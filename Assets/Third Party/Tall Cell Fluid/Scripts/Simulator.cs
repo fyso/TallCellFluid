@@ -20,6 +20,7 @@ public class Simulator
         m_Grid = new Grid(vResolutionXZ, vRegularCellYCount, vCellLength);
         m_Grid.InitMesh(vTerrian, vSeaLevel);
 
+        m_Utils = new Utils();
         m_SimulatorGPUCache = new SimulatorGPUCache(vMaxParticleCount);
         m_ParticleSortTools = new ParticleSortTools();
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
@@ -59,6 +60,48 @@ public class Simulator
                 Gizmos.DrawWireCube(TerrianCellCenter, new Vector3(FineGrid.CellLength, CurrTerrianHeight, FineGrid.CellLength));
             }
         }
+    }
+
+    public void GenerateRandomVelicty()
+    {
+        GridPerLevel FineGrid = m_Grid.FineGrid;
+        Texture2D Top = new Texture2D(FineGrid.ResolutionXZ.x, FineGrid.ResolutionXZ.y, TextureFormat.RGBAFloat, false);
+        Texture2D Bottom = new Texture2D(FineGrid.ResolutionXZ.x, FineGrid.ResolutionXZ.y, TextureFormat.RGBAFloat, false);
+        if (Top.width != Bottom.width || Top.height != Bottom.height)
+            Debug.LogError("unmatched top and bottom data!");
+
+        System.Random Rand = new System.Random();
+        for(int x = 0; x < Top.width; x++)
+        {
+            for (int y = 0; y < Top.height; y++)
+            {
+                //Color TopVelocity = new Color((float)Rand.NextDouble(), (float)Rand.NextDouble(), (float)Rand.NextDouble(), 1.0f);
+
+                Color TopVelocity = new Color((float)x / Top.width, (float)x / Top.width, (float)x / Top.width, 1.0f);
+                Top.SetPixel(x, y, TopVelocity);
+                Color BottomVelocity = new Color(0, 0, 0, 1.0f);
+                Bottom.SetPixel(x, y, BottomVelocity);
+            }
+        }
+        Top.Apply();
+        Bottom.Apply();
+        m_Utils.CopyFloat4Texture2DToAnother(Top, FineGrid.Velocity.TallCellTopValue);
+        m_Utils.CopyFloat4Texture2DToAnother(Bottom, FineGrid.Velocity.TallCellBottomValue);
+
+        Texture3D Regular = new Texture3D(FineGrid.ResolutionXZ.x, FineGrid.RegularCellYCount, FineGrid.ResolutionXZ.y, TextureFormat.RGBAFloat, 0);
+        for (int x = 0; x < FineGrid.ResolutionXZ.x; x++)
+        {
+            for (int y = 0; y < FineGrid.RegularCellYCount; y++)
+            {
+                for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
+                {
+                    Color RegularVelocity = new Color((float)x / Top.width, (float)x / Top.width, (float)x / Top.width, 1.0f);
+                    Regular.SetPixel(x, y, z, RegularVelocity);
+                }
+            }
+        }
+        Regular.Apply();
+        m_Utils.CopyFloat4Texture3DToAnother(Regular, FineGrid.Velocity.RegularCellValue);
     }
 
     public void Step(float vTimeStep)
@@ -133,6 +176,7 @@ public class Simulator
     private DynamicParticle m_DynamicParticle;
     private ParticleInCellTools m_ParticleInCellTools;
     private ParticleSortTools m_ParticleSortTools;
+    private Utils m_Utils;
 
     private SimulatorGPUCache m_SimulatorGPUCache;
 }

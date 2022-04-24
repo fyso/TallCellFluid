@@ -22,6 +22,7 @@ public class SimulatorTest : MonoBehaviour
 
     void Update()
     {
+        m_Simulator.GenerateRandomVelicty();
         m_Simulator.Step(m_TimeStep);
     }
 

@@ -51,6 +51,9 @@ public class ParticleInCellTools
     {
         m_ParticleInCellToolsCS.SetInt("ParticleCountOffset", DynamicParticle.ParticleCountArgumentOffset);
 
+        //ComputeBuffer DEBUG = new ComputeBuffer(vParticle.MainParticle.Velocity.count, sizeof(float) * 3);
+        //m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "DEBUG", DEBUG);
+
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleIndrectArgment_R", vParticle.Argument);
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticlePosition_R", vParticle.MainParticle.Position);
         m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleVelocity_RW", vParticle.MainParticle.Velocity);
@@ -61,6 +64,10 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "BottomCellVelocity_R", vTargetLevel.Velocity.TallCellBottomValue);
         m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "RegularCellVelocity_R", vTargetLevel.Velocity.RegularCellValue);
         m_ParticleInCellToolsCS.DispatchIndirect(gatherGridToParticle, vParticle.Argument);
+
+        //Vector3[] DEBUGCPU = new Vector3[DEBUG.count];
+        //DEBUG.GetData(DEBUGCPU);
+        //DEBUG.Release();
     }
 
     public void GatherOnlyTallCellParticleToGrid(DynamicParticle vParticle, GridPerLevel vTargetLevel, SimulatorGPUCache vCache)

@@ -87,8 +87,9 @@ Shader "DPParticle/Particle"
 
 #if _VISUALDATATYPE_VELOCITY
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(length(Velocity), 0.0f, 20.0f) / 20.0f;
-                result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 1.0f) + _ParticleColor;
+                float ClampVel = clamp(length(Velocity), 0.0f, 1.0f);
+                result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
+                //result.col = float4(Velocity, 1.0f);
 #elif _VISUALDATATYPE_PARTICLETYPE
                 uint filter = _particleFilterBuffer[instanceID];
                 if(filter == 0)

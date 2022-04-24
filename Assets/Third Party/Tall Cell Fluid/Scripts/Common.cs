@@ -5,8 +5,8 @@ using UnityEngine;
 public static class Common
 {
     public static uint ThreadCount1D = 512;
-    public static uint ThreadCount2D = 32;
-    public static uint ThreadCount3D = 8;
+    public static uint ThreadCount2D = 16;
+    public static uint ThreadCount3D = 2;
     public static string DownsampleToolsCSPath = "Shaders/DownSampleTools";
     public static string RemeshToolsCSPath = "Shaders/RemeshTools";
     public static string ParticleInCellToolsCSPath = "Shaders/ParticleInCellTools";
