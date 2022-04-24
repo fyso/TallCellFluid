@@ -128,7 +128,6 @@ public class Simulator
     private Vector3 m_Max;
     private float m_CellLength;
 
-
     private Grid m_Grid;
     private DynamicParticle m_DynamicParticle;
     private ParticleInCellTools m_ParticleInCellTools;
