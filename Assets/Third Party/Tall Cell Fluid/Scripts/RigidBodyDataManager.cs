@@ -43,9 +43,10 @@ public class RigidBodyDataManager : MonoBehaviour
         vComputeShader.SetInt("RigidbodyNum", m_RigidBodySDF.Count);
         m_RigidbodyInfoComputeBuffer.SetData(m_RigidbodyInfo.ToArray());
         vComputeShader.SetBuffer(vKernelIndex, "RigidbodyInfos", m_RigidbodyInfoComputeBuffer);
-        for(int i = 0; i < Mathf.Min(m_RigidBodySDF.Count, Common.MaxRigidNum); i++) //TODO: No support for 3d texture arrays
+        for(int i = 0; i < Common.MaxRigidNum; i++) //TODO: No support for 3d texture arrays
         {
-            vComputeShader.SetTexture(vKernelIndex, "SDF" + i, m_RigidBodySDF[i]);
+            if(i < m_RigidBodySDF.Count) vComputeShader.SetTexture(vKernelIndex, "SDF" + i, m_RigidBodySDF[i]);
+            else vComputeShader.SetTexture(vKernelIndex, "SDF" + i, m_RigidBodySDF[0]);
         }
     }
 
