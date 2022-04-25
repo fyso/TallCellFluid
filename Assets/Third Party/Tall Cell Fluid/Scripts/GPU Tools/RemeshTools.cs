@@ -100,7 +100,7 @@ public class RemeshTools
         m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "SrcTallCellTopVelocity", vLastFrameVelocity.TallCellTopValue);
         m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "SrcTallCellBottomVelocity", vLastFrameVelocity.TallCellBottomValue);
         m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TallCellTopVelocity", vVelocity.TallCellTopValue);
-        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TallCellTopVelocity", vVelocity.TallCellBottomValue);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TallCellBottomVelocity", vVelocity.TallCellBottomValue);
         m_RemeshToolsCS.Dispatch(updateTallCellVelocity, m_GPUGroupCount.x, m_GPUGroupCount.y, 1);
     }
 

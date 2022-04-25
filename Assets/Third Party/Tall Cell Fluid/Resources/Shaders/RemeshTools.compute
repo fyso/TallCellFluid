@@ -217,7 +217,7 @@ void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
             uint3 RegularIndex = uint3(DispatchThreadID.x, k, DispatchThreadID.y);
 
             Sumx += LastFrameRegularCellHeight;
-            Sumx2 += LastFrameRegularCellHeight * RegularCellHeight;
+            Sumx2 += LastFrameRegularCellHeight * LastFrameRegularCellHeight;
             Sumy += SrcRegularCellVelocity[RegularIndex];
             Sumxy += LastFrameRegularCellHeight * SrcRegularCellVelocity[RegularIndex];
             m++;
@@ -235,7 +235,7 @@ void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
     }
     else
     {
-        RegularCellVelocity[DispatchThreadID] =
+        TallCellTopVelocity[DispatchThreadID.xy] =
             (LastFrameTallCellTopVelocity - LastFrameTallCellBottomVelocity)
             / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentHeight - LastFrameTallCellBottomHeight)
             + LastFrameTallCellBottomVelocity;
