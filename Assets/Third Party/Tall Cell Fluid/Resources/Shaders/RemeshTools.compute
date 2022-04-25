@@ -6,6 +6,8 @@
 #pragma kernel computeTallCellHeight
 #pragma kernel smoothTallCellHeight
 #pragma kernel enforceDCondition
+#pragma kernel updateRegularCellVelocity
+#pragma kernel updateTallCellVelocity
 #pragma kernel updateSolidInfos
 
 Texture2D<float> TerrianTexture_R;
@@ -146,6 +148,100 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
     float FinalResult = min(Center, Max + D * CellLength) - TerrianHeight;
     FinalResult = (ceil(FinalResult / CellLength) + 2) * CellLength;
     TallCellHeightCache_RW[DispatchThreadID.xy] = FinalResult;
+}
+
+Texture2D<float> TerrrianHeight;
+Texture2D<float> SrcTallCellHeight;
+Texture2D<float> TallCellHeight;
+
+Texture3D<float3> SrcRegularCellVelocity;
+Texture2D<float3> SrcTallCellTopVelocity;
+Texture2D<float3> SrcTallCellBottomVelocity;
+
+RWTexture3D<float3> RegularCellVelocity;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void updateRegularCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    float CurrentHeight = TallCellHeight[DispatchThreadID.xz] + (DispatchThreadID.y + 0.5f) * CellLength;
+    float LastFrameTallCellHeight = SrcTallCellHeight[DispatchThreadID.xz];
+    float DistanceToLastFrameHeight = CurrentHeight - LastFrameTallCellHeight;
+
+    if (DistanceToLastFrameHeight > 0)
+    {
+        uint3 LastFrameIndex = uint3(DispatchThreadID.x, DistanceToLastFrameHeight / CellLength, DispatchThreadID.z);
+        RegularCellVelocity[DispatchThreadID] = SrcRegularCellVelocity[LastFrameIndex];
+    }
+    else
+    {
+        float LastFrameTallCellTopHeight = LastFrameTallCellHeight - 0.5f * CellLength;
+        float LastFrameTallCellBottomHeight = TerrrianHeight[DispatchThreadID.xz] + 0.5f * CellLength;
+        
+        RegularCellVelocity[DispatchThreadID] =
+            (SrcTallCellTopVelocity[DispatchThreadID.xz] - SrcTallCellBottomVelocity[DispatchThreadID.xz])
+            / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentHeight - LastFrameTallCellBottomHeight)
+            + SrcTallCellBottomVelocity[DispatchThreadID.xz];
+    }
+}
+
+RWTexture2D<float3> TallCellTopVelocity;
+RWTexture2D<float3> TallCellBottomVelocity;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    float CurrentHeight = TallCellHeight[DispatchThreadID.xy] + 0.0001 * CellLength;
+    float LastFrameTallCellHeight = SrcTallCellHeight[DispatchThreadID.xy];
+    float TerrainHeight = TerrrianHeight[DispatchThreadID.xz];
+    
+    float LastFrameTallCellTopHeight = LastFrameTallCellHeight - 0.5f * CellLength;
+    float LastFrameTallCellBottomHeight = TerrainHeight + 0.5f * CellLength;
+    float LastFrameTallCellTopVelocity = SrcTallCellTopVelocity[DispatchThreadID.xz];
+    float LastFrameTallCellBottomVelocity = SrcTallCellBottomVelocity[DispatchThreadID.xz];
+    
+    if (CurrentHeight - LastFrameTallCellHeight > 0)
+    {
+        float Sumx = 0;
+        float Sumx2 = 0;
+        float3 Sumy = 0;
+        float3 Sumxy = 0;
+        uint m = 2;
+        
+        Sumx += LastFrameTallCellTopHeight + LastFrameTallCellBottomHeight;
+        Sumx2 += LastFrameTallCellTopHeight * LastFrameTallCellTopHeight + LastFrameTallCellBottomHeight * LastFrameTallCellBottomHeight;
+        Sumy += LastFrameTallCellTopVelocity + LastFrameTallCellBottomVelocity;
+        Sumxy += LastFrameTallCellTopHeight * LastFrameTallCellTopVelocity + LastFrameTallCellBottomHeight * LastFrameTallCellBottomVelocity;
+        
+        float RegularCellYCount = (CurrentHeight - LastFrameTallCellHeight) / CellLength;
+        for (uint k = 0; k < RegularCellYCount; k++)
+        {
+            float LastFrameRegularCellHeight = LastFrameTallCellTopHeight + (k + 1) * CellLength;
+            uint3 RegularIndex = uint3(DispatchThreadID.x, k, DispatchThreadID.y);
+
+            Sumx += LastFrameRegularCellHeight;
+            Sumx2 += LastFrameRegularCellHeight * RegularCellHeight;
+            Sumy += SrcRegularCellVelocity[RegularIndex];
+            Sumxy += LastFrameRegularCellHeight * SrcRegularCellVelocity[RegularIndex];
+            m++;
+        }
+        
+        float3 theta0 = Sumx2 * Sumy - Sumx * Sumxy;
+        float3 theta1 = m * Sumxy - Sumx * Sumy;
+        float theta2 = m * Sumx2 - Sumx * Sumx;
+    
+        float CurrentTopHeight = CurrentHeight - 0.5f * CellLength;
+        float CurrentBottomHeight = TerrrianHeight[DispatchThreadID.xy] + 0.5f * CellLength;
+
+        TallCellTopVelocity[DispatchThreadID.xy] = (theta0 * CurrentTopHeight + theta1) / theta2;
+        TallCellBottomVelocity[DispatchThreadID.xy] = (theta0 * CurrentBottomHeight + theta1) / theta2;
+    }
+    else
+    {
+        RegularCellVelocity[DispatchThreadID] =
+            (LastFrameTallCellTopVelocity - LastFrameTallCellBottomVelocity)
+            / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentHeight - LastFrameTallCellBottomHeight)
+            + LastFrameTallCellBottomVelocity;
+        
+        TallCellBottomVelocity[DispatchThreadID.xy] = SrcTallCellBottomVelocity[DispatchThreadID.xy];
+    }
 }
 
 int RigidbodyNum;

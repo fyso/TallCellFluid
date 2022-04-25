@@ -12,6 +12,8 @@ public class RemeshTools
         computeTallCellHeight = m_RemeshToolsCS.FindKernel("computeTallCellHeight");
         smoothTallCellHeight = m_RemeshToolsCS.FindKernel("smoothTallCellHeight");
         enforceDCondition = m_RemeshToolsCS.FindKernel("enforceDCondition");
+        updateRegularCellVelocity = m_RemeshToolsCS.FindKernel("updateRegularCellVelocity");
+        updateTallCellVelocity = m_RemeshToolsCS.FindKernel("updateTallCellVelocity");
         updateSolidInfos = m_RemeshToolsCS.FindKernel("updateSolidInfos");
 
         UpdateGlobalParma(vResolutionXZ, vCellLength, vRegularCellYCount);
@@ -80,6 +82,28 @@ public class RemeshTools
         m_RemeshToolsCS.Dispatch(enforceDCondition, m_GPUGroupCount.x, m_GPUGroupCount.y, 1);
     }
 
+    public void UpdateFineGridVelocity(RenderTexture vTerrrianHeight, RenderTexture vLastFrameTallcellHeight, GridValuePerLevel vLastFrameVelocity, RenderTexture vTallcellHeight, GridValuePerLevel vVelocity)
+    {
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "TerrrianHeight", vTerrrianHeight);
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "SrcTallCellHeight", vLastFrameTallcellHeight);
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "TallCellHeight", vTallcellHeight);
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "SrcRegularCellVelocity", vLastFrameVelocity.RegularCellValue);
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "SrcTallCellTopVelocity", vLastFrameVelocity.TallCellTopValue);
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "SrcTallCellBottomVelocity", vLastFrameVelocity.TallCellBottomValue);
+        m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "RegularCellVelocity", vVelocity.RegularCellValue);
+        m_RemeshToolsCS.Dispatch(updateRegularCellVelocity, m_GPUGroupCountForRegularCell.x, m_GPUGroupCountForRegularCell.y, m_GPUGroupCountForRegularCell.z);
+
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TerrrianHeight", vTerrrianHeight);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "SrcTallCellHeight", vLastFrameTallcellHeight);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TallCellHeight", vTallcellHeight);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "SrcRegularCellVelocity", vLastFrameVelocity.RegularCellValue);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "SrcTallCellTopVelocity", vLastFrameVelocity.TallCellTopValue);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "SrcTallCellBottomVelocity", vLastFrameVelocity.TallCellBottomValue);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TallCellTopVelocity", vVelocity.TallCellTopValue);
+        m_RemeshToolsCS.SetTexture(updateTallCellVelocity, "TallCellTopVelocity", vVelocity.TallCellBottomValue);
+        m_RemeshToolsCS.Dispatch(updateTallCellVelocity, m_GPUGroupCount.x, m_GPUGroupCount.y, 1);
+    }
+
     public void UpdateSolidInfos(RenderTexture vTerrianHeight, RenderTexture vRigidBodyPercentage, RenderTexture vRigidBodyVelocity)
     {
         GameObject.FindGameObjectsWithTag("Simulator")[0].GetComponent<RigidBodyDataManager>().UploadRigidBodyDataToGPU(m_RemeshToolsCS, updateSolidInfos);
@@ -99,4 +123,6 @@ public class RemeshTools
     private int smoothTallCellHeight;
     private int enforceDCondition;
     private int updateSolidInfos;
+    private int updateRegularCellVelocity;
+    private int updateTallCellVelocity;
 }
