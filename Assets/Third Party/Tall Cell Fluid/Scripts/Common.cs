@@ -10,6 +10,7 @@ public static class Common
     public static string DownsampleToolsCSPath = "Shaders/DownSampleTools";
     public static string RemeshToolsCSPath = "Shaders/RemeshTools";
     public static string ParticleInCellToolsCSPath = "Shaders/ParticleInCellTools";
+    public static int MaxRigidNum = 4;
 
     public static Texture2D CopyRenderTextureToCPU(RenderTexture vTarget)
     {

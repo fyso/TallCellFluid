@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GridGPUCache
@@ -126,6 +124,14 @@ public class GridGPUCache
             filterMode = FilterMode.Trilinear,
             wrapMode = TextureWrapMode.Clamp
         };
+
+        LastFrameTallCellHeightCache = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RFloat)
+        {
+            enableRandomWrite = true,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+        LastFrameVelocityCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
     }
 
     ~GridGPUCache()
@@ -148,6 +154,8 @@ public class GridGPUCache
         RegularCellVectorXCache.Release();
         RegularCellVelocityYCache.Release();
         RegularCellVelocityZCache.Release();
+
+        LastFrameTallCellHeightCache.Release();
     }
 
     //Temp cache
@@ -169,4 +177,7 @@ public class GridGPUCache
     public RenderTexture RegularCellVectorXCache;
     public RenderTexture RegularCellVelocityYCache;
     public RenderTexture RegularCellVelocityZCache;
+
+    public RenderTexture LastFrameTallCellHeightCache;
+    public GridValuePerLevel LastFrameVelocityCache;
 }

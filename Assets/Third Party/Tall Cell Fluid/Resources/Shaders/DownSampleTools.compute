@@ -1,7 +1,8 @@
 #pragma kernel reduction
 #pragma kernel downSampleRegularCell
-#pragma kernel downSampleTallCell
+//#pragma kernel downSampleTallCell
 #pragma multi_compile _REDUCTION_MIN _REDUCTION_MAX
+#pragma enable_d3d11_debug_symbols
 
 groupshared float gs_Result[64];
 uint NumMipLevels;
@@ -63,12 +64,12 @@ void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_Disp
 #include "Common.hlsl"
 Texture2D<float> NextLevelTallCell;
 Texture2D<float> TallCell;
-Texture3D<float3> SrcRegularCell;
-Texture3D<int> SrcRegularMark; //TODO: Provisional: water is 1, air is 0
+Texture3D<float> SrcRegularCellRigidBodyPercentage;
+Texture3D<int> SrcRegularMark; //TODO: Provisional: water is 0, air is 1
 float SrcRegularCellLength;
 int SaveMoreAir;
 uint3 OutResolution;
-RWTexture3D<float3> OutRegularCell;
+RWTexture3D<float> OutRegularCellRigidBodyPercentage;
 RWTexture3D<int> OutRegularMark;
 [numthreads(4, 4, 4)]
 void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
@@ -76,8 +77,8 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     if (any(DispatchThreadID.xyz > OutResolution))
         return;
     
-    float NextLevelHeight = NextLevelTallCell[DispatchThreadID.xy] + 0.5 * SrcRegularCellLength;
-    uint2 TallCallIndex = DispatchThreadID.xy << 1;
+    float NextLevelHeight = NextLevelTallCell[DispatchThreadID.xz] + 0.5 * SrcRegularCellLength;
+    uint2 TallCallIndex = DispatchThreadID.xz << 1;
     uint3 Index[8] = { uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0) };
     Index[0] = uint3(TallCallIndex.x, 0, TallCallIndex.y);
     Index[1] = uint3(TallCallIndex.x + 1, 0, TallCallIndex.y);
@@ -85,82 +86,89 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     Index[3] = uint3(TallCallIndex.x + 1, 0, TallCallIndex.y + 1);
     for (uint i = 0; i < 4; i++)
     {
-        Index[i].y = (NextLevelHeight - TallCell[Index[i].xz]) / SrcRegularCellLength + (DispatchThreadID.z << 1);
+        Index[i].y = (NextLevelHeight - TallCell[Index[i].xz]) / SrcRegularCellLength + (DispatchThreadID.y << 1);
+        Index[i + 4] = Index[i];
         Index[i + 4].y += 1;
     }
     
-    float3 Result = 0;
+    float3 VelocityResult = 0;
+    float RigidBodyPercentageResult = 0;
     int CellNumWithFluid = 0;
+    int CellNum = 0;
     for (uint k = 0; k < 8; k++)
     {
-        if (SrcRegularMark[Index[k]] == 1)
+        if (Index[k].y < OutResolution.y * 2)
         {
-            Result += SrcRegularCell[Index[k]];
-            CellNumWithFluid++;
-        }
-    }
-    OutRegularCell[DispatchThreadID] = Result / 8;
-    
-    OutRegularMark[DispatchThreadID] = SaveMoreAir ? CellNumWithFluid == 8 : CellNumWithFluid != 0;
-}
-
-Texture2D<float3> SrcTallCellTop;
-Texture2D<float3> SrcTallCellBottom;
-Texture2D<float> Terrain;
-Texture2D<float> NextLevelTerrain;
-RWTexture2D<float3> OutTallCellTop;
-RWTexture2D<float3> OutTallCellBottom;
-[numthreads(8, 8, 1)]
-void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
-{
-    if (any(DispatchThreadID.xyz > OutResolution))
-        return;
-    
-    float Sumx = 0;
-    float Sumx2 = 0;
-    float3 Sumy = 0;
-    float3 Sumxy = 0;
-    uint m = 8;
-    
-    uint2 TallCallIndex = DispatchThreadID.xy << 1;
-    uint2 offset[4] = { uint2(0, 0), uint2(1, 0), uint2(0, 1), uint2(1, 1) };    
-    float NextLevelHeight = NextLevelTallCell[DispatchThreadID.xy] + 0.5 * SrcRegularCellLength;
-    for (uint i = 0; i < 4; i++)
-    {
-        uint2 Index = TallCallIndex + offset[i];
-        float TallCellHeight = TallCell[Index];
-        float TopHeight = TallCellHeight - 0.5 * SrcRegularCellLength;
-        float BottomHeight = Terrain[Index] + 0.5 * SrcRegularCellLength;
-        
-        Sumx += TopHeight + BottomHeight;
-        Sumx2 += TopHeight * TopHeight + BottomHeight * BottomHeight;
-        Sumy += SrcTallCellTop[Index] + SrcTallCellBottom[Index];
-        Sumxy += TopHeight * SrcTallCellTop[Index] + BottomHeight * SrcTallCellBottom[Index];
-        
-        float RegularCellYCount = (NextLevelHeight - TallCellHeight) / SrcRegularCellLength;
-        for (uint k = 0; k < RegularCellYCount; k++)
-        {
-            float RegularCellHeight = TopHeight + (k + 1) * SrcRegularCellLength;
-            uint3 RegularIndex = uint3(Index.x, k, Index.y);
-            if (SrcRegularMark[RegularIndex] == 1)
+            if (SrcRegularMark[Index[k]] == 0)
             {
-                Sumy += SrcRegularCell[RegularIndex];
-                Sumxy += RegularCellHeight * SrcRegularCell[RegularIndex];
+                RigidBodyPercentageResult += SrcRegularCellRigidBodyPercentage[Index[k]];
+                CellNumWithFluid++;
             }
-            
-            Sumx += RegularCellHeight;
-            Sumx2 += RegularCellHeight * RegularCellHeight;
-            m++;
+            CellNum++;
         }
     }
-    
-    float3 theta0 = Sumx2 * Sumy - Sumx * Sumxy;
-    float3 theta1 = m * Sumxy - Sumx * Sumy;
-    float theta2 = m * Sumx2 - Sumx * Sumx;
-    
-    float NextLevelTopHeight = NextLevelTallCell[DispatchThreadID.xy] - SrcRegularCellLength;
-    float NextLevelBottomHeight = NextLevelTerrain[DispatchThreadID.xy] + SrcRegularCellLength;
-
-    OutTallCellTop[DispatchThreadID.xy] = (theta0 * NextLevelTopHeight + theta1) / theta2;
-    OutTallCellBottom[DispatchThreadID.xy] = (theta0 * NextLevelBottomHeight + theta1) / theta2;
+    OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidBodyPercentageResult / CellNum;
+    OutRegularMark[DispatchThreadID] = SaveMoreAir ? CellNumWithFluid != CellNum : CellNumWithFluid == 0;
 }
+
+//TODO: Only used for RigidBody Percentage
+//Texture2D<float3> SrcTallCellTop;
+//Texture2D<float3> SrcTallCellBottom;
+//Texture2D<float> Terrain;
+//Texture2D<float> NextLevelTerrain;
+//RWTexture2D<float3> OutTallCellTop;
+//RWTexture2D<float3> OutTallCellBottom;
+//[numthreads(8, 8, 1)]
+//void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
+//{
+//    if (any(DispatchThreadID.xyz > OutResolution))
+//        return;
+    
+//    float Sumx = 0;
+//    float Sumx2 = 0;
+//    float3 Sumy = 0;
+//    float3 Sumxy = 0;
+//    uint m = 8;
+    
+//    uint2 TallCallIndex = DispatchThreadID.xy << 1;
+//    uint2 offset[4] = { uint2(0, 0), uint2(1, 0), uint2(0, 1), uint2(1, 1) };    
+//    float NextLevelHeight = NextLevelTallCell[DispatchThreadID.xy] + 0.5 * SrcRegularCellLength;
+//    for (uint i = 0; i < 4; i++)
+//    {
+//        uint2 Index = TallCallIndex + offset[i];
+//        float TallCellHeight = TallCell[Index];
+//        float TopHeight = TallCellHeight - 0.5 * SrcRegularCellLength;
+//        float BottomHeight = Terrain[Index] + 0.5 * SrcRegularCellLength;
+        
+//        Sumx += TopHeight + BottomHeight;
+//        Sumx2 += TopHeight * TopHeight + BottomHeight * BottomHeight;
+//        Sumy += SrcTallCellTop[Index] + SrcTallCellBottom[Index];
+//        Sumxy += TopHeight * SrcTallCellTop[Index] + BottomHeight * SrcTallCellBottom[Index];
+        
+//        float RegularCellYCount = (NextLevelHeight - TallCellHeight) / SrcRegularCellLength;
+//        for (uint k = 0; k < RegularCellYCount; k++)
+//        {
+//            float RegularCellHeight = TopHeight + (k + 1) * SrcRegularCellLength;
+//            uint3 RegularIndex = uint3(Index.x, k, Index.y);
+//            if (SrcRegularMark[RegularIndex] == 1)
+//            {
+//                Sumy += SrcRegularCellVelocity[RegularIndex];
+//                Sumxy += RegularCellHeight * SrcRegularCellVelocity[RegularIndex];
+//            }
+            
+//            Sumx += RegularCellHeight;
+//            Sumx2 += RegularCellHeight * RegularCellHeight;
+//            m++;
+//        }
+//    }
+    
+//    float3 theta0 = Sumx2 * Sumy - Sumx * Sumxy;
+//    float3 theta1 = m * Sumxy - Sumx * Sumy;
+//    float theta2 = m * Sumx2 - Sumx * Sumx;
+    
+//    float NextLevelTopHeight = NextLevelTallCell[DispatchThreadID.xy] - SrcRegularCellLength;
+//    float NextLevelBottomHeight = NextLevelTerrain[DispatchThreadID.xy] + SrcRegularCellLength;
+
+//    OutTallCellTop[DispatchThreadID.xy] = (theta0 * NextLevelTopHeight + theta1) / theta2;
+//    OutTallCellBottom[DispatchThreadID.xy] = (theta0 * NextLevelBottomHeight + theta1) / theta2;
+//}
