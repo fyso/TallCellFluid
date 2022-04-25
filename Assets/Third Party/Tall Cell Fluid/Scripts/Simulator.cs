@@ -77,7 +77,7 @@ public class Simulator
             {
                 Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
-                Color BottomVelocity = new Color(0.5f, 0, 0, 1.0f);
+                Color BottomVelocity = new Color(0.0f, 0, 0, 1.0f);
                 Bottom.SetPixel(x, y, BottomVelocity);
             }
         }
@@ -141,22 +141,21 @@ public class Simulator
 
         //TODO: advect particle
 
-        Profiler.BeginSample("ZSortOnlyTallCellparticle");
-        m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        Profiler.EndSample();
+        //Profiler.BeginSample("ZSortOnlyTallCellparticle");
+        //m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
+        //Profiler.EndSample();
 
-        Profiler.BeginSample("OnlyTallCellParticleToGrid");
+        //Profiler.BeginSample("OnlyTallCellParticleToGrid");
         //m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
-        //m_ParticleInCellTools.GatherOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
-        Profiler.EndSample();
+        //Profiler.EndSample();
 
-        Profiler.BeginSample("ZSortOtherParticle");
-        m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
-        Profiler.EndSample();
+        //Profiler.BeginSample("ZSortOtherParticle");
+        //m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        //Profiler.EndSample();
 
-        Profiler.BeginSample("SortRegularCellParticle");
-        m_ParticleInCellTools.ScatterOtherParticleToGrid(m_DynamicParticle, m_Grid);
-        Profiler.EndSample();
+        //Profiler.BeginSample("SortRegularCellParticle");
+        //m_ParticleInCellTools.ScatterRegularParticleToGrid(m_DynamicParticle, m_Grid);
+        //Profiler.EndSample();
 
         //TODO: update mark for fine level
     }

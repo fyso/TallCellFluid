@@ -26,12 +26,11 @@ public class SimulatorTest : MonoBehaviour
             m_SeaLevel, 
             m_MaxParticleCount
         );
-
-        m_Simulator.GenerateRandomVelicty();
     }
 
     void Update()
     {
+        m_Simulator.GenerateRandomVelicty();
         m_Simulator.Step(m_TimeStep);
     }
 
