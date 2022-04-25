@@ -175,7 +175,6 @@ public class Grid
     {
         UnityEngine.Profiling.Profiler.BeginSample("update fine grid velocity");
         m_RemeshTools.UpdateFineGridVelocity(
-            FineGrid.TerrrianHeight,
             m_GPUCache.LastFrameTallCellHeightCache,
             m_GPUCache.LastFrameVelocityCache,
             FineGrid.TallCellHeight,
@@ -183,8 +182,7 @@ public class Grid
         UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("update rigidbody");
-        //TODO: tall cell has not been considered
-        m_RemeshTools.UpdateSolidInfos(FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage.RegularCellValue, FineGrid.RigidBodyVelocity.RegularCellValue);
+        m_RemeshTools.UpdateSolidInfos(FineGrid.TerrrianHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
         UnityEngine.Profiling.Profiler.EndSample();
 
         //TODO: update water mark

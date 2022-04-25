@@ -61,6 +61,7 @@ void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_Disp
     }
 }
 
+//TODO: Terrain!
 #include "Common.hlsl"
 Texture2D<float> NextLevelTallCell;
 Texture2D<float> TallCell;
