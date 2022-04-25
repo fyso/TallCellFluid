@@ -17,11 +17,20 @@ public class SimulatorTest : MonoBehaviour
 
     void Start()
     {
-        m_Simulator = new Simulator(m_Terrian, m_ResolutionXZ, m_RegularCellYCount, m_Min, m_Celllength, m_SeaLevel, m_MaxParticleCount);
+        m_Simulator = new Simulator(
+            m_Terrian, 
+            m_ResolutionXZ, 
+            m_RegularCellYCount, 
+            m_Min, 
+            m_Celllength, 
+            m_SeaLevel, 
+            m_MaxParticleCount
+        );
     }
 
     void Update()
     {
+        m_Simulator.GenerateRandomVelicty();
         m_Simulator.Step(m_TimeStep);
     }
 

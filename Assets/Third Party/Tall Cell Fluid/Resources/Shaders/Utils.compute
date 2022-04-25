@@ -1,0 +1,19 @@
+#include "Common.hlsl"
+#pragma kernel copyFloat4Texture2DToAnother
+#pragma kernel copyFloat4Texture3DToAnother
+
+Texture2D<float4> Source;
+RWTexture2D<float4> Destination;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void copyFloat4Texture2DToAnother (uint3 id : SV_DispatchThreadID)
+{
+    Destination[id.xy] = Source[id.xy];
+}
+
+Texture3D<float4> Source3D_R;
+RWTexture3D<float4> Destination3D_RW;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void copyFloat4Texture3DToAnother(uint3 id : SV_DispatchThreadID)
+{
+    Destination3D_RW[id] = Source3D_R[id];
+}
