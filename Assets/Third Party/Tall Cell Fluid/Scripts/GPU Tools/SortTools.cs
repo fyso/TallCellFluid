@@ -80,7 +80,7 @@ public class ParticleSortTools
         GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleCellIndex_RW", vCache.CellIndexCache);
         GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleInnerSortIndex_RW", vCache.InnerSortIndexCache);
         GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", vCache.HashCount);
-        GPUCountingSortHashCS.SetTexture(InsertParticleIntoHashGridKernel, "TerrianHeight_R", vGrid.FineGrid.TerrrianHeight);
+        GPUCountingSortHashCS.SetTexture(InsertParticleIntoHashGridKernel, "TerrianHeight_R", vGrid.FineGrid.TerrainHeight);
         GPUCountingSortHashCS.SetTexture(InsertParticleIntoHashGridKernel, "TallCellHeight_R", vGrid.FineGrid.TallCellHeight);
         GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, voTarget.Argument, (uint)(DynamicParticle.DifferParticleXGridCountArgumentOffset + Simulator.OnlyTallCellParticleTypeIndex * 3) * 4);
 

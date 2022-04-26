@@ -33,7 +33,7 @@ public class Simulator
     public void DebugGridShape()
     {
         GridPerLevel FineGrid = m_Grid.FineGrid;
-        Texture2D TerrianHeight = Common.CopyRenderTextureToCPU(FineGrid.TerrrianHeight);
+        Texture2D TerrianHeight = Common.CopyRenderTextureToCPU(FineGrid.TerrainHeight);
         Texture2D TallCellHeight = Common.CopyRenderTextureToCPU(FineGrid.TallCellHeight);
 
         for (int i = 0; i < FineGrid.ResolutionXZ.x; i++)

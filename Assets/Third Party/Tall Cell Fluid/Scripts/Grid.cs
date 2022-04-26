@@ -46,7 +46,7 @@ public class GridValuePerLevel
 
 public class GridPerLevel
 {
-    public RenderTexture TerrrianHeight { get { return m_TerrrianHeight; } }
+    public RenderTexture TerrainHeight { get { return m_TerrrianHeight; } }
     public RenderTexture TallCellHeight {  get { return m_TallCellHeight; } set {  m_TallCellHeight = value; } }
     public RenderTexture RegularCellMark { get { return m_RegularCellMark; } }
     public GridValuePerLevel Velocity { get { return m_Velocity; } set { m_Velocity = value; } }
@@ -145,15 +145,16 @@ public class Grid
 
     public void InitMesh(Texture vTerrian, float vSeaLevel)
     {
-        m_RemeshTools.ComputeTerrianHeight(vTerrian, FineGrid.TerrrianHeight, 20.0f);
+        m_RemeshTools.ComputeTerrianHeight(vTerrian, FineGrid.TerrainHeight, 20.0f);
+        __DownSampleTerrainHeight();
 
         UnityEngine.Profiling.Profiler.BeginSample("init fine level tallcell grid");
-        m_RemeshTools.ComputeH1H2WithSeaLevel(FineGrid.TerrrianHeight, m_GPUCache.H1H2Cahce, vSeaLevel);
+        m_RemeshTools.ComputeH1H2WithSeaLevel(FineGrid.TerrainHeight, m_GPUCache.H1H2Cahce, vSeaLevel);
         __ComputeTallCellHeightFromH1H2();
         UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("down sample height");
-        __DownSampleHeight();
+        __DownSampleTallCellHeight();
         UnityEngine.Profiling.Profiler.EndSample();
     }
 
@@ -167,7 +168,7 @@ public class Grid
         UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("down sample height");
-        __DownSampleHeight();
+        __DownSampleTallCellHeight();
         UnityEngine.Profiling.Profiler.EndSample();
     }
 
@@ -182,7 +183,7 @@ public class Grid
         UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("update rigidbody");
-        m_RemeshTools.UpdateSolidInfos(FineGrid.TerrrianHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
+        m_RemeshTools.UpdateSolidInfos(FineGrid.TerrainHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
         UnityEngine.Profiling.Profiler.EndSample();
 
         //TODO: update water mark
@@ -208,22 +209,10 @@ public class Grid
         //m_DownSampleTallCellKernelIndex = m_DownsampleCS.FindKernel("downSampleTallCell");
     }
 
-    private void __DownSampleHeight(int vSrcLevel, int LeftLevel)
+    private void __DownSampleTallCellHeight(int vSrcLevel, int LeftLevel)
     {
-        //Terrain
-        m_DownsampleCS.SetTexture(downSampleTerrainHeight, "SrcTex", m_GridData[vSrcLevel].TerrrianHeight);
-        m_DownsampleCS.SetInts("SrcResolution", m_GridData[vSrcLevel].ResolutionXZ.x, m_GridData[vSrcLevel].ResolutionXZ.y);
-        m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
-        for (int i = 1; i <= 4; i++)
-        {
-            if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTerrainHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TerrrianHeight);
-        }
-        m_DownsampleCS.Dispatch(downSampleTerrainHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
-
-        //TallCell
         m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTex", m_GridData[vSrcLevel].TallCellHeight);
-        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTerrain", m_GridData[vSrcLevel].TerrrianHeight);
-        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "NextLevelTerrain", m_GridData[vSrcLevel + 1].TerrrianHeight);
+        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTerrain", m_GridData[vSrcLevel].TerrainHeight);
         for (int i = 1; i <= 4; i++)
         {
             if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
@@ -231,11 +220,31 @@ public class Grid
         m_DownsampleCS.Dispatch(downSampleTallCellHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
     }
 
-    private void __DownSampleHeight()
+    private void __DownSampleTallCellHeight()
     {
         for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
         {
-            __DownSampleHeight(i, m_HierarchicalLevel - i - 1);
+            __DownSampleTallCellHeight(i, m_HierarchicalLevel - i - 1);
+        }
+    }
+
+    private void __DownSampleTerrainHeight(int vSrcLevel, int LeftLevel)
+    {
+        m_DownsampleCS.SetTexture(downSampleTerrainHeight, "SrcTex", m_GridData[vSrcLevel].TerrainHeight);
+        m_DownsampleCS.SetInts("SrcResolution", m_GridData[vSrcLevel].ResolutionXZ.x, m_GridData[vSrcLevel].ResolutionXZ.y);
+        m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
+        for (int i = 1; i <= 4; i++)
+        {
+            if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTerrainHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TerrainHeight);
+        }
+        m_DownsampleCS.Dispatch(downSampleTerrainHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
+    }
+    
+    private void __DownSampleTerrainHeight()
+    {
+        for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
+        {
+            __DownSampleTerrainHeight(i, m_HierarchicalLevel - i - 1);
         }
     }
 
@@ -246,8 +255,10 @@ public class Grid
         {
             if (i < 4) m_DownsampleCS.SetInt("SaveMoreAir", 1);
             else m_DownsampleCS.SetInt("SaveMoreAir", 0);
-            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCell", m_GridData[i + 1].TallCellHeight);
-            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "TallCell", m_GridData[i].TallCellHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTerrainHeight", m_GridData[i + 1].TerrainHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCellHeight", m_GridData[i + 1].TallCellHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "TerrainHeight", m_GridData[i].TerrainHeight);
+            m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "TallCellHeight", m_GridData[i].TallCellHeight);
             m_DownsampleCS.SetFloat("SrcRegularCellLength", m_GridData[i].CellLength);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "SrcRegularMark", m_GridData[i].RegularCellMark);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "SrcRegularCellRigidBodyPercentage", m_GridData[i].RigidBodyPercentage.RegularCellValue);
@@ -285,11 +296,11 @@ public class Grid
 
     private void __ComputeTallCellHeightFromH1H2()
     {
-        m_RemeshTools.ComputeTallCellHeight(FineGrid.TerrrianHeight, m_GPUCache.H1H2Cahce, m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight);
+        m_RemeshTools.ComputeTallCellHeight(FineGrid.TerrainHeight, m_GPUCache.H1H2Cahce, m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
-        m_RemeshTools.EnforceDCondition(FineGrid.TerrrianHeight, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight);
+        m_RemeshTools.EnforceDCondition(FineGrid.TerrainHeight, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight);
     }
 
     private void __SwapFineGridVelocityWithCache()

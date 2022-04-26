@@ -60,69 +60,66 @@ void downSampleTerrainHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThre
     }
 }
 
+groupshared float gs_Terrain[64];
 Texture2D<float> SrcTerrain;
-Texture2D<float> NextLevelTerrain;
-float sampleHeight(uint2 index)
-{
-    return SrcTex[index] + SrcTerrain[index];
-}
 [numthreads(8, 8, 1)]
 void downSampleTallCellHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
 {
+    float Terrain1, Terrain2, Terrain3, Terrain4;
+    Terrain1 = SrcTerrain[DispatchThreadID.xy * 2];
+    Terrain2 = SrcTerrain[DispatchThreadID.xy * 2 + uint2(1, 0)];
+    Terrain3 = SrcTerrain[DispatchThreadID.xy * 2 + uint2(0, 1)];
+    Terrain4 = SrcTerrain[DispatchThreadID.xy * 2 + uint2(1, 1)];
     float Src1 = max4To1(
-       sampleHeight(DispatchThreadID.xy * 2),
-       sampleHeight(DispatchThreadID.xy * 2 + uint2(1, 0)),
-       sampleHeight(DispatchThreadID.xy * 2 + uint2(0, 1)),
-       sampleHeight(DispatchThreadID.xy * 2 + uint2(1, 1)));
-    OutMip1[DispatchThreadID.xy] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+        SrcTex[DispatchThreadID.xy * 2] + Terrain1,
+        SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)] + Terrain2,
+        SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)] + Terrain3,
+        SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)] + Terrain4);
+    float NextLevelTerrain = min4To1(Terrain1, Terrain2, Terrain3, Terrain4);
+    OutMip1[DispatchThreadID.xy] = Src1 - NextLevelTerrain;
     if (NumMipLevels == 1)
         return;
     gs_Result[GroupIndex] = Src1;
+    gs_Terrain[GroupIndex] = NextLevelTerrain;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x9) == 0)
     {
-        Src1 = max4To1(
-            Src1,
-            sampleHeight(GroupIndex + 0x01),
-            sampleHeight(GroupIndex + 0x08),
-            sampleHeight(GroupIndex + 0x09));
-        OutMip2[DispatchThreadID.xy >> 1] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
+        NextLevelTerrain = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);        
+        OutMip2[DispatchThreadID.xy >> 1] = Src1 - NextLevelTerrain;
     }
     if (NumMipLevels == 2)
         return;
     gs_Result[GroupIndex] = Src1;
+    gs_Terrain[GroupIndex] = NextLevelTerrain;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x1B) == 0)
     {
-        Src1 = max4To1(
-            Src1,
-            sampleHeight(GroupIndex + 0x02),
-            sampleHeight(GroupIndex + 0x10),
-            sampleHeight(GroupIndex + 0x12));
-        OutMip3[DispatchThreadID.xy >> 2] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+        Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        NextLevelTerrain = min4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        OutMip3[DispatchThreadID.xy >> 2] = Src1 - NextLevelTerrain;
     }
     if (NumMipLevels == 3)
         return;
     gs_Result[GroupIndex] = Src1;
+    gs_Terrain[GroupIndex] = NextLevelTerrain;
     GroupMemoryBarrierWithGroupSync();
     
     if (GroupIndex == 0)
     {
-        Src1 = max4To1(
-            Src1,
-            sampleHeight(GroupIndex + 0x04),
-            sampleHeight(GroupIndex + 0x20),
-            sampleHeight(GroupIndex + 0x24));
-        OutMip4[DispatchThreadID.xy >> 3] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+        Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        NextLevelTerrain = min4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        OutMip4[DispatchThreadID.xy >> 3] = Src1 - NextLevelTerrain;
     }
 }
 
-//TODO: Terrain!
 #include "Common.hlsl"
-Texture2D<float> NextLevelTallCell;
-Texture2D<float> TallCell;
+Texture2D<float> NextLevelTerrainHeight;
+Texture2D<float> NextLevelTallCellHeight;
+Texture2D<float> TerrainHeight;
+Texture2D<float> TallCellHeight;
 Texture3D<float> SrcRegularCellRigidBodyPercentage;
 Texture3D<int> SrcRegularMark; //TODO: Provisional: water is 0, air is 1
 float SrcRegularCellLength;
@@ -136,7 +133,7 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     if (any(DispatchThreadID.xyz > OutResolution))
         return;
     
-    float NextLevelHeight = NextLevelTallCell[DispatchThreadID.xz] + 0.5 * SrcRegularCellLength;
+    float NextLevelHeight = NextLevelTallCellHeight[DispatchThreadID.xz] + TerrainHeight[DispatchThreadID.xz] + 0.0001 * SrcRegularCellLength;
     uint2 TallCallIndex = DispatchThreadID.xz << 1;
     uint3 Index[8] = { uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0), uint3(0, 0, 0) };
     Index[0] = uint3(TallCallIndex.x, 0, TallCallIndex.y);
@@ -145,7 +142,7 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     Index[3] = uint3(TallCallIndex.x + 1, 0, TallCallIndex.y + 1);
     for (uint i = 0; i < 4; i++)
     {
-        Index[i].y = (NextLevelHeight - TallCell[Index[i].xz]) / SrcRegularCellLength + (DispatchThreadID.y << 1);
+        Index[i].y = (NextLevelHeight - TallCellHeight[Index[i].xz] - TerrainHeight[Index[i].xz]) / SrcRegularCellLength + (DispatchThreadID.y << 1);
         Index[i + 4] = Index[i];
         Index[i + 4].y += 1;
     }
