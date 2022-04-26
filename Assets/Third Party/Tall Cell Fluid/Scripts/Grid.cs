@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class GridValuePerLevel
 {
@@ -122,6 +123,11 @@ public class Grid
 {
     public Grid(Vector2Int vResolutionXZ, int vRegularCellYCount, float vCellLength)
     {
+        m_VisualGridMaterial = Resources.Load<Material>("Materials/VisualGrid");
+        int[] BoxIndex = new int[36] { 0, 2, 3, 0, 3, 1, 8, 4, 5, 8, 5, 9, 10, 6, 7, 10, 7, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23 };
+        //m_BoxIndexBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Index, 36, 4);
+        //m_BoxIndexBuffer.SetData(BoxIndex);
+
         m_HierarchicalLevel = (int)Mathf.Min(
             Mathf.Log(vResolutionXZ.x, 2),
             Mathf.Min(Mathf.Log(vResolutionXZ.y, 2), Mathf.Log(vRegularCellYCount, 2))) + 1;
@@ -143,54 +149,64 @@ public class Grid
 
     public GridGPUCache GPUCache { get { return m_GPUCache; } }
 
+    public void VisualGrid(VisualGridInfo VisualGridInfo)
+    {
+        Profiler.BeginSample("VisualGrid");
+        m_VisualGridMaterial.SetPass(0);
+        Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(0,0,0), Quaternion.Euler(0, 0, 0), new Vector3(1, 1, 1));
+        //Graphics.DrawMeshNow(VisualGridInfo.mesh, matrix);
+        Graphics.DrawProceduralNow(MeshTopology.Triangles, 36, 1);
+        Profiler.EndSample();
+    }
+
     public void InitMesh(Texture vTerrian, float vSeaLevel)
     {
         m_RemeshTools.ComputeTerrianHeight(vTerrian, FineGrid.TerrainHeight, 20.0f);
         __DownSampleTerrainHeight();
 
-        UnityEngine.Profiling.Profiler.BeginSample("init fine level tallcell grid");
+        Profiler.BeginSample("init fine level tallcell grid");
         m_RemeshTools.ComputeH1H2WithSeaLevel(FineGrid.TerrainHeight, m_GPUCache.H1H2Cahce, vSeaLevel);
         __ComputeTallCellHeightFromH1H2();
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
 
-        UnityEngine.Profiling.Profiler.BeginSample("down sample height");
+        Profiler.BeginSample("down sample height");
         __DownSampleTallCellHeight();
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
     }
 
     public void Remesh(bool vIsInit = false)
     {
         __SwapFineGridVelocityWithCache();
 
-        UnityEngine.Profiling.Profiler.BeginSample("update fine level tallcell grid");
+        Profiler.BeginSample("update fine level tallcell grid");
         //TODO: ComputeH1H2WithParticle
         __ComputeTallCellHeightFromH1H2();
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
 
-        UnityEngine.Profiling.Profiler.BeginSample("down sample height");
+        Profiler.BeginSample("down sample height");
         __DownSampleTallCellHeight();
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
     }
 
     public void UpdateGridValue()
     {
-        UnityEngine.Profiling.Profiler.BeginSample("update fine grid velocity");
+        Profiler.BeginSample("update fine grid velocity");
         m_RemeshTools.UpdateFineGridVelocity(
             m_GPUCache.LastFrameTallCellHeightCache,
             m_GPUCache.LastFrameVelocityCache,
             FineGrid.TallCellHeight,
             FineGrid.Velocity) ;
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
 
-        UnityEngine.Profiling.Profiler.BeginSample("update rigidbody");
+        Profiler.BeginSample("update rigidbody");
         m_RemeshTools.UpdateSolidInfos(FineGrid.TerrainHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
 
         //TODO: update water mark
 
-        UnityEngine.Profiling.Profiler.BeginSample("down sample");
+        Profiler.BeginSample("down sample");
         __DownSampleValue();
-        UnityEngine.Profiling.Profiler.EndSample();
+        Profiler.EndSample();
     }
 
     #region DownSample
@@ -316,4 +332,7 @@ public class Grid
     private RemeshTools m_RemeshTools;
 
     private GridGPUCache m_GPUCache;
+
+    private Material m_VisualGridMaterial;
+    //GraphicsBuffer m_BoxIndexBuffer;
 }

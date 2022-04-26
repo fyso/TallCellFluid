@@ -5,11 +5,9 @@ using System.Collections.Generic;
 
 public class Simulator
 {
-    public static int OnlyTallCellParticleTypeIndex {get{ return 3; }}
-    public static int RegularCellParticleTypeIndex { get{ return 0; }}
+    public static int OnlyTallCellParticleTypeIndex {get{ return 3; }} // TODO: magic number
 
-    public DynamicParticle DynamicParticle { get { return m_DynamicParticle; } } //TODO: Cannot return directly, breaking encapsulation.
-    public GridPerLevel FineGrid { get { return m_Grid.FineGrid; } }
+    public static int RegularCellParticleTypeIndex { get{ return 0; } } // TODO: magic number
 
     public Simulator(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellYCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
     {
@@ -28,6 +26,16 @@ public class Simulator
         m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vSeaLevel, m_DynamicParticle);
 
         m_Grid.UpdateGridValue();
+    }
+
+    public void VisualParticle()
+    {
+        m_DynamicParticle.VisualParticle();
+    }
+    
+    public void VisualGrid(VisualGridInfo VisualGridInfo)
+    {
+        m_Grid.VisualGrid(VisualGridInfo);
     }
 
     public void DebugGridShape()

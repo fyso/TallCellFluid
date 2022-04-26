@@ -1,5 +1,11 @@
 using UnityEngine;
 
+[System.Serializable]
+public struct VisualGridInfo
+{
+    public Mesh mesh;
+}
+
 public class SimulatorTest : MonoBehaviour
 {
     public Texture m_Terrian;
@@ -11,7 +17,9 @@ public class SimulatorTest : MonoBehaviour
     public int m_MaxParticleCount;
     public float m_TimeStep;
 
-    public bool ShowDebugInfo = false;
+    public bool VisualParticle = false;
+    public bool ShowGridDebugInfo = false;
+    public VisualGridInfo VisualGridInfo;
 
     private Simulator m_Simulator;
 
@@ -21,29 +29,25 @@ public class SimulatorTest : MonoBehaviour
             m_Terrian, 
             m_ResolutionXZ, 
             m_RegularCellYCount, 
-            m_Min, 
+            m_Min,
             m_Celllength, 
             m_SeaLevel, 
             m_MaxParticleCount
         );
+        m_Simulator.GenerateRandomVelicty();
     }
 
     void Update()
     {
-        m_Simulator.GenerateRandomVelicty();
         m_Simulator.Step(m_TimeStep);
     }
 
     private void OnRenderObject()
     {
-        m_Simulator.DynamicParticle.VisualParticle();
-    }
+        if(m_Simulator != null && VisualParticle)
+            m_Simulator.VisualParticle();
 
-    private void OnDrawGizmos()
-    {
-        if (m_Simulator != null && ShowDebugInfo)
-        {
-            m_Simulator.DebugGridShape();
-        }
+        if (m_Simulator != null && ShowGridDebugInfo)
+            m_Simulator.VisualGrid(VisualGridInfo);
     }
 }
