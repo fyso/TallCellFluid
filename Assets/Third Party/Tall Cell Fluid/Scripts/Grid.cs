@@ -194,14 +194,16 @@ public class Grid
 
     #region DownSample
     private ComputeShader m_DownsampleCS;
-    private int m_ReductionKernelIndex;
+    private int downSampleTerrainHeight;
+    private int downSampleTallCellHeight;
     private int m_DownSampleRegularCellKernelIndex;
     //private int m_DownSampleTallCellKernelIndex;
 
     private void __InitDownSampleTools()
     {
         m_DownsampleCS = Resources.Load<ComputeShader>(Common.DownsampleToolsCSPath);
-        m_ReductionKernelIndex = m_DownsampleCS.FindKernel("reduction");
+        downSampleTerrainHeight = m_DownsampleCS.FindKernel("downSampleTerrainHeight");
+        downSampleTallCellHeight = m_DownsampleCS.FindKernel("downSampleTallCellHeight");
         m_DownSampleRegularCellKernelIndex = m_DownsampleCS.FindKernel("downSampleRegularCell");
         //m_DownSampleTallCellKernelIndex = m_DownsampleCS.FindKernel("downSampleTallCell");
     }
@@ -209,26 +211,24 @@ public class Grid
     private void __DownSampleHeight(int vSrcLevel, int LeftLevel)
     {
         //Terrain
-        m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "SrcTex", m_GridData[vSrcLevel].TerrrianHeight);
+        m_DownsampleCS.SetTexture(downSampleTerrainHeight, "SrcTex", m_GridData[vSrcLevel].TerrrianHeight);
         m_DownsampleCS.SetInts("SrcResolution", m_GridData[vSrcLevel].ResolutionXZ.x, m_GridData[vSrcLevel].ResolutionXZ.y);
         m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
         for (int i = 1; i <= 4; i++)
         {
-            if (i <= LeftLevel) m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "OutMip" + i, m_GridData[vSrcLevel + i].TerrrianHeight);
+            if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTerrainHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TerrrianHeight);
         }
-        m_DownsampleCS.EnableKeyword("_REDUCTION_MAX");
-        m_DownsampleCS.DisableKeyword("_REDUCTION_MIN");
-        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
+        m_DownsampleCS.Dispatch(downSampleTerrainHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
 
         //TallCell
-        m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "SrcTex", m_GridData[vSrcLevel].TallCellHeight);
+        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTex", m_GridData[vSrcLevel].TallCellHeight);
+        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTerrain", m_GridData[vSrcLevel].TerrrianHeight);
+        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "NextLevelTerrain", m_GridData[vSrcLevel + 1].TerrrianHeight);
         for (int i = 1; i <= 4; i++)
         {
-            if (i <= LeftLevel) m_DownsampleCS.SetTexture(m_ReductionKernelIndex, "OutMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
+            if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
         }
-        m_DownsampleCS.EnableKeyword("_REDUCTION_MAX");
-        m_DownsampleCS.DisableKeyword("_REDUCTION_MIN");
-        m_DownsampleCS.Dispatch(m_ReductionKernelIndex, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
+        m_DownsampleCS.Dispatch(downSampleTallCellHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
     }
 
     private void __DownSampleHeight()

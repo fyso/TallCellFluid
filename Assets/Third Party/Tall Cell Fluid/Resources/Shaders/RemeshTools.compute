@@ -274,7 +274,7 @@ float4 updateSolidInfo(float3 SamplePos, Texture3D<float> SDF, RigidbodyInfo Rig
     if (any(uvw > SDF_RESOLUTION - 1))
         return Result;
 #ifdef _RIGIDBODY_FLAG
-    Result.w = SDF[uvw] < 0;
+    Result.w = SDF[uvw] <= 0;
 #else
     Result.w = clamp((-SDF[uvw] + 0.5 * CellLength) / CellLength, 0, 1);
 #endif

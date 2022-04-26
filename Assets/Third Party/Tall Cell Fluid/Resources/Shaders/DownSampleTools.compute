@@ -1,7 +1,7 @@
-#pragma kernel reduction
+#pragma kernel downSampleTerrainHeight
+#pragma kernel downSampleTallCellHeight
 #pragma kernel downSampleRegularCell
 //#pragma kernel downSampleTallCell
-#pragma multi_compile _REDUCTION_MIN _REDUCTION_MAX
 #pragma enable_d3d11_debug_symbols
 
 groupshared float gs_Result[64];
@@ -13,21 +13,20 @@ RWTexture2D<float> OutMip2;
 RWTexture2D<float> OutMip3;
 RWTexture2D<float> OutMip4;
 
-float fourInOne(float x1, float x2, float x3, float x4)
+float min4To1(float x1, float x2, float x3, float x4)
 {
-#ifdef _REDUCTION_MIN
-    return min(x1, min(x2, min(x3, x4)));
-#elif  _REDUCTION_MAX
-    return max(x1, max(x2, max(x3, x4)));
-#endif
-    return 0;
+    return min(x1, min(x2, min(x3, x4))); 
 }
 
-//TODO: 1.Remap the latter thread to only one warp, and do not need synchronous; 2.use warp-level operation
+float max4To1(float x1, float x2, float x3, float x4)
+{
+    return max(x1, max(x2, max(x3, x4)));
+}
+
 [numthreads(8, 8, 1)]
-void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
+void downSampleTerrainHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
 {    
-    float Src1 = fourInOne(SrcTex[DispatchThreadID.xy * 2], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)], SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)]);
+    float Src1 = min4To1(SrcTex[DispatchThreadID.xy * 2], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)], SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)]);
     OutMip1[DispatchThreadID.xy] = Src1;
     if (NumMipLevels == 1)
         return;
@@ -36,7 +35,7 @@ void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_Disp
     
     if ((GroupIndex & 0x9) == 0)
     {
-        Src1 = fourInOne(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
+        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
         OutMip2[DispatchThreadID.xy >> 1] = Src1;
     }
     if (NumMipLevels == 2)
@@ -46,7 +45,7 @@ void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_Disp
     
     if ((GroupIndex & 0x1B) == 0)
     {
-        Src1 = fourInOne(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
         OutMip3[DispatchThreadID.xy >> 2] = Src1;
     }
     if (NumMipLevels == 3)
@@ -56,8 +55,67 @@ void reduction(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_Disp
     
     if (GroupIndex == 0)
     {
-        Src1 = fourInOne(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
-        OutMip4[DispatchThreadID.xy >> 3] = Src1;        
+        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        OutMip4[DispatchThreadID.xy >> 3] = Src1;
+    }
+}
+
+Texture2D<float> SrcTerrain;
+Texture2D<float> NextLevelTerrain;
+float sampleHeight(uint2 index)
+{
+    return SrcTex[index] + SrcTerrain[index];
+}
+[numthreads(8, 8, 1)]
+void downSampleTallCellHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    float Src1 = max4To1(
+       sampleHeight(DispatchThreadID.xy * 2),
+       sampleHeight(DispatchThreadID.xy * 2 + uint2(1, 0)),
+       sampleHeight(DispatchThreadID.xy * 2 + uint2(0, 1)),
+       sampleHeight(DispatchThreadID.xy * 2 + uint2(1, 1)));
+    OutMip1[DispatchThreadID.xy] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+    if (NumMipLevels == 1)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if ((GroupIndex & 0x9) == 0)
+    {
+        Src1 = max4To1(
+            Src1,
+            sampleHeight(GroupIndex + 0x01),
+            sampleHeight(GroupIndex + 0x08),
+            sampleHeight(GroupIndex + 0x09));
+        OutMip2[DispatchThreadID.xy >> 1] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+    }
+    if (NumMipLevels == 2)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if ((GroupIndex & 0x1B) == 0)
+    {
+        Src1 = max4To1(
+            Src1,
+            sampleHeight(GroupIndex + 0x02),
+            sampleHeight(GroupIndex + 0x10),
+            sampleHeight(GroupIndex + 0x12));
+        OutMip3[DispatchThreadID.xy >> 2] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
+    }
+    if (NumMipLevels == 3)
+        return;
+    gs_Result[GroupIndex] = Src1;
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GroupIndex == 0)
+    {
+        Src1 = max4To1(
+            Src1,
+            sampleHeight(GroupIndex + 0x04),
+            sampleHeight(GroupIndex + 0x20),
+            sampleHeight(GroupIndex + 0x24));
+        OutMip4[DispatchThreadID.xy >> 3] = Src1 - NextLevelTerrain[DispatchThreadID.xy];
     }
 }
 
