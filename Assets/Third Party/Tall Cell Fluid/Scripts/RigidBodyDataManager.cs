@@ -50,6 +50,11 @@ public class RigidBodyDataManager : MonoBehaviour
         }
     }
 
+    public bool hasRigidBody()
+    {
+        return m_RigidBodySDF.Count > 0;
+    }
+
     private void OnDisable()
     {
         m_RigidbodyInfoComputeBuffer.Dispose();
