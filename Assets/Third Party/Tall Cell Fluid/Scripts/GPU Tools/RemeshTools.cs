@@ -103,6 +103,8 @@ public class RemeshTools
 
     public void UpdateSolidInfos(RenderTexture vTerrainHeight, RenderTexture vTallCellHeight, GridValuePerLevel vRigidBodyPercentage, GridValuePerLevel vRigidBodyVelocity)
     {
+        if (!GameObject.FindGameObjectsWithTag("Simulator")[0].GetComponent<RigidBodyDataManager>().hasRigidBody()) return;
+
         GameObject.FindGameObjectsWithTag("Simulator")[0].GetComponent<RigidBodyDataManager>().UploadRigidBodyDataToGPU(m_RemeshToolsCS, updateRegularCellSolidInfos);
         m_RemeshToolsCS.SetTexture(updateRegularCellSolidInfos, "TerrianHeight_R", vTerrainHeight);
         m_RemeshToolsCS.SetTexture(updateRegularCellSolidInfos, "TallCellHeight_R", vTallCellHeight);
