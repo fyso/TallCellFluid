@@ -337,7 +337,7 @@ MonoBehaviour:
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
-  ShowDebugInfo: 0
+  ShowDebugInfo: 1
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0
