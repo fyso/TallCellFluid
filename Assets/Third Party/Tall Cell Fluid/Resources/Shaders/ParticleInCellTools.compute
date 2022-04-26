@@ -196,43 +196,27 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         WeightSum += Weight;
     }
     
-    
-    for (c = 0; c < 3 * 3; c++)
+    float2 AdjPointXZ = CurrCenterCellPosition.xz;
+    float3 AdjPoint = float3(AdjPointXZ.x, RelativePosition.y, AdjPointXZ.y);
+        
+    int2 AdjXZ = AdjPoint.xz / CellLength;
+        
+    float CenterTerrianHeight = TerrianHeight_R[AdjXZ];
+    float CenterTallCellHeight = TallCellHeight_R[AdjXZ];
+        
+    float3 Value = float3(0, 0, 0);
+    if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight)
     {
-        float2 AdjPointXZ = CurrCenterCellPosition.xz + OffsetVector2D[c] * CellLength;
-        float3 AdjPoint = float3(AdjPointXZ.x, RelativePosition.y, AdjPointXZ.y);
-        
-        int2 AdjXZ = AdjPoint.xz / CellLength;
-        
-        if (any(AdjXZ < 0) || any(AdjXZ >= XZResolution))
-            continue;
-        
-        float CenterTerrianHeight = TerrianHeight_R[AdjXZ];
-        float CenterTallCellHeight = TallCellHeight_R[AdjXZ];
-        
-        float Weight = CubicKernel(length(AdjPoint - CurrPosition) / CellLength);
-        float3 Value = float3(0, 0, 0);
-        if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight)
-        {
-            float3 TopValue = TopCellVelocity_R[AdjXZ];
-            float3 BottomValue = BottomCellVelocity_R[AdjXZ];
-            float RelativeHeight = (AdjPoint.y - CenterTerrianHeight - 0.5f * CellLength) / ((CenterTallCellHeight - CellLength));
-            Value = RelativeHeight * (TopValue - BottomValue) + BottomValue;
-        }
-        else
-        {
-            Value = float3(0, 0, 0);
-            Weight = 0;
-        }
-        
-        WeightValue += Value * Weight;
-        WeightSum += Weight;
+        float3 TopValue = TopCellVelocity_R[AdjXZ];
+        float3 BottomValue = BottomCellVelocity_R[AdjXZ];
+        float RelativeHeight = (AdjPoint.y - CenterTerrianHeight - 0.5f * CellLength) / ((CenterTallCellHeight - CellLength));
+        Value = RelativeHeight * (TopValue - BottomValue) + BottomValue;
     }
     
     float3 FinalValue = float3(0, 0, 0);
     if (WeightSum != 0)
         FinalValue = WeightValue / WeightSum;
-    ParticleVelocity_RW[i] = FinalValue;
+    ParticleVelocity_RW[i] = FinalValue + Value;
 }
 
 uint doCLZLowToHigh(uint4 vInput, uint vTargetBit)
