@@ -143,6 +143,27 @@ public class Grid
 
     public GridGPUCache GPUCache { get { return m_GPUCache; } }
 
+    public void RestCache()
+    {
+        Graphics.SetRenderTarget(GPUCache.TallCellScalarCahce1);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+        Graphics.SetRenderTarget(GPUCache.TallCellScalarCahce2);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+        Graphics.SetRenderTarget(GPUCache.TallCellVectorCahce1);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+        Graphics.SetRenderTarget(GPUCache.TallCellVectorCahce2);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+
+        Graphics.SetRenderTarget(GPUCache.RegularCellScalarCahce);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+        Graphics.SetRenderTarget(GPUCache.RegularCellVectorXCache);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+        Graphics.SetRenderTarget(GPUCache.RegularCellVectorYCache);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+        Graphics.SetRenderTarget(GPUCache.RegularCellVectorZCache);
+        GL.Clear(false, true, new Color(0, 0, 0, 0));
+    }
+
     public void InitMesh(Texture vTerrian, float vSeaLevel)
     {
         m_RemeshTools.ComputeTerrianHeight(vTerrian, FineGrid.TerrrianHeight, 20.0f);
@@ -182,7 +203,7 @@ public class Grid
         UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("update rigidbody");
-        m_RemeshTools.UpdateSolidInfos(FineGrid.TerrrianHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
+        //m_RemeshTools.UpdateSolidInfos(FineGrid.TerrrianHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
         UnityEngine.Profiling.Profiler.EndSample();
 
         //TODO: update water mark
