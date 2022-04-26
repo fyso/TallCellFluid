@@ -9,6 +9,8 @@ public class Utils
         UtilsCS = Resources.Load<ComputeShader>("Shaders/Utils");
         copyFloat4Texture2DToAnother = UtilsCS.FindKernel("copyFloat4Texture2DToAnother");
         copyFloat4Texture3DToAnother = UtilsCS.FindKernel("copyFloat4Texture3DToAnother");
+        clearUIntTexture2D = UtilsCS.FindKernel("clearUIntTexture2D");
+        clearIntTexture3D = UtilsCS.FindKernel("clearIntTexture3D");
     }
 
     public void CopyFloat4Texture2DToAnother(Texture2D vSource, RenderTexture vDestination)
@@ -35,7 +37,27 @@ public class Utils
         UtilsCS.Dispatch(copyFloat4Texture3DToAnother, Mathf.CeilToInt((float)vSource.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vSource.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vSource.depth / Common.ThreadCount3D));
     }
 
+    public void ClearIntTexture3D(RenderTexture vClearTarget)
+    {
+        if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex3D)
+            Debug.LogError("need 3d texture but given a non 3d texture!");
+
+        UtilsCS.SetTexture(clearIntTexture3D, "ClearTarget3D_RW", vClearTarget);
+        UtilsCS.Dispatch(clearIntTexture3D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.volumeDepth / Common.ThreadCount3D));
+    }
+
+    public void ClearUIntTexture2D(RenderTexture vClearTarget)
+    {
+        if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
+            Debug.LogError("need 2d texture but given a non 2d texture!");
+
+        UtilsCS.SetTexture(clearUIntTexture2D, "ClearTarget2D_RW", vClearTarget);
+        UtilsCS.Dispatch(clearUIntTexture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
+    }
+
     private ComputeShader UtilsCS;
     private int copyFloat4Texture2DToAnother;
     private int copyFloat4Texture3DToAnother;
+    private int clearUIntTexture2D;
+    private int clearIntTexture3D;
 }

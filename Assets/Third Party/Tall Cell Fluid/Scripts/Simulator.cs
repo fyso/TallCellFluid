@@ -27,7 +27,7 @@ public class Simulator
         m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
         m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vSeaLevel, m_DynamicParticle);
 
-        //m_Grid.UpdateGridValue();
+        m_Grid.UpdateGridValue();
     }
 
     public void DebugGridShape()
@@ -150,7 +150,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("OnlyTallCellParticleToGrid");
-        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
+        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 
         Profiler.BeginSample("ZSortOtherParticle");

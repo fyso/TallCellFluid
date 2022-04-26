@@ -1,6 +1,8 @@
 #include "Common.hlsl"
 #pragma kernel copyFloat4Texture2DToAnother
 #pragma kernel copyFloat4Texture3DToAnother
+#pragma kernel clearUIntTexture2D
+#pragma kernel clearIntTexture3D
 
 Texture2D<float4> Source;
 RWTexture2D<float4> Destination;
@@ -16,4 +18,18 @@ RWTexture3D<float4> Destination3D_RW;
 void copyFloat4Texture3DToAnother(uint3 id : SV_DispatchThreadID)
 {
     Destination3D_RW[id] = Source3D_R[id];
+}
+
+RWTexture2D<uint> ClearTarget2D_RW;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void clearUIntTexture2D(uint3 id : SV_DispatchThreadID)
+{
+    ClearTarget2D_RW[id.xy] = 0;
+}
+
+RWTexture3D<int> ClearTarget3D_RW;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void clearIntTexture3D(uint3 id : SV_DispatchThreadID)
+{
+    ClearTarget3D_RW[id] = 0;
 }
