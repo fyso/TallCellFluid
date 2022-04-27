@@ -6,7 +6,6 @@ namespace DParticle
 {
     public class Common
     {
-        static public int ThreadCount1D = 512;
-        static public int ThreadCount2D = 32;
+        static public int ThreadCount1D = 256;
     }
 }

@@ -1,5 +1,4 @@
-#define THREAD_NUM_1D 512
-#define THREAD_NUM_2D 32
+#define THREAD_NUM_1D 256
 
 #define ParticleXGridCountArgumentOffset 0
 #define ParticleCountArgumentOffset 4

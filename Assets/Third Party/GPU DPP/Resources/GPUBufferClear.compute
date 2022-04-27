@@ -1,4 +1,4 @@
-#define BUFFER_CLEAR_THRED_NUM 512
+#define BUFFER_CLEAR_THRED_NUM 256
 #pragma kernel clearUIntBufferWithZero
 #pragma kernel clearUIntBufferWithSequence
 #pragma kernel clearFloatBufferWithZero

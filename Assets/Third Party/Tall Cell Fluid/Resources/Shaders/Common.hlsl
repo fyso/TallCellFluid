@@ -1,5 +1,5 @@
 
-#define THREAD_COUNT_1D 512
+#define THREAD_COUNT_1D 256
 #define THREAD_COUNT_2D 16
 #define THREAD_COUNT_3D 2
 

@@ -4,7 +4,7 @@
 #pragma kernel insertParticleIntoHashGrid
 #pragma kernel countingSortFull
 
-#pragma multi_compile_local __ Hash2D HashRegularCellOfTallCellGrid
+#pragma multi_compile_local __ HashTallCell HashRegularCell
 
 uint ParticleCountArgumentOffset;
 uint DifferParticleSplitPointArgumentOffset;
@@ -14,12 +14,13 @@ float3 HashGridMin;
 float HashGridCellLength;
 int TargetParticleType;
 
-#if HashRegularCellOfTallCellGrid
+
+#if HashRegularCell || HashTallCell
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 #endif
 
-StructuredBuffer<uint> ParticleIndrectArgment_R;
+StructuredBuffer<uint> ParticleIndirectArgment_R;
 
 StructuredBuffer<float3> ParticlePosition_R;
 StructuredBuffer<float3> ParticleVelocity_R;
@@ -42,28 +43,35 @@ RWStructuredBuffer<uint> HashGridCellParticleCount_RW;
 void insertParticleIntoHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint TargetParticleOffset = 0;
-    uint TargetParticleCount = ParticleIndrectArgment_R[ParticleCountArgumentOffset];
+    uint TargetParticleCount = ParticleIndirectArgment_R[ParticleCountArgumentOffset];
     if (TargetParticleType >= 0)
     {
-        TargetParticleOffset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
-        TargetParticleCount = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+        TargetParticleOffset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
+        TargetParticleCount = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
     }
     
     uint i = TargetParticleOffset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i >= TargetParticleOffset + TargetParticleCount)
         return;
     
-#if Hash2D
+#if HashTallCell
     float3 Postion = ParticlePosition_R[i];
-    uint2 Cell3DIndex = uint2((Postion.xz - HashGridMin.xz) / HashGridCellLength);
-    uint CellLinerIndex = computeMorton2D(Cell3DIndex);
-#elif HashRegularCellOfTallCellGrid
+    uint2 CellXZIndex = uint2((Postion.xz - HashGridMin.xz) / HashGridCellLength);
+    uint CellLinerIndex = computeMorton2D(CellXZIndex);
+    
+    //float CurrTerrianHeight = TerrianHeight_R[CellXZIndex];
+    //float CurrTallCellHeight = TallCellHeight_R[CellXZIndex];
+    //uint CellYIndex = (Postion.y - CurrTerrianHeight) / HashGridCellLength;
+    //uint3 Cell3DIndex = uint3(CellXZIndex.x, CellYIndex, CellXZIndex.y);
+    //uint CellLinerIndex = computeMorton3D(Cell3DIndex);
+    
+#elif HashRegularCell
     float3 CurrPosition = ParticlePosition_R[i];
     float2 RelativeXZ = CurrPosition.xz - HashGridMin.xz;
     uint2 CurrGridXZIndex = RelativeXZ / HashGridCellLength;
     float CurrTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
     float CurrTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
-    uint CurrGridYIndex = (CurrPosition.y - CurrTerrianHeight - CurrTallCellHeight + 2.0f * HashGridCellLength) / HashGridCellLength;
+    uint CurrGridYIndex = (CurrPosition.y - CurrTerrianHeight - CurrTallCellHeight) / HashGridCellLength;
     uint3 Cell3DIndex = uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y);
     uint CellLinerIndex = computeMorton3D(Cell3DIndex);
 #else
@@ -82,15 +90,15 @@ void insertParticleIntoHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : 
 void countingSortFull(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+    if (i >= ParticleIndirectArgment_R[ParticleCountArgumentOffset])
         return;
     
     uint CellLinerIndex = ParticleCellIndex_R[i];
     uint Offset = HashGridCellParticleOffset_R[CellLinerIndex];
     uint Index = ParticleInnerSortIndex_R[i];
     
-    uint TargetParticleOffset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
-    uint TargetParticleCount = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+    uint TargetParticleOffset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
+    uint TargetParticleCount = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
     uint SortedIndex = TargetParticleOffset + Offset + Index;
     if(TargetParticleType == -1)
     {

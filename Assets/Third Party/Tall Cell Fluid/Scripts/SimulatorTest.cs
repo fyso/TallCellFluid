@@ -77,7 +77,8 @@ public class SimulatorTest : MonoBehaviour
 
         if (m_Simulator != null && ShowGridDebugInfo)
         {
-            if ((int)VisualGridInfo.m_ShowInfo < 2) VisualGridInfo.m_GridLevel = 0;
+            if ((int)VisualGridInfo.m_ShowInfo > 1)
+                VisualGridInfo.m_GridLevel = 0;
             m_Simulator.VisualGrid(VisualGridInfo);
         }
     }

@@ -5,9 +5,13 @@ using System.Collections.Generic;
 
 public class Simulator
 {
-    public static int OnlyTallCellParticleTypeIndex {get{ return 3; }} // TODO: magic number
+    public static int OnlyTallCellParticleTypeIndex {get{ return 3; }}
+    public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
 
-    public static int RegularCellParticleTypeIndex { get{ return 0; } } // TODO: magic number
+    public static int ScatterOnlyTallCellParticleArgmentOffset { get{ return 0; }}
+
+    public DynamicParticle DynamicParticle { get { return m_DynamicParticle; } } //TODO: Cannot return directly, breaking encapsulation.
+    public GridPerLevel FineGrid { get { return m_Grid.FineGrid; } }
 
     public Simulator(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellYCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
     {
@@ -24,6 +28,12 @@ public class Simulator
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
         m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
         m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vSeaLevel, m_DynamicParticle);
+
+        m_Argument = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
+        uint[] InitArgument = new uint[3] {
+                1, 1, 1
+        };
+        m_Argument.SetData(InitArgument);
 
         m_Grid.UpdateGridValue();
     }
@@ -53,7 +63,7 @@ public class Simulator
             {
                 Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
-                Color BottomVelocity = new Color(0.0f, 0, 0, 1.0f);
+                Color BottomVelocity = new Color(0.8f, 0, 0, 1.0f);
                 Bottom.SetPixel(x, y, BottomVelocity);
             }
         }
@@ -111,27 +121,33 @@ public class Simulator
         m_DynamicParticle.OrganizeParticle();
         Profiler.EndSample();
 
+        m_Utils.UpdateArgment(m_Argument, m_DynamicParticle.Argument, DynamicParticle.DifferParticleXGridCountArgumentOffset + OnlyTallCellParticleTypeIndex * 3, ScatterOnlyTallCellParticleArgmentOffset);
+
         Profiler.BeginSample("GatherGridToParticle");
         m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
         //TODO: advect particle
 
-        //Profiler.BeginSample("ZSortOnlyTallCellparticle");
-        //m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        //Profiler.EndSample();
+        Profiler.BeginSample("ClearCache");
+        m_Grid.RestCache();
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("OnlyTallCellParticleToGrid");
-        //m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
-        //Profiler.EndSample();
+        Profiler.BeginSample("ZSortRegularCellParticle");
+        m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("ZSortOtherParticle");
-        //m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
-        //Profiler.EndSample();
+        Profiler.BeginSample("OnlyRegularCellParticleToGrid");
+        m_ParticleInCellTools.ScatterRegularParticleToGrid(m_DynamicParticle, m_Grid);
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("SortRegularCellParticle");
-        //m_ParticleInCellTools.ScatterRegularParticleToGrid(m_DynamicParticle, m_Grid);
-        //Profiler.EndSample();
+        Profiler.BeginSample("ZSortOnlyTallCellparticle");
+        m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("OnlyTallCellParticleToGrid");
+        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_Argument);
+        Profiler.EndSample();
 
         //TODO: update mark for fine level
     }
@@ -150,6 +166,8 @@ public class Simulator
     private ParticleInCellTools m_ParticleInCellTools;
     private ParticleSortTools m_ParticleSortTools;
     private Utils m_Utils;
+
+    private ComputeBuffer m_Argument;
 
     private SimulatorGPUCache m_SimulatorGPUCache;
 }

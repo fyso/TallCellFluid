@@ -139,6 +139,7 @@ public class Grid
 
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellYCount);
         m_GPUCache = new GridGPUCache(vResolutionXZ, vCellLength, vRegularCellYCount);
+        m_Utils = new Utils();
         __InitDownSampleTools();
     }
 
@@ -151,7 +152,7 @@ public class Grid
         Vector2Int ResolutionXZ = m_GridData[VisualGridInfo.m_GridLevel].ResolutionXZ;
         Profiler.BeginSample("VisualGrid");
 
-        if(VisualGridInfo.m_ShowTerrainCell)
+        if (VisualGridInfo.m_ShowTerrainCell)
         {
             m_VisualGridMaterial.SetPass(0);
             m_VisualGridMaterial.SetVector("MinPos", vMin);
@@ -160,8 +161,8 @@ public class Grid
             m_VisualGridMaterial.SetTexture("TerrainHeight", m_GridData[VisualGridInfo.m_GridLevel].TerrainHeight);
             Graphics.DrawProceduralNow(MeshTopology.Triangles, 36, ResolutionXZ.x * ResolutionXZ.y);
         }
-                
-        if(VisualGridInfo.m_ShowTallCell)
+
+        if (VisualGridInfo.m_ShowTallCell)
         {
             m_VisualGridMaterial.SetPass(1);
             m_VisualGridMaterial.SetVector("MinPos", vMin);
@@ -209,7 +210,7 @@ public class Grid
                     break;
             }
         }
-                
+
         if (VisualGridInfo.m_ShowRegularCell)
         {
             m_VisualGridMaterial.SetPass(2);
@@ -219,7 +220,7 @@ public class Grid
             m_VisualGridMaterial.SetInt("ResolutionY", m_GridData[VisualGridInfo.m_GridLevel].RegularCellYCount);
             m_VisualGridMaterial.SetTexture("TerrainHeight", m_GridData[VisualGridInfo.m_GridLevel].TerrainHeight);
             m_VisualGridMaterial.SetTexture("TallCellHeight", m_GridData[VisualGridInfo.m_GridLevel].TallCellHeight);
-            
+
             m_VisualGridMaterial.SetInt("ShowInfoMode", 0);
             m_VisualGridMaterial.SetVector("MinShowColor", new Vector4(VisualGridInfo.MinShowColor.r, VisualGridInfo.MinShowColor.g, VisualGridInfo.MinShowColor.b, VisualGridInfo.MinShowValue));
             m_VisualGridMaterial.SetVector("MaxShowColor", new Vector4(VisualGridInfo.MaxShowColor.r, VisualGridInfo.MaxShowColor.g, VisualGridInfo.MaxShowColor.b, VisualGridInfo.MaxShowValue));
@@ -257,6 +258,21 @@ public class Grid
         }
 
         Profiler.EndSample();
+    }
+
+    public void RestCache()
+    {
+       
+        m_Utils.ClearIntTexture2D(GPUCache.TallCellParticleCountCahce);
+        m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce1);
+        m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce2);
+        m_Utils.ClearIntTexture3D(GPUCache.TallCellVectorCahce1);
+        m_Utils.ClearIntTexture3D(GPUCache.TallCellVectorCahce2);
+
+        m_Utils.ClearIntTexture3D(GPUCache.RegularCellScalarCahce);
+        m_Utils.ClearIntTexture3D(GPUCache.RegularCellVectorXCache);
+        m_Utils.ClearIntTexture3D(GPUCache.RegularCellVectorYCache);
+        m_Utils.ClearIntTexture3D(GPUCache.RegularCellVectorZCache);
     }
 
     public void InitMesh(Texture vTerrian, float vSeaLevel)
@@ -430,6 +446,7 @@ public class Grid
     private int m_HierarchicalLevel;
     private GridPerLevel[] m_GridData;
     private RemeshTools m_RemeshTools;
+    private Utils m_Utils;
 
     private GridGPUCache m_GPUCache;
 
