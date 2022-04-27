@@ -4,7 +4,7 @@
 #pragma kernel insertParticleIntoHashGrid
 #pragma kernel countingSortFull
 
-#pragma multi_compile_local __ Hash2D HashRegularCellOfTallCellGrid
+#pragma multi_compile_local __ HashTallCell HashRegularCell
 
 uint ParticleCountArgumentOffset;
 uint DifferParticleSplitPointArgumentOffset;
@@ -14,7 +14,7 @@ float3 HashGridMin;
 float HashGridCellLength;
 int TargetParticleType;
 
-#if HashRegularCellOfTallCellGrid
+#if HashRegularCell
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 #endif
@@ -53,11 +53,11 @@ void insertParticleIntoHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : 
     if (i >= TargetParticleOffset + TargetParticleCount)
         return;
     
-#if Hash2D
+#if HashTallCell
     float3 Postion = ParticlePosition_R[i];
     uint2 Cell3DIndex = uint2((Postion.xz - HashGridMin.xz) / HashGridCellLength);
     uint CellLinerIndex = computeMorton2D(Cell3DIndex);
-#elif HashRegularCellOfTallCellGrid
+#elif HashRegularCell
     float3 CurrPosition = ParticlePosition_R[i];
     float2 RelativeXZ = CurrPosition.xz - HashGridMin.xz;
     uint2 CurrGridXZIndex = RelativeXZ / HashGridCellLength;

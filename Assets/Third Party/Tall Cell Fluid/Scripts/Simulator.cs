@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class Simulator
 {
     public static int OnlyTallCellParticleTypeIndex {get{ return 3; }}
-    public static int RegularCellParticleTypeIndex { get{ return 0; }}
+    public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
 
     public DynamicParticle DynamicParticle { get { return m_DynamicParticle; } } //TODO: Cannot return directly, breaking encapsulation.
     public GridPerLevel FineGrid { get { return m_Grid.FineGrid; } }
@@ -145,19 +145,19 @@ public class Simulator
         m_Grid.RestCache();
         Profiler.EndSample();
 
-        //Profiler.BeginSample("ZSortOnlyTallCellparticle");
-        //m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        //Profiler.EndSample();
+        Profiler.BeginSample("ZSortOnlyTallCellparticle");
+        m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("OnlyTallCellParticleToGrid");
-        //m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid);
-        //Profiler.EndSample();
+        Profiler.BeginSample("OnlyTallCellParticleToGrid");
+        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid);
+        Profiler.EndSample();
 
         Profiler.BeginSample("ZSortRegularCellParticle");
         m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
         Profiler.EndSample();
 
-        Profiler.BeginSample("SortRegularCellParticle");
+        Profiler.BeginSample("OnlyRegularCellParticleToGrid");
         m_ParticleInCellTools.ScatterRegularParticleToGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 

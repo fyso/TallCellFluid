@@ -13,10 +13,10 @@ public class ParticleSortTools
         CountingSortFullKernel = GPUCountingSortHashCS.FindKernel("countingSortFull");
     }
 
-    public void SortOnlyTallCellParticle(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength)
+    public void SortOnlyTallCellParticle(DynamicParticle voTarget, Grid vGrid, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength)
     {
         m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);
-        GPUCountingSortHashCS.EnableKeyword("Hash2D");
+        GPUCountingSortHashCS.EnableKeyword("HashTallCell");
 
         GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
         GPUCountingSortHashCS.SetFloat("HashGridCellLength", vCellLength);
@@ -35,7 +35,7 @@ public class ParticleSortTools
 
         RearrangePartileData(voTarget, vCache);
 
-        GPUCountingSortHashCS.DisableKeyword("Hash2D");
+        GPUCountingSortHashCS.DisableKeyword("HashTallCell");
     }
 
     public void ZSortFullParticle(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength)
@@ -65,11 +65,11 @@ public class ParticleSortTools
     public void SortRegularCellParticle(DynamicParticle voTarget, Grid vGrid, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength)
     {
         m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);
-        GPUCountingSortHashCS.EnableKeyword("HashRegularCellOfTallCellGrid");
+        GPUCountingSortHashCS.EnableKeyword("HashRegularCell");
 
         GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
         GPUCountingSortHashCS.SetFloat("HashGridCellLength", vCellLength);
-        GPUCountingSortHashCS.SetInt("TargetParticleType", Simulator.RegularCellParticleTypeIndex);
+        GPUCountingSortHashCS.SetInt("TargetParticleType", Simulator.OnlyRegularCellParticleTypeIndex);
 
         GPUCountingSortHashCS.SetInt("ParticleCountArgumentOffset", DynamicParticle.ParticleCountArgumentOffset);
         GPUCountingSortHashCS.SetInt("DifferParticleSplitPointArgumentOffset", DynamicParticle.DifferParticleSplitPointArgumentOffset);
@@ -88,7 +88,7 @@ public class ParticleSortTools
 
         RearrangePartileData(voTarget, vCache);
 
-        GPUCountingSortHashCS.DisableKeyword("HashRegularCellOfTallCellGrid");
+        GPUCountingSortHashCS.DisableKeyword("HashRegularCell");
     }
 
     private void RearrangePartileData(DynamicParticle voTarget, SimulatorGPUCache vCache)

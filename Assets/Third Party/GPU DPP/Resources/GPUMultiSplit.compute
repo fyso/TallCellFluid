@@ -5,7 +5,7 @@
 #pragma kernel rearrangeKeyValue
 #pragma kernel updateSplitPoint32
 #pragma use_dxc
-#define MULTI_SPLIT_BLOCK_SIZE 512
+#define MULTI_SPLIT_BLOCK_SIZE 256
 
 uint BucketCount;
 uint ElementCountOffset;

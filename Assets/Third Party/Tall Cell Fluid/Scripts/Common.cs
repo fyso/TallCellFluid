@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class Common
 {
-    public static uint ThreadCount1D = 512;
+    public static uint ThreadCount1D = 256;
     public static uint ThreadCount2D = 16;
     public static uint ThreadCount3D = 2;
     public static string DownsampleToolsCSPath = "Shaders/DownSampleTools";

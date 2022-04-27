@@ -5,7 +5,7 @@
 #pragma kernel sumAcrossBlockSize
 #pragma use_dxc
 
-#define SCAN_BLOCK_SIZE 512
+#define SCAN_BLOCK_SIZE 256
 uint ElementCount;
 StructuredBuffer<uint> Target;
 RWStructuredBuffer<uint> BlockResult;
