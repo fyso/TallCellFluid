@@ -63,7 +63,7 @@ void insertParticleIntoHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : 
     //float CurrTallCellHeight = TallCellHeight_R[CellXZIndex];
     //uint CellYIndex = (Postion.y - CurrTerrianHeight) / HashGridCellLength;
     //uint3 Cell3DIndex = uint3(CellXZIndex.x, CellYIndex, CellXZIndex.y);
-    //uint CellLinerIndex = computeMorton3D(CellXZIndex);
+    //uint CellLinerIndex = computeMorton3D(Cell3DIndex);
     
 #elif HashRegularCell
     float3 CurrPosition = ParticlePosition_R[i];

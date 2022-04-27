@@ -143,7 +143,7 @@ public class Simulator
         m_DynamicParticle.OrganizeParticle();
         Profiler.EndSample();
 
-        m_Utils.UpdateArgment(m_Argument, m_DynamicParticle.Argument, OnlyTallCellParticleTypeIndex, ScatterOnlyTallCellParticleArgmentOffset);
+        m_Utils.UpdateArgment(m_Argument, m_DynamicParticle.Argument, DynamicParticle.DifferParticleXGridCountArgumentOffset + OnlyTallCellParticleTypeIndex * 3, ScatterOnlyTallCellParticleArgmentOffset);
 
         Profiler.BeginSample("GatherGridToParticle");
         m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_Grid.FineGrid);

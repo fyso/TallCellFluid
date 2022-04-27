@@ -43,6 +43,6 @@ RWStructuredBuffer<uint> TallCellIndirectArgment_RW;
 void updateArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset] = ParticleIndirectArgment_R[OnlyTallCellParticleXGridCountArgumentOffset];
-    TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset + 1] = 27;
+    TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset + 1] = 9;
     TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset + 2] = 1;
 }
