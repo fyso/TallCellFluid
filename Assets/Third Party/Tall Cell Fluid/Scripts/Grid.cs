@@ -159,7 +159,7 @@ public class Grid
             m_VisualGridMaterial.SetFloat("CellLength", m_GridData[VisualGridInfo.m_GridLevel].CellLength);
             m_VisualGridMaterial.SetInt("ResolutionX", m_GridData[VisualGridInfo.m_GridLevel].ResolutionXZ.x);
             m_VisualGridMaterial.SetTexture("TerrainHeight", m_GridData[VisualGridInfo.m_GridLevel].TerrainHeight);
-            Graphics.DrawProceduralNow(MeshTopology.Triangles, 36, ResolutionXZ.x * ResolutionXZ.y);
+            Graphics.DrawProceduralNow(VisualGridInfo.m_ShowMode == ShowMode.Entity ? MeshTopology.Triangles : MeshTopology.Lines, 36, ResolutionXZ.x * ResolutionXZ.y);
         }
 
         if (VisualGridInfo.m_ShowTallCell)
@@ -170,7 +170,6 @@ public class Grid
             m_VisualGridMaterial.SetInt("ResolutionX", m_GridData[VisualGridInfo.m_GridLevel].ResolutionXZ.x);
             m_VisualGridMaterial.SetTexture("TerrainHeight", m_GridData[VisualGridInfo.m_GridLevel].TerrainHeight);
             m_VisualGridMaterial.SetTexture("TallCellHeight", m_GridData[VisualGridInfo.m_GridLevel].TallCellHeight);
-            Graphics.DrawProceduralNow(MeshTopology.Triangles, 36, ResolutionXZ.x * ResolutionXZ.y);
 
             m_VisualGridMaterial.SetInt("ShowInfoMode", 0);
             m_VisualGridMaterial.SetVector("MinShowColor", new Vector4(VisualGridInfo.MinShowColor.r, VisualGridInfo.MinShowColor.g, VisualGridInfo.MinShowColor.b, VisualGridInfo.MinShowValue));
@@ -209,6 +208,7 @@ public class Grid
                     m_VisualGridMaterial.SetInt("ShowInfoMode", -1);
                     break;
             }
+            Graphics.DrawProceduralNow(VisualGridInfo.m_ShowMode == ShowMode.Entity ? MeshTopology.Triangles : MeshTopology.Lines, 36, ResolutionXZ.x * ResolutionXZ.y);
         }
 
         if (VisualGridInfo.m_ShowRegularCell)
@@ -254,7 +254,9 @@ public class Grid
                     break;
             }
 
-            Graphics.DrawProceduralNow(MeshTopology.Triangles, 36, ResolutionXZ.x * ResolutionXZ.y * m_GridData[VisualGridInfo.m_GridLevel].RegularCellYCount);
+            Graphics.DrawProceduralNow(
+                VisualGridInfo.m_ShowMode == ShowMode.Entity ? MeshTopology.Triangles : MeshTopology.Lines,
+                36, ResolutionXZ.x * ResolutionXZ.y * m_GridData[VisualGridInfo.m_GridLevel].RegularCellYCount);
         }
 
         Profiler.EndSample();
