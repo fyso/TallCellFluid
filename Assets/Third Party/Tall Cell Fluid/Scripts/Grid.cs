@@ -146,7 +146,7 @@ public class Grid
 
     public void RestCache()
     {
-        m_Utils.ClearUIntTexture2D(GPUCache.TallCellParticleCountCahce);
+        m_Utils.ClearIntTexture2D(GPUCache.TallCellParticleCountCahce);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce1);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce2);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellVectorCahce1);
@@ -193,7 +193,7 @@ public class Grid
             m_GPUCache.LastFrameTallCellHeightCache,
             m_GPUCache.LastFrameVelocityCache,
             FineGrid.TallCellHeight,
-            FineGrid.Velocity) ;
+            FineGrid.Velocity);
         UnityEngine.Profiling.Profiler.EndSample();
 
         UnityEngine.Profiling.Profiler.BeginSample("update rigidbody");

@@ -1,7 +1,7 @@
 #include "Common.hlsl"
 #pragma kernel copyFloat4Texture2DToAnother
 #pragma kernel copyFloat4Texture3DToAnother
-#pragma kernel clearUIntTexture2D
+#pragma kernel clearIntTexture2D
 #pragma kernel clearIntTexture3D
 #pragma kernel updateArgment
 
@@ -21,9 +21,9 @@ void copyFloat4Texture3DToAnother(uint3 id : SV_DispatchThreadID)
     Destination3D_RW[id] = Source3D_R[id];
 }
 
-RWTexture2D<uint> ClearTarget2D_RW;
-[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
-void clearUIntTexture2D(uint3 id : SV_DispatchThreadID)
+RWTexture2D<int> ClearTarget2D_RW;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void clearIntTexture2D(uint3 id : SV_DispatchThreadID)
 {
     ClearTarget2D_RW[id.xy] = 0;
 }
@@ -43,6 +43,6 @@ RWStructuredBuffer<uint> TallCellIndirectArgment_RW;
 void updateArgment(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset] = ParticleIndirectArgment_R[OnlyTallCellParticleXGridCountArgumentOffset];
-    TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset + 1] = 9;
+    TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset + 1] = 1;
     TallCellIndirectArgment_RW[ScatterOnlyTallCellParticleArgmentOffset + 2] = 1;
 }

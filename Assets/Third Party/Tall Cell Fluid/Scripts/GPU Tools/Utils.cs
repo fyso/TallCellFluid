@@ -9,7 +9,7 @@ public class Utils
         UtilsCS = Resources.Load<ComputeShader>("Shaders/Utils");
         copyFloat4Texture2DToAnother = UtilsCS.FindKernel("copyFloat4Texture2DToAnother");
         copyFloat4Texture3DToAnother = UtilsCS.FindKernel("copyFloat4Texture3DToAnother");
-        clearUIntTexture2D = UtilsCS.FindKernel("clearUIntTexture2D");
+        clearIntTexture2D = UtilsCS.FindKernel("clearIntTexture2D");
         clearIntTexture3D = UtilsCS.FindKernel("clearIntTexture3D");
         updateArgment = UtilsCS.FindKernel("updateArgment");
     }
@@ -47,13 +47,13 @@ public class Utils
         UtilsCS.Dispatch(clearIntTexture3D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.volumeDepth / Common.ThreadCount3D));
     }
 
-    public void ClearUIntTexture2D(RenderTexture vClearTarget)
+    public void ClearIntTexture2D(RenderTexture vClearTarget)
     {
         if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
             Debug.LogError("need 2d texture but given a non 2d texture!");
 
-        UtilsCS.SetTexture(clearUIntTexture2D, "ClearTarget2D_RW", vClearTarget);
-        UtilsCS.Dispatch(clearUIntTexture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
+        UtilsCS.SetTexture(clearIntTexture2D, "ClearTarget2D_RW", vClearTarget);
+        UtilsCS.Dispatch(clearIntTexture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
     }
 
     public void UpdateArgment(ComputeBuffer vTallCellArgument, ComputeBuffer vParticleArgument, int vOnlyTallCellParticleXGridCountArgumentOffset, int vScatterOnlyTallCellParticleArgmentOffset)
@@ -68,7 +68,7 @@ public class Utils
     private ComputeShader UtilsCS;
     private int copyFloat4Texture2DToAnother;
     private int copyFloat4Texture3DToAnother;
-    private int clearUIntTexture2D;
+    private int clearIntTexture2D;
     private int clearIntTexture3D;
     private int updateArgment;
 }
