@@ -646,13 +646,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1038799706}
-  m_LocalRotation: {x: -0, y: 0.61580384, z: -0, w: 0.7878995}
-  m_LocalPosition: {x: -8.5, y: 15.6, z: 20.5}
+  m_LocalRotation: {x: 0.07600365, y: 0.6155094, z: -0.059808973, w: 0.782173}
+  m_LocalPosition: {x: -62.66, y: 45.3, z: 1.71}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 76.021, z: 0}
+  m_LocalEulerAnglesHint: {x: 11.1, y: 76.4, z: 0}
 --- !u!1 &1066607789
 GameObject:
   m_ObjectHideFlags: 0
@@ -879,14 +879,23 @@ MonoBehaviour:
   m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
-  m_Celllength: 1
+  m_CellLength: 1
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
   VisualParticle: 0
   ShowGridDebugInfo: 1
   VisualGridInfo:
-    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    m_ShowMode: 0
+    m_ShowInfo: 1
+    MinShowValue: 0
+    MinShowColor: {r: 0, g: 0, b: 0, a: 0}
+    MaxShowValue: 1
+    MaxShowColor: {r: 1, g: 1, b: 1, a: 0}
+    m_GridLevel: 0
+    m_ShowRegularCell: 1
+    m_ShowTallCell: 1
+    m_ShowTerrainCell: 1
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0
