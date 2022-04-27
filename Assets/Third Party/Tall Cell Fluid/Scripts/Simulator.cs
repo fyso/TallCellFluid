@@ -8,6 +8,8 @@ public class Simulator
     public static int OnlyTallCellParticleTypeIndex {get{ return 3; }}
     public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
 
+    public static int ScatterOnlyTallCellParticleArgmentOffset { get{ return 0; }}
+
     public DynamicParticle DynamicParticle { get { return m_DynamicParticle; } } //TODO: Cannot return directly, breaking encapsulation.
     public GridPerLevel FineGrid { get { return m_Grid.FineGrid; } }
 
@@ -26,6 +28,12 @@ public class Simulator
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
         m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
         m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vSeaLevel, m_DynamicParticle);
+
+        m_Argument = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
+        uint[] InitArgument = new uint[3] {
+                1, 1, 1
+        };
+        m_Argument.SetData(InitArgument);
 
         m_Grid.UpdateGridValue();
     }
@@ -135,6 +143,8 @@ public class Simulator
         m_DynamicParticle.OrganizeParticle();
         Profiler.EndSample();
 
+        m_Utils.UpdateArgment(m_Argument, m_DynamicParticle.Argument, OnlyTallCellParticleTypeIndex, ScatterOnlyTallCellParticleArgmentOffset);
+
         Profiler.BeginSample("GatherGridToParticle");
         m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
@@ -150,7 +160,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("OnlyTallCellParticleToGrid");
-        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid);
+        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_Argument);
         Profiler.EndSample();
 
         Profiler.BeginSample("ZSortRegularCellParticle");
@@ -178,6 +188,8 @@ public class Simulator
     private ParticleInCellTools m_ParticleInCellTools;
     private ParticleSortTools m_ParticleSortTools;
     private Utils m_Utils;
+
+    private ComputeBuffer m_Argument;
 
     private SimulatorGPUCache m_SimulatorGPUCache;
 }

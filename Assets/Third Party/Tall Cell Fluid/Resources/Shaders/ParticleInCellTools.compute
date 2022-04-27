@@ -314,11 +314,11 @@ RWTexture3D<int> XXSum_RW;
 RWTexture3D<int> YSum_RW;
 RWTexture3D<int> XYSum_RW;
 
-groupshared float LocalWeight[THREAD_COUNT_1D][27];
-groupshared float3 LocalWeightedVelocity[THREAD_COUNT_1D][27];
+groupshared float LocalWeight[THREAD_COUNT_1D];
+groupshared float3 LocalWeightedVelocity[THREAD_COUNT_1D];
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
-void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 GroupIdx : SV_GroupID)
 {
     uint CurrLaneIndex = WaveGetLaneIndex();
     uint CurrLaneCount = WaveGetLaneCount();
@@ -326,7 +326,7 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     
     uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + OnlyTallCellParticleType];
     uint Offset = OnlyTallCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyTallCellParticleType - 1];
-    uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    uint i = Offset + ThreadIdx + GroupIdx.x * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
     
@@ -354,80 +354,78 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     uint RegionLength = InvIntraOffset + IntraOffset + 1;
     
     //warp level reduce
-    for (int c = 0; c < 9; c++)
+    int c = GroupIdx.y;
+    int2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
+    if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
+        return;
+        
+    float AdjTerrianHeight = TerrianHeight_R[AdjTallCell2DIndex];
+    float X = RelativeY - AdjTerrianHeight;
+    if (X < 0)
+        return;
+        
+    float XX = X * X;
+        
+    float2 AdjPointXZ = CurrCenterCellPosition.xz + OffsetVector2D[c] * CellLength;
+    float3 AdjPoint = float3(AdjPointXZ.x, RelativePosition.y, AdjPointXZ.y);
+        
+    float Weight = CubicKernel(length(RelativePosition - AdjPoint) / CellLength);
+    float3 Y = Weight * CurrVelocity;
+    float3 XY = X * Y;
+        
+    uint ParticleIncFactor = 1;
+        
+    for (int k = 0; k < ceil(log2(RegionLength)); k++)
     {
-        int2 AdjTallCell2DIndex = CurrGridXZIndex + OffsetVector2D[c];
-        if (any(AdjTallCell2DIndex < 0) || any(AdjTallCell2DIndex >= XZResolution))
-            continue;
-        
-        float AdjTerrianHeight = TerrianHeight_R[AdjTallCell2DIndex];
-        float X = RelativeY - AdjTerrianHeight;
-        if(X < 0)
-            continue;
-        
-        float XX = X * X;
-        
-        float2 AdjPointXZ = CurrCenterCellPosition.xz + OffsetVector2D[c] * CellLength;
-        float3 AdjPoint = float3(AdjPointXZ.x, RelativePosition.y, AdjPointXZ.y);
-        
-        float Weight = CubicKernel(length(RelativePosition - AdjPoint) / CellLength);
-        float3 Y = Weight * CurrVelocity;
-        float3 XY = X * Y;
-        
-        uint ParticleIncFactor = 1;
-        
-        for (int k = 0; k < ceil(log2(RegionLength)); k++)
+        uint IntraEnd = floor((float) RegionLength / pow(2.0f, k + 1));
+        uint Offset = ceil((float) RegionLength / pow(2.0f, k + 1));
+            
+        uint AnotherParticleIncFactor = WaveReadLaneAt(ParticleIncFactor, CurrLaneIndex + Offset);
+        float AnotherX = WaveReadLaneAt(X, CurrLaneIndex + Offset);
+        float3 AnotherY = WaveReadLaneAt(Y, CurrLaneIndex + Offset);
+        float AnotherXX = WaveReadLaneAt(XX, CurrLaneIndex + Offset);
+        float3 AnotherXY = WaveReadLaneAt(XY, CurrLaneIndex + Offset);
+        if (IntraOffset < IntraEnd)
         {
-            uint IntraEnd = floor((float) RegionLength / pow(2.0f, k + 1));
-            uint Offset = ceil((float) RegionLength / pow(2.0f, k + 1));
-            
-            uint AnotherParticleIncFactor = WaveReadLaneAt(ParticleIncFactor, CurrLaneIndex + Offset);
-            float AnotherX = WaveReadLaneAt(X, CurrLaneIndex + Offset);
-            float3 AnotherY = WaveReadLaneAt(Y, CurrLaneIndex + Offset);
-            float AnotherXX = WaveReadLaneAt(XX, CurrLaneIndex + Offset);
-            float3 AnotherXY = WaveReadLaneAt(XY, CurrLaneIndex + Offset);
-            if (IntraOffset < IntraEnd)
-            {
-                ParticleIncFactor += AnotherParticleIncFactor;
-                X += AnotherX;
-                Y += AnotherY;
-                XX += AnotherXX;
-                XY += AnotherXY;
-            }
+            ParticleIncFactor += AnotherParticleIncFactor;
+            X += AnotherX;
+            Y += AnotherY;
+            XX += AnotherXX;
+            XY += AnotherXY;
         }
+    }
         
-        if (IntraOffset == 0)
-        {
-            InterlockedAdd(ParticleCount_RW[AdjTallCell2DIndex], ParticleIncFactor);
+    if (IntraOffset == 0)
+    {
+        InterlockedAdd(ParticleCount_RW[AdjTallCell2DIndex], ParticleIncFactor);
             
-            int XIntZIP = floor(X);
-            int XFloatZIP = (X - XIntZIP) * ZIP;
-            InterlockedAdd(XSum_RW[uint3(AdjTallCell2DIndex, 0)], XIntZIP);
-            InterlockedAdd(XSum_RW[uint3(AdjTallCell2DIndex, 1)], XFloatZIP);
+        int XIntZIP = floor(X);
+        int XFloatZIP = (X - XIntZIP) * ZIP;
+        InterlockedAdd(XSum_RW[uint3(AdjTallCell2DIndex, 0)], XIntZIP);
+        InterlockedAdd(XSum_RW[uint3(AdjTallCell2DIndex, 1)], XFloatZIP);
             
-            int XXIntZIP = floor(XX);
-            int XXFloatZIP = (XX - XXIntZIP) * ZIP;
-            InterlockedAdd(XXSum_RW[uint3(AdjTallCell2DIndex, 0)], XXIntZIP);
-            InterlockedAdd(XXSum_RW[uint3(AdjTallCell2DIndex, 1)], XXFloatZIP);
+        int XXIntZIP = floor(XX);
+        int XXFloatZIP = (XX - XXIntZIP) * ZIP;
+        InterlockedAdd(XXSum_RW[uint3(AdjTallCell2DIndex, 0)], XXIntZIP);
+        InterlockedAdd(XXSum_RW[uint3(AdjTallCell2DIndex, 1)], XXFloatZIP);
             
-            int3 YIntZIP = int3(floor(Y.x), floor(Y.y), floor(Y.z));
-            int3 YFloatZIP = (Y - YIntZIP) * ZIP;
-            InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 0)], YIntZIP.x);
-            InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 1)], YIntZIP.y);
-            InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 2)], YIntZIP.z);
-            InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 3)], YFloatZIP.x);
-            InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 4)], YFloatZIP.y);
-            InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 5)], YFloatZIP.z);
+        int3 YIntZIP = int3(floor(Y.x), floor(Y.y), floor(Y.z));
+        int3 YFloatZIP = (Y - YIntZIP) * ZIP;
+        InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 0)], YIntZIP.x);
+        InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 1)], YIntZIP.y);
+        InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 2)], YIntZIP.z);
+        InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 3)], YFloatZIP.x);
+        InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 4)], YFloatZIP.y);
+        InterlockedAdd(YSum_RW[uint3(AdjTallCell2DIndex, 5)], YFloatZIP.z);
             
-            int3 XYIntZIP = int3(floor(XY.x), floor(XY.y), floor(XY.z));
-            int3 XYFloatZIP = (XY - XYIntZIP) * ZIP;
-            InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 0)], XYIntZIP.x);
-            InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 1)], XYIntZIP.y);
-            InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 2)], XYIntZIP.z);
-            InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 3)], XYFloatZIP.x);
-            InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 4)], XYFloatZIP.y);
-            InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 5)], XYFloatZIP.z);
-        }
+        int3 XYIntZIP = int3(floor(XY.x), floor(XY.y), floor(XY.z));
+        int3 XYFloatZIP = (XY - XYIntZIP) * ZIP;
+        InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 0)], XYIntZIP.x);
+        InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 1)], XYIntZIP.y);
+        InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 2)], XYIntZIP.z);
+        InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 3)], XYFloatZIP.x);
+        InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 4)], XYFloatZIP.y);
+        InterlockedAdd(XYSum_RW[uint3(AdjTallCell2DIndex, 5)], XYFloatZIP.z);
     }
 }
 

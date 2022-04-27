@@ -59,7 +59,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.DispatchIndirect(gatherGridToParticle, vParticle.Argument);
     }
 
-    public void ScatterOnlyTallCellParticleToGrid(DynamicParticle vParticle, Grid vTargetGrid)
+    public void ScatterOnlyTallCellParticleToGrid(DynamicParticle vParticle, Grid vTargetGrid, ComputeBuffer vSimulatorArgument)
     {
         Profiler.BeginSample("Pass1");
         m_ParticleInCellToolsCS.SetBuffer(scatterOnlyTallCellParticleToGrid_Pass1, "ParticleIndrectArgment_R", vParticle.Argument);
@@ -71,7 +71,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XXSum_RW", vTargetGrid.GPUCache.TallCellScalarCahce2);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "YSum_RW", vTargetGrid.GPUCache.TallCellVectorCahce1);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XYSum_RW", vTargetGrid.GPUCache.TallCellVectorCahce2);
-        m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyTallCellParticleToGrid_Pass1, vParticle.Argument, ((uint)DynamicParticle.DifferParticleXGridCountArgumentOffset + (uint)Simulator.OnlyTallCellParticleTypeIndex * 3) * sizeof(uint));
+        m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyTallCellParticleToGrid_Pass1, vSimulatorArgument, (uint)Simulator.ScatterOnlyTallCellParticleArgmentOffset * sizeof(uint));
         Profiler.EndSample();
 
         Profiler.BeginSample("Pass2");
