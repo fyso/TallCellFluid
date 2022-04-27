@@ -45,7 +45,7 @@ public class Simulator
     
     public void VisualGrid(VisualGridInfo VisualGridInfo)
     {
-        m_Grid.VisualGrid(VisualGridInfo);
+        //m_Grid.VisualGrid(VisualGridInfo);
     }
 
     public void DebugGridShape()

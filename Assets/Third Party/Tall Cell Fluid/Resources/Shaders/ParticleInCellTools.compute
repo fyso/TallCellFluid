@@ -210,7 +210,7 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         WeightSum += Weight;
     }
     
-    for (c = 0; c < 3 * 3; c++)
+    for (c = 3 * 3 - 1; c < 3 * 3; c++)
     {
         if (!(RelativePosition.y >= CenterTerrianHeight && RelativePosition.y < CenterTerrianHeight + CenterTallCellHeight))
             break;
@@ -228,7 +228,7 @@ void gatherGridToParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         {
             float3 TopValue = TopCellVelocity_R[AdjXZ];
             float3 BottomValue = BottomCellVelocity_R[AdjXZ];
-            float RelativeHeight = (AdjPoint.y - CenterTerrianHeight - 0.5f * CellLength) / ((CenterTallCellHeight - CellLength));
+            float RelativeHeight = AdjPoint.y / (CenterTallCellHeight + CenterTerrianHeight);
             Value = RelativeHeight * (TopValue - BottomValue) + BottomValue;
             Weight = CubicKernel(length(AdjPoint - CurrPosition) / CellLength);
         }

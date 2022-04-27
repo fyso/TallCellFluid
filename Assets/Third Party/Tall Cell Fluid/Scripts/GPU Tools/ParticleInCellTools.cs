@@ -65,7 +65,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetBuffer(scatterOnlyTallCellParticleToGrid_Pass1, "ParticleIndrectArgment_R", vParticle.Argument);
         m_ParticleInCellToolsCS.SetBuffer(scatterOnlyTallCellParticleToGrid_Pass1, "ParticlePosition_R", vParticle.MainParticle.Position);
         m_ParticleInCellToolsCS.SetBuffer(scatterOnlyTallCellParticleToGrid_Pass1, "ParticleVelocity_R", vParticle.MainParticle.Velocity);
-        m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrrianHeight);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "ParticleCount_RW", vTargetGrid.GPUCache.TallCellParticleCountCahce);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XSum_RW", vTargetGrid.GPUCache.TallCellScalarCahce1);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XXSum_RW", vTargetGrid.GPUCache.TallCellScalarCahce2);
@@ -75,7 +75,7 @@ public class ParticleInCellTools
         Profiler.EndSample();
 
         Profiler.BeginSample("Pass2");
-        m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass2, "TerrianHeight_R", vTargetGrid.FineGrid.TerrrianHeight);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass2, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass2, "TallCellHeight_R", vTargetGrid.FineGrid.TallCellHeight);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass2, "ParticleCount_R", vTargetGrid.GPUCache.TallCellParticleCountCahce);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass2, "XSum_R", vTargetGrid.GPUCache.TallCellScalarCahce1);
