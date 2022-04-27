@@ -138,7 +138,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &255287186
 Transform:
   m_ObjectHideFlags: 0
@@ -883,7 +883,10 @@ MonoBehaviour:
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
-  ShowDebugInfo: 0
+  VisualParticle: 0
+  ShowGridDebugInfo: 1
+  VisualGridInfo:
+    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0

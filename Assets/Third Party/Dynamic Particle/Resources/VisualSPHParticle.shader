@@ -1,4 +1,4 @@
-Shader "DPParticle/Particle"
+Shader "Custom/VisualParticle"
 {
     Properties
     {
