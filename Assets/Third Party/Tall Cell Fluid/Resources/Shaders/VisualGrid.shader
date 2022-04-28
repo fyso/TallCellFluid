@@ -81,9 +81,9 @@ Shader "Custom/VisualGrid"
                 uint2 terrainCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
                 float terrainHeight = TerrainHeight[terrainCellIndex];
                 float3 pos = MinPos +
-                    float3((vertices[vertexID * 3] + terrainCellIndex.x) * CellLength,
+                    float3((vertices[vertexID * 3] + terrainCellIndex.x + 0.5) * CellLength,
                            vertices[vertexID * 3 + 1] * terrainHeight + terrainHeight * 0.5,
-                           (vertices[vertexID * 3 + 2] + terrainCellIndex.y) * CellLength);
+                           (vertices[vertexID * 3 + 2] + terrainCellIndex.y + 0.5) * CellLength);
 
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(pos, 1));
@@ -201,9 +201,9 @@ Shader "Custom/VisualGrid"
                 float tallCellHeight = TallCellHeight[tallCellIndex];
 
                 float3 pos = MinPos + 
-                    float3((vertices[vertexID * 3] + tallCellIndex.x) * CellLength,
+                    float3((vertices[vertexID * 3] + tallCellIndex.x + 0.5) * CellLength,
                            vertices[vertexID * 3 + 1] * tallCellHeight + tallCellHeight * 0.5 + terrainHeight,
-                           (vertices[vertexID * 3 + 2] + tallCellIndex.y) * CellLength);
+                           (vertices[vertexID * 3 + 2] + tallCellIndex.y + 0.5) * CellLength);
 
                 o.pos = mul(UNITY_MATRIX_VP, float4(pos, 1));
                 return o;
@@ -311,9 +311,9 @@ Shader "Custom/VisualGrid"
                 float terrainHeight = TerrainHeight[regularCellIndex.xz];
                 float tallCellHeight = TallCellHeight[regularCellIndex.xz];
                 float3 pos = MinPos +
-                    (float3(vertices[vertexID * 3],
+                    (float3(vertices[vertexID * 3] + 0.5,
                             vertices[vertexID * 3 + 1],
-                            vertices[vertexID * 3 + 2]) + regularCellIndex) * CellLength;
+                            vertices[vertexID * 3 + 2] + 0.5) + regularCellIndex) * CellLength;
                 pos.y += 0.5 * CellLength + terrainHeight + tallCellHeight;
 
                 v2f o;

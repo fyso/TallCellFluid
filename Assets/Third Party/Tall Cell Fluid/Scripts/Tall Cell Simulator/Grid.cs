@@ -294,7 +294,7 @@ public class Grid
 
     public void Remesh(bool vIsInit = false)
     {
-        //__SwapFineGridVelocityWithCache();
+        __SwapFineGridVelocityWithCache();
 
         Profiler.BeginSample("update fine level tallcell grid");
         //TODO: ComputeH1H2WithParticle
@@ -309,11 +309,11 @@ public class Grid
     public void UpdateGridValue()
     {
         Profiler.BeginSample("update fine grid velocity");
-        //m_RemeshTools.UpdateFineGridVelocity(
-        //    m_GPUCache.LastFrameTallCellHeightCache,
-        //    m_GPUCache.LastFrameVelocityCache,
-        //    FineGrid.TallCellHeight,
-        //    FineGrid.Velocity);
+        m_RemeshTools.UpdateFineGridVelocity(
+            m_GPUCache.LastFrameTallCellHeightCache,
+            m_GPUCache.LastFrameVelocityCache,
+            FineGrid.TallCellHeight,
+            FineGrid.Velocity);
         Profiler.EndSample();
 
         Profiler.BeginSample("update rigidbody");
