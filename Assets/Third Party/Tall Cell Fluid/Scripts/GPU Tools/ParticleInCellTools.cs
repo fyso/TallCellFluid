@@ -10,11 +10,12 @@ public class ParticleInCellTools
     {
         m_ParticleInCellToolsCS = Resources.Load<ComputeShader>(Common.ParticleInCellToolsCSPath);
         markParticleByCellType = m_ParticleInCellToolsCS.FindKernel("markParticleByCellType");
-        gatherGridToParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToParticle");
+        gatherGridToOnlyRegularParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToOnlyRegularParticle");
+        gatherGridToOnlyTallCellParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToOnlyTallCellParticle");
         scatterOnlyTallCellParticleToGrid_Pass1 = m_ParticleInCellToolsCS.FindKernel("scatterOnlyTallCellParticleToGrid_Pass1");
         scatterOnlyTallCellParticleToGrid_Pass2 = m_ParticleInCellToolsCS.FindKernel("scatterOnlyTallCellParticleToGrid_Pass2");
-        scatterRegularParticleToGrid_Pass1 = m_ParticleInCellToolsCS.FindKernel("scatterRegularParticleToGrid_Pass1");
-        scatterRegularParticleToGrid_Pass2 = m_ParticleInCellToolsCS.FindKernel("scatterRegularParticleToGrid_Pass2");
+        scatterOnlyRegularParticleToGrid_Pass1 = m_ParticleInCellToolsCS.FindKernel("scatterOnlyRegularParticleToGrid_Pass1");
+        scatterOnlyRegularParticleToGrid_Pass2 = m_ParticleInCellToolsCS.FindKernel("scatterOnlyRegularParticleToGrid_Pass2");
         UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
     }
 
@@ -44,19 +45,27 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.DispatchIndirect(markParticleByCellType, vParticle.Argument);
     }
 
-    public void GatherGridToParticle(DynamicParticle vParticle, GridPerLevel vTargetLevel)
+    public void GatherGridToOnlyRegularParticle(DynamicParticle vParticle, GridPerLevel vTargetLevel)
     {
-        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleIndrectArgment_R", vParticle.Argument);
-        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticlePosition_R", vParticle.MainParticle.Position);
-        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleFilter_R", vParticle.MainParticle.Filter);
-        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleVelocity_RW", vParticle.MainParticle.Velocity);
-        m_ParticleInCellToolsCS.SetBuffer(gatherGridToParticle, "ParticleFilter_RW", vParticle.MainParticle.Filter);
-        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "TerrianHeight_R", vTargetLevel.TerrainHeight);
-        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "TallCellHeight_R", vTargetLevel.TallCellHeight);
-        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "TopCellVelocity_R", vTargetLevel.Velocity.TallCellTopValue);
-        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "BottomCellVelocity_R", vTargetLevel.Velocity.TallCellBottomValue);
-        m_ParticleInCellToolsCS.SetTexture(gatherGridToParticle, "RegularCellVelocity_R", vTargetLevel.Velocity.RegularCellValue);
-        m_ParticleInCellToolsCS.DispatchIndirect(gatherGridToParticle, vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToOnlyRegularParticle, "ParticleIndrectArgment_R", vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToOnlyRegularParticle, "ParticlePosition_R", vParticle.MainParticle.Position);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToOnlyRegularParticle, "ParticleVelocity_RW", vParticle.MainParticle.Velocity);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyRegularParticle, "TerrianHeight_R", vTargetLevel.TerrainHeight);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyRegularParticle, "TallCellHeight_R", vTargetLevel.TallCellHeight);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyRegularParticle, "RegularCellVelocity_R", vTargetLevel.Velocity.RegularCellValue);
+        m_ParticleInCellToolsCS.DispatchIndirect(gatherGridToOnlyRegularParticle, vParticle.Argument);
+    }
+
+    public void GatherGridToOnlyTallCellParticle(DynamicParticle vParticle, GridPerLevel vTargetLevel)
+    {
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToOnlyTallCellParticle, "ParticleIndrectArgment_R", vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToOnlyTallCellParticle, "ParticlePosition_R", vParticle.MainParticle.Position);
+        m_ParticleInCellToolsCS.SetBuffer(gatherGridToOnlyTallCellParticle, "ParticleVelocity_RW", vParticle.MainParticle.Velocity);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyTallCellParticle, "TerrianHeight_R", vTargetLevel.TerrainHeight);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyTallCellParticle, "TallCellHeight_R", vTargetLevel.TallCellHeight);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyTallCellParticle, "TopCellVelocity_R", vTargetLevel.Velocity.TallCellTopValue);
+        m_ParticleInCellToolsCS.SetTexture(gatherGridToOnlyTallCellParticle, "BottomCellVelocity_R", vTargetLevel.Velocity.TallCellBottomValue);
+        m_ParticleInCellToolsCS.DispatchIndirect(gatherGridToOnlyTallCellParticle, vParticle.Argument);
     }
 
     public void ScatterOnlyTallCellParticleToGrid(DynamicParticle vParticle, Grid vTargetGrid, ComputeBuffer vSimulatorArgument)
@@ -91,25 +100,25 @@ public class ParticleInCellTools
     public void ScatterRegularParticleToGrid(DynamicParticle vParticle, Grid vTargetGrid)
     {
         Profiler.BeginSample("Pass1");
-        m_ParticleInCellToolsCS.SetBuffer(scatterRegularParticleToGrid_Pass1, "ParticleIndrectArgment_R", vParticle.Argument);
-        m_ParticleInCellToolsCS.SetBuffer(scatterRegularParticleToGrid_Pass1, "ParticlePosition_R", vParticle.MainParticle.Position);
-        m_ParticleInCellToolsCS.SetBuffer(scatterRegularParticleToGrid_Pass1, "ParticleVelocity_R", vParticle.MainParticle.Velocity);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass1, "TallCellHeight_R", vTargetGrid.FineGrid.TallCellHeight);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass1, "RegularCellWeight_RW", vTargetGrid.GPUCache.RegularCellScalarCahce);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_R_RW", vTargetGrid.GPUCache.RegularCellVectorXCache);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_G_RW", vTargetGrid.GPUCache.RegularCellVectorYCache);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_B_RW", vTargetGrid.GPUCache.RegularCellVectorZCache);
-        m_ParticleInCellToolsCS.DispatchIndirect(scatterRegularParticleToGrid_Pass1, vParticle.Argument, ((uint)DynamicParticle.DifferParticleXGridCountArgumentOffset + (uint)Simulator.OnlyRegularCellParticleTypeIndex * 3) * sizeof(uint));
+        m_ParticleInCellToolsCS.SetBuffer(scatterOnlyRegularParticleToGrid_Pass1, "ParticleIndrectArgment_R", vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(scatterOnlyRegularParticleToGrid_Pass1, "ParticlePosition_R", vParticle.MainParticle.Position);
+        m_ParticleInCellToolsCS.SetBuffer(scatterOnlyRegularParticleToGrid_Pass1, "ParticleVelocity_R", vParticle.MainParticle.Velocity);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "TallCellHeight_R", vTargetGrid.FineGrid.TallCellHeight);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeight_RW", vTargetGrid.GPUCache.RegularCellScalarCahce);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_R_RW", vTargetGrid.GPUCache.RegularCellVectorXCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_G_RW", vTargetGrid.GPUCache.RegularCellVectorYCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_B_RW", vTargetGrid.GPUCache.RegularCellVectorZCache);
+        m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyRegularParticleToGrid_Pass1, vParticle.Argument, ((uint)DynamicParticle.DifferParticleXGridCountArgumentOffset + (uint)Simulator.OnlyRegularCellParticleTypeIndex * 3) * sizeof(uint));
         Profiler.EndSample();
 
         Profiler.BeginSample("Pass2");
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass2, "RegularCellWeight_R", vTargetGrid.GPUCache.RegularCellScalarCahce);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_R_R", vTargetGrid.GPUCache.RegularCellVectorXCache);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_G_R", vTargetGrid.GPUCache.RegularCellVectorYCache);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_B_R", vTargetGrid.GPUCache.RegularCellVectorZCache);
-        m_ParticleInCellToolsCS.SetTexture(scatterRegularParticleToGrid_Pass2, "RegularCellVelocity_RW", vTargetGrid.FineGrid.Velocity.RegularCellValue);
-        m_ParticleInCellToolsCS.Dispatch(scatterRegularParticleToGrid_Pass2, Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.x / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.RegularCellYCount / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount3D));
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellWeight_R", vTargetGrid.GPUCache.RegularCellScalarCahce);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_R_R", vTargetGrid.GPUCache.RegularCellVectorXCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_G_R", vTargetGrid.GPUCache.RegularCellVectorYCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_B_R", vTargetGrid.GPUCache.RegularCellVectorZCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellVelocity_RW", vTargetGrid.FineGrid.Velocity.RegularCellValue);
+        m_ParticleInCellToolsCS.Dispatch(scatterOnlyRegularParticleToGrid_Pass2, Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.x / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.RegularCellYCount / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount3D));
         Profiler.EndSample();
     }
 
@@ -177,9 +186,10 @@ public class ParticleInCellTools
 
     private ComputeShader m_ParticleInCellToolsCS;
     private int markParticleByCellType;
-    private int gatherGridToParticle;
+    private int gatherGridToOnlyRegularParticle;
+    private int gatherGridToOnlyTallCellParticle;
     private int scatterOnlyTallCellParticleToGrid_Pass1;
     private int scatterOnlyTallCellParticleToGrid_Pass2;
-    private int scatterRegularParticleToGrid_Pass1;
-    private int scatterRegularParticleToGrid_Pass2;
+    private int scatterOnlyRegularParticleToGrid_Pass1;
+    private int scatterOnlyRegularParticleToGrid_Pass2;
 }

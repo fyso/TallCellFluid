@@ -155,8 +155,12 @@ public class Simulator
 
         m_Utils.UpdateArgment(m_Argument, m_DynamicParticle.Argument, DynamicParticle.DifferParticleXGridCountArgumentOffset + OnlyTallCellParticleTypeIndex * 3, ScatterOnlyTallCellParticleArgmentOffset);
 
-        Profiler.BeginSample("GatherGridToParticle");
-        m_ParticleInCellTools.GatherGridToParticle(m_DynamicParticle, m_Grid.FineGrid);
+        Profiler.BeginSample("GatherGridToOnlyRegularParticle");
+        m_ParticleInCellTools.GatherGridToOnlyRegularParticle(m_DynamicParticle, m_Grid.FineGrid);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("GatherGridToOnlyTallCellParticle");
+        m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
         //TODO: advect particle
