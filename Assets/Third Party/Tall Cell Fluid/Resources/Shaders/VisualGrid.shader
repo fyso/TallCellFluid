@@ -113,7 +113,7 @@ Shader "Custom/VisualGrid"
             Texture2D<float> TerrainHeight;
             Texture2D<float> TallCellHeight;
 
-            int ShowInfoMode; // -1 is no draw, 0 is to draw scalar, 1 is to draw direction, 2 is to draw size
+            int TallCellShowInfoMode; // -1 is no draw, 0 is to draw scalar, 1 is to draw direction, 2 is to draw size
             Texture2D<float3> TopVelocity;
             Texture2D<float3> BottomVelocity;
             Texture2D<float> ShowTopValue;
@@ -181,17 +181,17 @@ Shader "Custom/VisualGrid"
             {
                 v2f o;
                 uint2 tallCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
-                if (ShowInfoMode == 1)
+                if (TallCellShowInfoMode == 1)
                 {
                     if(vertices[vertexID * 3 + 1] > 0) o.velocity = TopVelocity[tallCellIndex];
                     else o.velocity = BottomVelocity[tallCellIndex];
                 }
-                else if (ShowInfoMode == 2)
+                else if (TallCellShowInfoMode == 2)
                 {
                     if (vertices[vertexID * 3 + 1] > 0) o.value = clamp(length(TopVelocity[tallCellIndex]), MinShowColor.w, MaxShowColor.w);
                     else o.value = clamp(length(BottomVelocity[tallCellIndex]), MinShowColor.w, MaxShowColor.w);
                 }
-                else
+                else if (TallCellShowInfoMode == 0)
                 {
                     if (vertices[vertexID * 3 + 1] > 0) o.value = clamp(ShowTopValue[tallCellIndex], MinShowColor.w, MaxShowColor.w);
                     else  o.value = clamp(ShowBottomValue[tallCellIndex], MinShowColor.w, MaxShowColor.w);
@@ -211,11 +211,11 @@ Shader "Custom/VisualGrid"
 
             float4 VisualGridFrag(v2f i) : SV_Target
             {
-                if (ShowInfoMode == 1)
+                if (TallCellShowInfoMode == 1)
                 {
                     return float4(i.velocity, 1);
                 }
-                else if (ShowInfoMode == -1)
+                else if (TallCellShowInfoMode == -1)
                 {
                     return float4(0.262, 0.556, 0.858, 1);
                 }
@@ -243,7 +243,7 @@ Shader "Custom/VisualGrid"
             Texture2D<float> TerrainHeight;
             Texture2D<float> TallCellHeight;
 
-            int ShowInfoMode; // -1 is no draw, 0 is to draw scalar, 1 is to draw direction, 2 is to draw size
+            int ShowInfoMode; // 0 is to draw scalar, 1 is to draw direction, 2 is to draw size
             Texture3D<float3> Velocity;
             Texture3D<float> ShowValue;
             float4 MinShowColor;
