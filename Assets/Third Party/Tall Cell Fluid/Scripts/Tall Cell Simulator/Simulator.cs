@@ -1,17 +1,12 @@
 using UnityEngine;
 using DParticle;
 using UnityEngine.Profiling;
-using System.Collections.Generic;
 
 public class Simulator
 {
     public static int OnlyTallCellParticleTypeIndex {get{ return 3; }}
     public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
-
     public static int ScatterOnlyTallCellParticleArgmentOffset { get{ return 0; }}
-
-    public DynamicParticle DynamicParticle { get { return m_DynamicParticle; } } //TODO: Cannot return directly, breaking encapsulation.
-    public GridPerLevel FineGrid { get { return m_Grid.FineGrid; } }
 
     public Simulator(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellYCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
     {
@@ -101,7 +96,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("Remesh");
-        m_Grid.Remesh();
+        m_Grid.Remesh(vTimeStep);
         Profiler.EndSample();
 
         Profiler.BeginSample("UpdateGridValue");

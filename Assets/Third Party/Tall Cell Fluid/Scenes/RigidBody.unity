@@ -875,12 +875,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de90f2c2c37e412478ff0bfc6124c041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_TestSeaLevel: 28
   m_Terrian: {fileID: 2800000, guid: 7664b6f69431dfb4cbaf3e1ef3122f15, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
-  m_SeaLevel: 32
+  m_SeaLevel: 28
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
   VisualParticle: 0

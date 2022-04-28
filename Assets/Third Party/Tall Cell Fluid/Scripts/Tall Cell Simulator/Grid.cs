@@ -292,12 +292,13 @@ public class Grid
         Profiler.EndSample();
     }
 
-    public void Remesh(bool vIsInit = false)
+    public void Remesh(float testSeaLevel = 32)
     {
         __SwapFineGridVelocityWithCache();
 
         Profiler.BeginSample("update fine level tallcell grid");
         //TODO: ComputeH1H2WithParticle
+        m_RemeshTools.ComputeH1H2WithSeaLevel(FineGrid.TerrainHeight, m_GPUCache.H1H2Cahce, testSeaLevel);
         __ComputeTallCellHeightFromH1H2();
         Profiler.EndSample();
 

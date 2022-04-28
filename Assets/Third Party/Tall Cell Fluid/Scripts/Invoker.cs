@@ -36,6 +36,8 @@ public struct VisualGridInfo
 
 public class Invoker : MonoBehaviour
 {
+    [Range(0f, 32f)]
+    public float m_TestSeaLevel;
     public Texture m_Terrian;
     public Vector3 m_Min;
     public Vector2Int m_ResolutionXZ;//TODO: The number with exponent 2
@@ -68,7 +70,10 @@ public class Invoker : MonoBehaviour
 
     void Update()
     {
-        m_Simulator.Step(m_TimeStep);
+        //m_Simulator.Step(m_TimeStep);
+        //if (m_TestSeaLevel == 28) m_TestSeaLevel++;
+        //else m_TestSeaLevel--;
+        m_Simulator.Step(m_TestSeaLevel);
     }
 
     private void OnRenderObject()
