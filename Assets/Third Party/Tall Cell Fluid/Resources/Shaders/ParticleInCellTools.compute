@@ -3,6 +3,7 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel markParticleByCellType
 #pragma kernel gatherGridToOnlyRegularParticle
+#pragma kernel gatherGridToIntersectCellParticle
 #pragma kernel gatherGridToOnlyTallCellParticle
 #pragma kernel scatterOnlyTallCellParticleToGrid_Pass1
 #pragma kernel scatterOnlyTallCellParticleToGrid_Pass2
@@ -14,6 +15,7 @@ uint ParticleCountArgumentOffset;
 uint DifferParticleSplitPointArgumentOffset;
 uint DifferParticleCountArgumentOffset;
 uint OnlyTallCellParticleType;
+uint IntersectCellParticleType;
 uint OnlyRegularCellParticleType;
 
 RWStructuredBuffer<float3> DEBUG;
@@ -38,7 +40,7 @@ RWTexture2D<float3> BottomCellVelocity_RW;
 StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 
-int2 OffsetVector2D[3 * 3] =
+static int2 OffsetVector2D[3 * 3] =
 {
     { -1, 0 },
     { 1, 0 },
@@ -51,7 +53,7 @@ int2 OffsetVector2D[3 * 3] =
     { 0, 0 }
 };
 
-int3 OffsetVector3D[3 * 3 * 3] =
+static int3 OffsetVector3D[3 * 3 * 3] =
 {
     { -1, 0, 0},
     { 1, 0, 0 },
@@ -113,8 +115,12 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     
     for (int c = 0; c < 3 * 3 - 1; c++)
     {
-        float SurroundTerrianHeight = TerrianHeight_R[CurrGridXZIndex + OffsetVector2D[c]];
-        float SurroundTallCellHeight = TallCellHeight_R[CurrGridXZIndex + OffsetVector2D[c]];
+        int2 Adj = CurrGridXZIndex + OffsetVector2D[c];
+        if (any(Adj < 0) || any(Adj >= XZResolution))
+            continue;
+        
+        float SurroundTerrianHeight = TerrianHeight_R[Adj];
+        float SurroundTallCellHeight = TallCellHeight_R[Adj];
         
         if (RelativeHeight <= SurroundTallCellHeight + SurroundTerrianHeight + CellLength)
         {
@@ -129,17 +135,17 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     
     if (!IsInTallCell && !IsInTerrianCell)
     {
-        //if (!IsAnyTallCellHigher)
+        if (!IsAnyTallCellHigher)
             ParticleFilter_RW[i] = 0;
-        //else
-            //ParticleFilter_RW[i] = 1;
+        else
+            ParticleFilter_RW[i] = 1;
     }
     else if (IsInTallCell && !IsInTerrianCell)
     {
-        //if (!IsAnyTallCellLower)
+        if (!IsAnyTallCellLower)
             ParticleFilter_RW[i] = 3;
-        //else
-            //ParticleFilter_RW[i] = 2;
+        else
+            ParticleFilter_RW[i] = 1;
     }
     else
     {
@@ -186,14 +192,66 @@ void gatherGridToOnlyRegularParticle(uint ThreadIdx : SV_GroupIndex, uint GroupI
             Value = RegularCellVelocity_R[uint3(AdjXZ.x, YIndex, AdjXZ.y)];
             Weight = CubicKernel(length(AdjPoint - CurrPosition) / CellLength);
         }
-        //else if (AdjPoint.y >= CenterTerrianHeight && AdjPoint.y < CenterTerrianHeight + CenterTallCellHeight && length((uint2) (AdjPoint.xz / CellLength) - CurrGridXZIndex) == 0)
-        //{
-        //    float3 TopValue = TopCellVelocity_R[AdjXZ];
-        //    float3 BottomValue = BottomCellVelocity_R[AdjXZ];
-        //    float RelativeHeight = (AdjPoint.y - CenterTerrianHeight) / CenterTallCellHeight;
-        //    Value = RelativeHeight * (TopValue - BottomValue) + BottomValue;
-        //    Weight = CubicKernel(length(AdjPoint.xz - CurrCenterCellPosition.xz) / CellLength);
-        //}
+        else
+        {
+            Value = float3(0, 0, 0);
+            Weight = 0;
+        }
+        WeightValue += Value * Weight;
+        WeightSum += Weight;
+    }
+    
+    float3 FinalValue = float3(0, 0, 0);
+    if (WeightSum != 0)
+        FinalValue = WeightValue / WeightSum;
+    ParticleVelocity_RW[i] = FinalValue;
+}
+
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void gatherGridToIntersectCellParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + IntersectCellParticleType];
+    uint Offset = IntersectCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + IntersectCellParticleType - 1];
+    uint i = Offset + ThreadIdx + GroupIdx.x * THREAD_COUNT_1D;
+    if (i - Offset >= Count)
+        return;
+    
+    float3 CurrPosition = ParticlePosition_R[i];
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    float RelativeY = CurrPosition.y - Min.y;
+    float3 RelativePosition = float3(RelativeXZ.x, RelativeY, RelativeXZ.y);
+    
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
+    uint CurrGridYIndex = RelativePosition.y / CellLength;
+    uint3 CurrCenterCell3DIndex = uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y);
+    float3 CurrCenterCellPosition = CurrCenterCell3DIndex * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+    
+    float WeightSum = 0.0f;
+    float3 WeightValue = float3(0, 0, 0);
+    for (int c = 0; c < 3 * 3 * 3; c++)
+    {
+        float3 AdjPoint = CurrCenterCellPosition + OffsetVector3D[c] * CellLength;
+        int2 AdjXZ = AdjPoint.xz / CellLength;
+        
+        if (any(AdjXZ < 0) || any(AdjXZ >= XZResolution))
+            continue;
+        
+        float AdjTerrianHeight = TerrianHeight_R[AdjXZ];
+        float AdjTallCellHeight = TallCellHeight_R[AdjXZ];
+        float3 Value = float3(0, 0, 0);
+        float Weight = CubicKernel(length(AdjPoint - CurrPosition) / CellLength);
+        if (AdjPoint.y >= AdjTerrianHeight + AdjTallCellHeight && AdjPoint.y < AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength)
+        {
+            uint YIndex = (AdjPoint.y - AdjTerrianHeight - AdjTallCellHeight) / CellLength;
+            Value = RegularCellVelocity_R[uint3(AdjXZ.x, YIndex, AdjXZ.y)];
+        }
+        else if (AdjPoint.y >= 0 && AdjPoint.y < AdjTerrianHeight + AdjTallCellHeight)
+        {
+            float3 TopValue = TopCellVelocity_R[RelativeXZ];
+            float3 BottomValue = BottomCellVelocity_R[RelativeXZ];
+            float RelativeHeight = (RelativePosition.y - AdjTerrianHeight) / AdjTallCellHeight;
+            Value = RelativeHeight * (TopValue - BottomValue) + BottomValue;
+        }
         else
         {
             Value = float3(0, 0, 0);
@@ -480,15 +538,15 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     float RelativeY = CurrPosition.y - Min.y;
     
     float3 RelativePoition = float3(RelativeXZ.x, RelativeY, RelativeXZ.y);
-    float3 CenterGridPosition = floor(RelativePoition / CellLength) * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
     
     //unzip cell morton code
-    uint2 CurrGridXZIndex = RelativePoition.xz / CellLength;
+    uint2 CurrGridXZIndex = RelativeXZ / CellLength;
     float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
     float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
-    uint CurrGridYIndex = (RelativePoition.y - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
-    uint3 Cell3DIndex = uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y);
-    uint CurrRegularCellLinerIndex = computeMorton3D(Cell3DIndex);
+    
+    uint CurrGridYIndex = (RelativeY - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
+    
+    uint CurrRegularCellLinerIndex = computeMorton3D(uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y));
     uint PrevRegularCellLinerIndex = ThreadIdx == 0 ? 0 : WaveReadLaneAt(CurrRegularCellLinerIndex, CurrLaneIndex - 1);
     uint NextRegularCellLinerIndex = ThreadIdx == CurrLaneCount - 1 ? 0 : WaveReadLaneAt(CurrRegularCellLinerIndex, CurrLaneIndex + 1);
     
@@ -502,20 +560,21 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     //warp level reduce
     for (int c = 0; c < 27; c++)
     {
-        float3 AdjContributePoint = CenterGridPosition + OffsetVector3D[c] * CellLength;
-        int2 AdjContributePointXZIndex = AdjContributePoint.xz / CellLength;
-        
-        CenterTerrianHeight = TerrianHeight_R[AdjContributePointXZIndex];
-        CenterTallCellHeight = TallCellHeight_R[AdjContributePointXZIndex];
-        
-        int AdjContributePointYIndex = (AdjContributePoint.y - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
-        int3 AdjContributePoint3DIndex = int3(AdjContributePointXZIndex.x, AdjContributePointYIndex, AdjContributePointXZIndex.y);
-        if (any(AdjContributePoint3DIndex < 0) || any(AdjContributePointXZIndex >= XZResolution) || AdjContributePointYIndex > ConstantCellNum)
+        int2 AdjContributePointXZIndex = CurrGridXZIndex + OffsetVector3D[c].xz;
+        if (any(AdjContributePointXZIndex < 0) || any(AdjContributePointXZIndex >= XZResolution))
             continue;
         
+        float AdjTerrianHeight = TerrianHeight_R[AdjContributePointXZIndex];
+        float AdjTallCellHeight = TallCellHeight_R[AdjContributePointXZIndex];
+        
+        float AdjContributePointHeight = (int) (RelativeY / CellLength) * CellLength + 0.5f * CellLength + OffsetVector3D[c].y * CellLength;
+        if (AdjContributePointHeight <= AdjTerrianHeight + AdjTallCellHeight || AdjContributePointHeight > AdjTerrianHeight + AdjTallCellHeight + CellLength * ConstantCellNum)
+            continue;
+        
+        float3 AdjContributePoint = float3(AdjContributePointXZIndex.x * CellLength + 0.5f * CellLength, AdjContributePointHeight, AdjContributePointXZIndex.y * CellLength + 0.5f * CellLength);
         float Weight = CubicKernel(length(RelativePoition - AdjContributePoint) / CellLength);
         float3 WeightVelocity = Weight * CurrVelocity;
-        
+
         for (int k = 0; k < ceil(log2(RegionLength)); k++)
         {
             uint IntraEnd = floor((float) RegionLength / pow(2.0f, k + 1));
@@ -532,6 +591,8 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
         
         if (IntraOffset == 0)
         {
+            int AdjContributePointYIndex = (AdjContributePointHeight - AdjTerrianHeight - AdjTallCellHeight) / CellLength;
+            int3 AdjContributePoint3DIndex = int3(AdjContributePointXZIndex.x, AdjContributePointYIndex, AdjContributePointXZIndex.y);
             InterlockedAdd(RegularCellWeight_RW[AdjContributePoint3DIndex], Weight * ZIP);
             InterlockedAdd(RegularCellWeightedVelocity_R_RW[AdjContributePoint3DIndex], WeightVelocity.x * ZIP);
             InterlockedAdd(RegularCellWeightedVelocity_G_RW[AdjContributePoint3DIndex], WeightVelocity.y * ZIP);
