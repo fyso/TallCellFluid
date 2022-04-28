@@ -194,7 +194,7 @@ RWTexture2D<float3> TallCellBottomVelocity;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    float CurrentHeight = TallCellHeight[DispatchThreadID.xy] - 0.5 * CellLength;
+    float CurrentTallCellTopHeight = TallCellHeight[DispatchThreadID.xy] - 0.5 * CellLength;
     float LastFrameTallCellHeight = SrcTallCellHeight[DispatchThreadID.xy];
     
     float LastFrameTallCellTopHeight = LastFrameTallCellHeight - 0.5f * CellLength;
@@ -202,12 +202,12 @@ void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
     float3 LastFrameTallCellTopVelocity = SrcTallCellTopVelocity[DispatchThreadID.xy];
     float3 LastFrameTallCellBottomVelocity = SrcTallCellBottomVelocity[DispatchThreadID.xy];
     
-    if (CurrentHeight - LastFrameTallCellHeight > 0.0001 * CellLength)
+    if (CurrentTallCellTopHeight - LastFrameTallCellHeight > 0.0001 * CellLength)
     {
         float Sumx = 0;
         float Sumx2 = 0;
-        float3 Sumy = 0;
-        float3 Sumxy = 0;
+        float3 Sumy = float3(0, 0, 0);
+        float3 Sumxy = float3(0, 0, 0);
         uint m = 2;
         
         Sumx += LastFrameTallCellTopHeight + LastFrameTallCellBottomHeight;
@@ -215,16 +215,22 @@ void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
         Sumy += LastFrameTallCellTopVelocity + LastFrameTallCellBottomVelocity;
         Sumxy += LastFrameTallCellTopHeight * LastFrameTallCellTopVelocity + LastFrameTallCellBottomHeight * LastFrameTallCellBottomVelocity;
         
-        float RegularCellYCount = (CurrentHeight - LastFrameTallCellHeight) / CellLength;
-        for (uint k = 0; k < RegularCellYCount; k++)
+        float RegularCellYCount = (CurrentTallCellTopHeight - LastFrameTallCellHeight) / CellLength;
+        for (uint k = 0; k < RegularCellYCount - 0.0001 * CellLength; k++)
         {
             float LastFrameRegularCellHeight = LastFrameTallCellTopHeight + (k + 1) * CellLength;
             uint3 RegularIndex = uint3(DispatchThreadID.x, k, DispatchThreadID.y);
 
+            float3 LastFrameRegularCellVelocity = float3(0, 0, 0);
+            if (k < RegularCellYCount)
+                LastFrameRegularCellVelocity = SrcRegularCellVelocity[RegularIndex];
+            else
+                LastFrameRegularCellVelocity = float3(0, 0, 0);
+            
             Sumx += LastFrameRegularCellHeight;
             Sumx2 += LastFrameRegularCellHeight * LastFrameRegularCellHeight;
-            Sumy += SrcRegularCellVelocity[RegularIndex];
-            Sumxy += LastFrameRegularCellHeight * SrcRegularCellVelocity[RegularIndex];
+            Sumy += LastFrameRegularCellVelocity;
+            Sumxy += LastFrameRegularCellHeight * LastFrameRegularCellVelocity;
             m++;
         }
         
@@ -232,18 +238,15 @@ void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
         float3 theta1 = m * Sumxy - Sumx * Sumy;
         float theta2 = m * Sumx2 - Sumx * Sumx;
     
-        float CurrentTopHeight = CurrentHeight - 0.5f * CellLength;
-        float CurrentBottomHeight = 0.5f * CellLength;
-
-        TallCellTopVelocity[DispatchThreadID.xy] = (theta0 * CurrentTopHeight + theta1) / theta2;
-        TallCellBottomVelocity[DispatchThreadID.xy] = (theta0 * CurrentBottomHeight + theta1) / theta2;
+        TallCellTopVelocity[DispatchThreadID.xy] = (theta1 * CurrentTallCellTopHeight + theta0) / theta2;
+        TallCellBottomVelocity[DispatchThreadID.xy] = (theta1 * LastFrameTallCellBottomHeight + theta0) / theta2;
     }
     else
     {
         TallCellTopVelocity[DispatchThreadID.xy] = LastFrameTallCellBottomVelocity +
             (LastFrameTallCellTopVelocity - LastFrameTallCellBottomVelocity)
-            / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentHeight - LastFrameTallCellBottomHeight);
-        TallCellBottomVelocity[DispatchThreadID.xy] = SrcTallCellBottomVelocity[DispatchThreadID.xy];
+            / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentTallCellTopHeight - LastFrameTallCellBottomHeight);
+        TallCellBottomVelocity[DispatchThreadID.xy] = LastFrameTallCellBottomVelocity;
     }
 }
 

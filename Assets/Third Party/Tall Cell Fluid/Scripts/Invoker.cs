@@ -36,6 +36,8 @@ public struct VisualGridInfo
 
 public class Invoker : MonoBehaviour
 {
+    [Range(0f, 32f)]
+    public float m_TestSeaLevel;
     public Texture m_Terrian;
     public Vector3 m_Min;
     public Vector2Int m_ResolutionXZ;//TODO: The number with exponent 2

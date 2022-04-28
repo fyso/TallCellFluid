@@ -292,7 +292,7 @@ public class Grid
         Profiler.EndSample();
     }
 
-    public void Remesh(bool vIsInit = false)
+    public void Remesh()
     {
         __SwapFineGridVelocityWithCache();
 

@@ -179,8 +179,8 @@ void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     
     float Sumx = 0;
     float Sumx2 = 0;
-    float3 Sumy = 0;
-    float3 Sumxy = 0;
+    float3 Sumy = float3(0, 0, 0);
+    float3 Sumxy = float3(0, 0, 0);
     uint m = 8;
     
     uint2 TallCallIndex = DispatchThreadID.xy << 1;
@@ -221,6 +221,6 @@ void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     float NextLevelTopHeight = NextLevelHeight - SrcRegularCellLength;
     float NextLevelBottomHeight = NextLevelTerrain + SrcRegularCellLength;
 
-    OutTallCellTop[DispatchThreadID.xy] = (theta0 * NextLevelTopHeight + theta1) / theta2;
-    OutTallCellBottom[DispatchThreadID.xy] = (theta0 * NextLevelBottomHeight + theta1) / theta2;
+    OutTallCellTop[DispatchThreadID.xy] = (theta1 * NextLevelTopHeight + theta0) / theta2;
+    OutTallCellBottom[DispatchThreadID.xy] = (theta1 * NextLevelBottomHeight + theta0) / theta2;
 }
