@@ -70,10 +70,7 @@ public class Invoker : MonoBehaviour
 
     void Update()
     {
-        //m_Simulator.Step(m_TimeStep);
-        //if (m_TestSeaLevel == 28) m_TestSeaLevel++;
-        //else m_TestSeaLevel--;
-        m_Simulator.Step(m_TestSeaLevel);
+        m_Simulator.Step(m_TimeStep);
     }
 
     private void OnRenderObject()

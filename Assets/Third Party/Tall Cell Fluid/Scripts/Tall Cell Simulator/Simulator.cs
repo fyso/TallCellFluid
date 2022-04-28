@@ -96,7 +96,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("Remesh");
-        m_Grid.Remesh(vTimeStep);
+        m_Grid.Remesh();
         Profiler.EndSample();
 
         Profiler.BeginSample("UpdateGridValue");
