@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DParticle;
 using UnityEngine.Profiling;
+using System;
 
 public class ParticleInCellTools
 {
@@ -165,9 +166,8 @@ public class ParticleInCellTools
 
     private void addParticleInCell(Vector3 vCellMin, float vCellLength, int vParticleInCellRes, float vTop, ref List<Vector3> voPosition, ref List<Vector3> voVelocity, ref List<int> voFilter)
     {
-        System.Random Rand = new System.Random();
         float Step = vCellLength / vParticleInCellRes;
-        for(int x = 0; x < vParticleInCellRes; x++)
+        for (int x = 0; x < vParticleInCellRes; x++)
         {
             for (int y = 0; y < vParticleInCellRes; y++)
             {
@@ -177,6 +177,7 @@ public class ParticleInCellTools
                     if (SubCellMin.y > vTop)
                         continue;
 
+                    System.Random Rand = new System.Random((int)DateTime.Now.Ticks & 0x0000FFFF);
                     Vector3 Podition = SubCellMin + new Vector3(Step * (float)Rand.NextDouble(), Step * (float)Rand.NextDouble(), Step * (float)Rand.NextDouble());
                     voPosition.Add(Podition);
                     voVelocity.Add(new Vector3(0, 0, 0));
