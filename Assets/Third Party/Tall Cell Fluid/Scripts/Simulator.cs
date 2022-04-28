@@ -45,39 +45,7 @@ public class Simulator
     
     public void VisualGrid(VisualGridInfo VisualGridInfo)
     {
-        //m_Grid.VisualGrid(VisualGridInfo);
-    }
-
-    public void DebugGridShape()
-    {
-        GridPerLevel FineGrid = m_Grid.FineGrid;
-        Texture2D TerrianHeight = Common.CopyRenderTextureToCPU(FineGrid.TerrainHeight);
-        Texture2D TallCellHeight = Common.CopyRenderTextureToCPU(FineGrid.TallCellHeight);
-
-        for (int i = 0; i < FineGrid.ResolutionXZ.x; i++)
-        {
-            for (int j = 0; j < FineGrid.ResolutionXZ.y; j++)
-            {
-                float CurrTerrianHeight = TerrianHeight.GetPixel(i, j).r;
-                float CurrTallCellHeight = TallCellHeight.GetPixel(i, j).r;
-
-                Gizmos.color = new Color(0.0f, 0.0f, 1.0f);
-                Vector3 RegularCellCenter = m_Min + new Vector3(i * FineGrid.CellLength, CurrTallCellHeight + CurrTerrianHeight + 0.5f * FineGrid.CellLength, j * FineGrid.CellLength);
-                for (int k = 0; k < FineGrid.RegularCellYCount; k++)
-                {
-                    Gizmos.DrawWireCube(RegularCellCenter, new Vector3(FineGrid.CellLength, FineGrid.CellLength, FineGrid.CellLength));
-                    RegularCellCenter.y += FineGrid.CellLength;
-                }
-
-                Gizmos.color = new Color(1.0f, 0.0f, 0.0f);
-                Vector3 TallCellCenter = m_Min + new Vector3(i * FineGrid.CellLength, CurrTallCellHeight * 0.5f + CurrTerrianHeight, j * FineGrid.CellLength);
-                Gizmos.DrawWireCube(TallCellCenter, new Vector3(FineGrid.CellLength, CurrTallCellHeight, FineGrid.CellLength));
-
-                Gizmos.color = new Color(0.0f, 1.0f, 0.0f);
-                Vector3 TerrianCellCenter = m_Min + new Vector3(i * FineGrid.CellLength, CurrTerrianHeight * 0.5f, j * FineGrid.CellLength);
-                Gizmos.DrawWireCube(TerrianCellCenter, new Vector3(FineGrid.CellLength, CurrTerrianHeight, FineGrid.CellLength));
-            }
-        }
+        m_Grid.VisualGrid(VisualGridInfo, m_Min);
     }
 
     public void GenerateRandomVelicty()
@@ -126,17 +94,17 @@ public class Simulator
         ParticleInCell();
         Profiler.EndSample();
 
-        //Profiler.BeginSample("Remesh");
-        //m_Grid.Remesh();
-        //Profiler.EndSample();
+        Profiler.BeginSample("Remesh");
+        m_Grid.Remesh();
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("UpdateGridValue");
-        //m_Grid.UpdateGridValue();
-        //Profiler.EndSample();
+        Profiler.BeginSample("UpdateGridValue");
+        m_Grid.UpdateGridValue();
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        //SparseMultiGridRedBlackGaussSeidel();
-        //Profiler.EndSample();
+        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
+        SparseMultiGridRedBlackGaussSeidel();
+        Profiler.EndSample();
     }
 
     private void ParticleInCell()
