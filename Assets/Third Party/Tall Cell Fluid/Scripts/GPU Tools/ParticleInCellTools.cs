@@ -102,7 +102,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XXSum_RW", vTargetGrid.GPUCache.TallCellScalarCahce2);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "YSum_RW", vTargetGrid.GPUCache.TallCellVectorCahce1);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XYSum_RW", vTargetGrid.GPUCache.TallCellVectorCahce2);
-        m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyTallCellParticleToGrid_Pass1, vParticle.Argument, OnlyTallCellParticleArgumentOffset);
+        m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyTallCellParticleToGrid_Pass1, vParticle.Argument);
         Profiler.EndSample();
 
         Profiler.BeginSample("Pass2");

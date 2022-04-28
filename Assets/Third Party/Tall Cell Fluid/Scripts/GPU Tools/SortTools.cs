@@ -20,7 +20,7 @@ public class ParticleSortTools
 
         GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
         GPUCountingSortHashCS.SetFloat("HashGridCellLength", vCellLength);
-        GPUCountingSortHashCS.SetInt("TargetParticleType", Simulator.OnlyTallCellParticleTypeIndex);
+        GPUCountingSortHashCS.SetInt("TargetParticleType", -1);
 
         GPUCountingSortHashCS.SetInt("ParticleCountArgumentOffset", DynamicParticle.ParticleCountArgumentOffset);
         GPUCountingSortHashCS.SetInt("DifferParticleSplitPointArgumentOffset", DynamicParticle.DifferParticleSplitPointArgumentOffset);
@@ -31,7 +31,7 @@ public class ParticleSortTools
         GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleCellIndex_RW", vCache.CellIndexCache);
         GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleInnerSortIndex_RW", vCache.InnerSortIndexCache);
         GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", vCache.HashCount);
-        GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, voTarget.Argument, (uint)(DynamicParticle.DifferParticleXGridCountArgumentOffset + Simulator.OnlyTallCellParticleTypeIndex * 3) * 4);
+        GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, voTarget.Argument);
 
         RearrangePartileData(voTarget, vCache);
 

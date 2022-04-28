@@ -385,10 +385,8 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     uint CurrLaneCount = WaveGetLaneCount();
     uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
     
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + OnlyTallCellParticleType];
-    uint Offset = OnlyTallCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyTallCellParticleType - 1];
-    uint i = Offset + ThreadIdx + GroupIdx.x * THREAD_COUNT_1D;
-    if (i - Offset >= Count)
+    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
         return;
     
     float3 CurrPosition = ParticlePosition_R[i];
@@ -417,7 +415,7 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
     
     int ParticleIncFactor = 1;
-    float X = (RelativePosition.y - CenterTerrianHeight) / CenterTallCellHeight;
+    float X = (RelativePosition.y - CenterTerrianHeight) / (CenterTallCellHeight + ConstantCellNum * CellLength);
     float XX = X * X;
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
@@ -504,7 +502,7 @@ void scatterOnlyTallCellParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatc
     float3 Sigma0 = (XXSum * YSum - XSum * XYSum) / Factor;
     float3 Sigma1 = (M * XYSum - XSum * YSum) / Factor;
     
-    float3 TopValue = Sigma0 + Sigma1;
+    float3 TopValue = Sigma0 + Sigma1 * (CenterTallCellHeight / (CenterTallCellHeight + ConstantCellNum * CellLength));
     float3 BottomValue = Sigma0;
     
     TopCellVelocity_RW[DispatchThreadID.xy] = TopValue;
