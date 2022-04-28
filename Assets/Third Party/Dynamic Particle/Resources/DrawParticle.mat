@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: DrawSPHParticle
+  m_Name: DrawParticle
   m_Shader: {fileID: 4800000, guid: be20f13f7b69a6644a63f704682a8e34, type: 3}
   m_ShaderKeywords: _VISUALDATATYPE_VELOCITY
   m_LightmapFlags: 0

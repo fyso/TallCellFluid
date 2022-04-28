@@ -48,6 +48,7 @@ public class Invoker : MonoBehaviour
     public bool VisualParticle = false;
     public bool ShowGridDebugInfo = false;
     public VisualGridInfo VisualGridInfo;
+    public Material VisualParticleMaterial;
 
     private Simulator m_Simulator;
 
@@ -73,7 +74,7 @@ public class Invoker : MonoBehaviour
     private void OnRenderObject()
     {
         if(m_Simulator != null && VisualParticle)
-            m_Simulator.VisualParticle();
+            m_Simulator.VisualParticle(VisualParticleMaterial);
 
         if (m_Simulator != null && ShowGridDebugInfo)
         {

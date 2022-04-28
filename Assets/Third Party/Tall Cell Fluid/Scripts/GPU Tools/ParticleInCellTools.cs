@@ -76,6 +76,8 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetBuffer(scatterOnlyTallCellParticleToGrid_Pass1, "ParticleVelocity_R", vParticle.MainParticle.Velocity);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "ParticleCount_RW", vTargetGrid.GPUCache.TallCellParticleCountCahce);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "TallCellHeight_R", vTargetGrid.FineGrid.TallCellHeight);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XSum_RW", vTargetGrid.GPUCache.TallCellScalarCahce1);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "XXSum_RW", vTargetGrid.GPUCache.TallCellScalarCahce2);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyTallCellParticleToGrid_Pass1, "YSum_RW", vTargetGrid.GPUCache.TallCellVectorCahce1);

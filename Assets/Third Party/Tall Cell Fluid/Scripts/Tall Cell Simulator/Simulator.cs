@@ -38,11 +38,17 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
-    public void VisualParticle()
+    public void VisualParticle(Material vMaterial)
     {
-        m_DynamicParticle.VisualParticle();
+        Profiler.BeginSample("VisualParticle");
+        vMaterial.SetPass(0);
+        vMaterial.SetBuffer("_particlePositionBuffer", m_DynamicParticle.MainParticle.Position);
+        vMaterial.SetBuffer("_particleVelocityBuffer", m_DynamicParticle.MainParticle.Velocity);
+        vMaterial.SetBuffer("_particleFilterBuffer", m_DynamicParticle.MainParticle.Filter);
+        Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, m_DynamicParticle.Argument, 12);
+        Profiler.EndSample();
     }
-    
+
     public void VisualGrid(VisualGridInfo VisualGridInfo)
     {
         m_Grid.VisualGrid(VisualGridInfo, m_Min);

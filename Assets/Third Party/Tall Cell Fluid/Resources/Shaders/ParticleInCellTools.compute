@@ -209,7 +209,6 @@ void gatherGridToOnlyRegularParticle(uint ThreadIdx : SV_GroupIndex, uint GroupI
     ParticleVelocity_RW[i] = FinalValue;
 }
 
-
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void gatherGridToOnlyTallCellParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
@@ -229,16 +228,12 @@ void gatherGridToOnlyTallCellParticle(uint ThreadIdx : SV_GroupIndex, uint Group
     float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
     
     float3 Value = float3(0, 0, 0);
-    if (CurrPosition.y >= CenterTerrianHeight && CurrPosition.y < CenterTerrianHeight + CenterTallCellHeight)
+    if (RelativePosition.y >= 0 && RelativePosition.y < CenterTerrianHeight + CenterTallCellHeight)
     {
         float3 TopValue = TopCellVelocity_R[RelativeXZ];
         float3 BottomValue = BottomCellVelocity_R[RelativeXZ];
-        float RelativeHeight = CurrPosition.y / (CenterTallCellHeight + CenterTerrianHeight);
+        float RelativeHeight = (RelativePosition.y - CenterTerrianHeight) / CenterTallCellHeight;
         Value = RelativeHeight * (TopValue - BottomValue) + BottomValue;
-    }
-    else
-    {
-        Value = float3(0, 0, 0);
     }
     ParticleVelocity_RW[i] = Value;
 }
@@ -309,7 +304,7 @@ uint4 MaskUnusedBit(uint4 vInput, uint vLaneCount)
     return vInput;
 }
 
-#define ZIP 100000
+#define ZIP 5000000
 Texture2D<int> ParticleCount_R;
 Texture3D<int> XSum_R;
 Texture3D<int> XXSum_R;
@@ -360,8 +355,11 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
     uint RegionLength = InvIntraOffset + IntraOffset + 1;
     
     //warp level reduce
+    float CenterTerrianHeight = TerrianHeight_R[RelativeXZ];
+    float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
+    
     int ParticleIncFactor = 1;
-    float X = RelativeY;
+    float X = (RelativePosition.y - CenterTerrianHeight) / CenterTallCellHeight;
     float XX = X * X;
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
@@ -444,10 +442,12 @@ void scatterOnlyTallCellParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatc
     float CenterTerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
     float CenterTallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
     
-    float3 Sigma0 = (XXSum * YSum - XSum * XYSum) / (M * XXSum - pow(XSum, 2));
-    float3 Sigma1 = (M * XYSum - XSum * YSum) / (M * XXSum - pow(XSum, 2));
-    float3 TopValue = Sigma0 + Sigma1 * (CenterTallCellHeight + CenterTerrianHeight);
-    float3 BottomValue = Sigma0 + Sigma1 * CenterTerrianHeight;
+    float Factor = M <= 1 ? 1 : M * XXSum - pow(XSum, 2);
+    float3 Sigma0 = (XXSum * YSum - XSum * XYSum) / Factor;
+    float3 Sigma1 = (M * XYSum - XSum * YSum) / Factor;
+    
+    float3 TopValue = Sigma0 + Sigma1;
+    float3 BottomValue = Sigma0;
     
     TopCellVelocity_RW[DispatchThreadID.xy] = TopValue;
     BottomCellVelocity_RW[DispatchThreadID.xy] = BottomValue;

@@ -169,17 +169,6 @@ namespace DParticle
             GPUDynamicParticleToolCS.Dispatch(UpdateParticleCountArgmentKernel, 1, 1, 1);
         }
 
-        public void VisualParticle()
-        {
-            Profiler.BeginSample("VisualParticle");
-            m_SPHVisualMaterial.SetPass(0);
-            m_SPHVisualMaterial.SetBuffer("_particlePositionBuffer", m_MainParticle.Position);
-            m_SPHVisualMaterial.SetBuffer("_particleVelocityBuffer", m_MainParticle.Velocity);
-            m_SPHVisualMaterial.SetBuffer("_particleFilterBuffer", m_MainParticle.Filter);
-            Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, m_Argument, 12);
-            Profiler.EndSample();
-        }
-
         private float m_Radius;
         private int m_MaxSize;
 

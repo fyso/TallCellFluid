@@ -12,6 +12,8 @@ namespace DParticle
 
         private DynamicParticle m_Particle;
 
+        public Material m_Material;
+
         void Start()
         {
             m_Particle = new DynamicParticle(250000, 0.25f);
@@ -29,7 +31,11 @@ namespace DParticle
 
         private void OnRenderObject()
         {
-            m_Particle.VisualParticle();
+            m_Material.SetPass(0);
+            m_Material.SetBuffer("_particlePositionBuffer", m_Particle.MainParticle.Position);
+            m_Material.SetBuffer("_particleVelocityBuffer", m_Particle.MainParticle.Velocity);
+            m_Material.SetBuffer("_particleFilterBuffer", m_Particle.MainParticle.Filter);
+            Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, m_Particle.Argument, 12);
         }
     }
 }
