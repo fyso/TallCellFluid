@@ -34,7 +34,7 @@ public struct VisualGridInfo
     public bool m_ShowTerrainCell;
 }
 
-public class SimulatorTest : MonoBehaviour
+public class Invoker : MonoBehaviour
 {
     public Texture m_Terrian;
     public Vector3 m_Min;
