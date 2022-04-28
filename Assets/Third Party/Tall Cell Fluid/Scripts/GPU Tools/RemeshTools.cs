@@ -83,6 +83,7 @@ public class RemeshTools
 
     public void UpdateFineGridVelocity(RenderTexture vLastFrameTallcellHeight, GridValuePerLevel vLastFrameVelocity, RenderTexture vTallcellHeight, GridValuePerLevel vVelocity)
     {
+        m_RemeshToolsCS.SetInt("RegularCellYCount", vVelocity.RegularCellValue.height);
         m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "SrcTallCellHeight", vLastFrameTallcellHeight);
         m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "TallCellHeight", vTallcellHeight);
         m_RemeshToolsCS.SetTexture(updateRegularCellVelocity, "SrcRegularCellVelocity", vLastFrameVelocity.RegularCellValue);

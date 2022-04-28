@@ -153,6 +153,7 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
     TallCellHeightCache_RW[DispatchThreadID.xy] = FinalResult;
 }
 
+int RegularCellYCount;
 Texture2D<float> SrcTallCellHeight;
 Texture2D<float> TallCellHeight;
 
@@ -171,7 +172,10 @@ void updateRegularCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
     if (DistanceToLastFrameHeight > 0)
     {
         uint3 LastFrameIndex = uint3(DispatchThreadID.x, DistanceToLastFrameHeight / CellLength, DispatchThreadID.z);
-        RegularCellVelocity[DispatchThreadID] = SrcRegularCellVelocity[LastFrameIndex];
+        if (LastFrameIndex.y < RegularCellYCount)
+            RegularCellVelocity[DispatchThreadID] = SrcRegularCellVelocity[LastFrameIndex];
+        else
+            RegularCellVelocity[DispatchThreadID] = float3(0, 0, 0);
     }
     else
     {
@@ -190,15 +194,15 @@ RWTexture2D<float3> TallCellBottomVelocity;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    float CurrentHeight = TallCellHeight[DispatchThreadID.xy] + 0.0001 * CellLength;
+    float CurrentHeight = TallCellHeight[DispatchThreadID.xy] - 0.5 * CellLength;
     float LastFrameTallCellHeight = SrcTallCellHeight[DispatchThreadID.xy];
     
     float LastFrameTallCellTopHeight = LastFrameTallCellHeight - 0.5f * CellLength;
     float LastFrameTallCellBottomHeight = 0.5f * CellLength;
-    float LastFrameTallCellTopVelocity = SrcTallCellTopVelocity[DispatchThreadID.xz];
-    float LastFrameTallCellBottomVelocity = SrcTallCellBottomVelocity[DispatchThreadID.xz];
+    float3 LastFrameTallCellTopVelocity = SrcTallCellTopVelocity[DispatchThreadID.xy];
+    float3 LastFrameTallCellBottomVelocity = SrcTallCellBottomVelocity[DispatchThreadID.xy];
     
-    if (CurrentHeight - LastFrameTallCellHeight > 0)
+    if (CurrentHeight - LastFrameTallCellHeight > 0.0001 * CellLength)
     {
         float Sumx = 0;
         float Sumx2 = 0;
@@ -236,11 +240,9 @@ void updateTallCellVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
     }
     else
     {
-        TallCellTopVelocity[DispatchThreadID.xy] =
+        TallCellTopVelocity[DispatchThreadID.xy] = LastFrameTallCellBottomVelocity +
             (LastFrameTallCellTopVelocity - LastFrameTallCellBottomVelocity)
-            / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentHeight - LastFrameTallCellBottomHeight)
-            + LastFrameTallCellBottomVelocity;
-        
+            / (LastFrameTallCellTopHeight - LastFrameTallCellBottomHeight) * (CurrentHeight - LastFrameTallCellBottomHeight);
         TallCellBottomVelocity[DispatchThreadID.xy] = SrcTallCellBottomVelocity[DispatchThreadID.xy];
     }
 }
