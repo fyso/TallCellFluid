@@ -64,6 +64,7 @@ public class Simulator
             for (int y = 0; y < Top.height; y++)
             {
                 Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
+                //Color TopVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
                 Color BottomVelocity = new Color(0.8f, 0, 0, 1.0f);
                 Bottom.SetPixel(x, y, BottomVelocity);
@@ -82,6 +83,7 @@ public class Simulator
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
                     Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, 0.0f, 1.0f);
+                    //Color RegularVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
             }

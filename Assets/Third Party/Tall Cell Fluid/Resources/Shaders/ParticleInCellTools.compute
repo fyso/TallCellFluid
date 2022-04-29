@@ -21,7 +21,7 @@ uint TargetParticleType;
 
 RWStructuredBuffer<float3> DEBUG;
 
-StructuredBuffer<int> ParticleIndrectArgment_R;
+StructuredBuffer<int> ParticleIndirectArgment_R;
 
 StructuredBuffer<float3> ParticlePosition_R;
 
@@ -91,7 +91,7 @@ static int3 OffsetVector3D[3 * 3 * 3] =
 void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+    if (i >= ParticleIndirectArgment_R[ParticleCountArgumentOffset])
         return;
     
     float3 CurrPosition = ParticlePosition_R[i];
@@ -157,8 +157,8 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void gatherGridToOnlyRegularParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + OnlyRegularCellParticleType];
-    uint Offset = OnlyRegularCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyRegularCellParticleType - 1];
+    uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + OnlyRegularCellParticleType];
+    uint Offset = OnlyRegularCellParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyRegularCellParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
@@ -211,8 +211,8 @@ void gatherGridToOnlyRegularParticle(uint ThreadIdx : SV_GroupIndex, uint GroupI
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void gatherGridToIntersectCellParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + IntersectCellParticleType];
-    uint Offset = IntersectCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + IntersectCellParticleType - 1];
+    uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + IntersectCellParticleType];
+    uint Offset = IntersectCellParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + IntersectCellParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx.x * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
@@ -271,8 +271,8 @@ void gatherGridToIntersectCellParticle(uint ThreadIdx : SV_GroupIndex, uint Grou
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void gatherGridToOnlyTallCellParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + OnlyTallCellParticleType];
-    uint Offset = OnlyTallCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyTallCellParticleType - 1];
+    uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + OnlyTallCellParticleType];
+    uint Offset = OnlyTallCellParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyTallCellParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx.x * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
@@ -386,8 +386,8 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     uint CurrLaneCount = WaveGetLaneCount();
     uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
     
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
-    uint Offset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
+    uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+    uint Offset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
@@ -526,8 +526,8 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     uint CurrLaneIndex = WaveGetLaneIndex();
     uint CurrLaneCount = WaveGetLaneCount();
     
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
-    uint Offset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
+    uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+    uint Offset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
@@ -619,4 +619,55 @@ void scatterOnlyRegularParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatch
     if (Weight != 0)
         FinalValue = WeightedVelocity / Weight;
     RegularCellVelocity_RW[DispatchThreadID] = FinalValue;
+}
+
+RWTexture2D<float2> WaterSurfaceH1H2_RW;
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void computeH1H2WithParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint CurrLaneIndex = WaveGetLaneIndex();
+    uint CurrLaneCount = WaveGetLaneCount();
+    uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
+    
+    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= ParticleIndirectArgment_R[ParticleCountArgumentOffset])
+        return;
+    
+    float3 CurrPosition = ParticlePosition_R[i];
+    float3 CurrVelocity = ParticleVelocity_R[i];
+    
+    float2 RelativeXZ = CurrPosition.xz - Min.xz;
+    float RelativeY = CurrPosition.y - Min.y;
+    float3 RelativePosition = float3(RelativeXZ.x, RelativeY, RelativeXZ.y);
+    
+    uint2 CurrGridXZIndex = RelativePosition.xz / CellLength;
+    uint CurrGridYIndex = RelativePosition.y / CellLength;
+    
+    uint CurrTallCellLinerIndex = computeMorton2D((uint2) (RelativeXZ / CellLength));
+    uint PrevTallCellLinerIndex = ThreadIdx == 0 ? 0 : WaveReadLaneAt(CurrTallCellLinerIndex, CurrLaneIndex - 1);
+    uint NextTallCellLinerIndex = ThreadIdx == CurrLaneCount - 1 ? 0 : WaveReadLaneAt(CurrTallCellLinerIndex, CurrLaneIndex + 1);
+    
+    //r: Lane31~Lane0, g: Lane63~Lane32...
+    uint4 BallotResult1 = WaveActiveBallot(ThreadIdx == 0 || PrevTallCellLinerIndex != CurrTallCellLinerIndex);
+    uint4 BallotResult2 = WaveActiveBallot(ThreadIdx == CurrLaneCount - 1 || NextTallCellLinerIndex != CurrTallCellLinerIndex);
+    uint IntraOffset = doCLZHighToLow(MaskUnusedBit(BallotResult2, CurrLaneCount), CurrLaneIndex);
+    uint InvIntraOffset = doCLZLowToHigh(MaskUnusedBit(BallotResult1, CurrLaneCount), CurrLaneIndex);
+    uint RegionLength = InvIntraOffset + IntraOffset + 1;
+    
+    //warp level reduce
+    float CenterTerrianHeight = TerrianHeight_R[RelativeXZ];
+    float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
+    for (int k = 0; k < ceil(log2(RegionLength)); k++)
+    {
+        uint IntraEnd = floor((float) RegionLength / pow(2.0f, k + 1));
+        uint Offset = ceil((float) RegionLength / pow(2.0f, k + 1));
+        
+        if (IntraOffset < IntraEnd)
+        {
+        }
+    }
+        
+    if (IntraOffset == 0)
+    {
+    }
 }
