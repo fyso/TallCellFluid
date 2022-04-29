@@ -5,8 +5,8 @@
 #pragma kernel gatherGridToOnlyRegularParticle
 #pragma kernel gatherGridToIntersectCellParticle
 #pragma kernel gatherGridToOnlyTallCellParticle
-#pragma kernel scatterOnlyTallCellParticleToGrid_Pass1
-#pragma kernel scatterOnlyTallCellParticleToGrid_Pass2
+#pragma kernel scatterParticleToTallCellGrid_Pass1
+#pragma kernel scatterParticleToTallCellGrid_Pass2
 #pragma kernel scatterOnlyRegularParticleToGrid_Pass1
 #pragma kernel scatterOnlyRegularParticleToGrid_Pass2
 #pragma use_dxc
@@ -17,6 +17,7 @@ uint DifferParticleCountArgumentOffset;
 uint OnlyTallCellParticleType;
 uint IntersectCellParticleType;
 uint OnlyRegularCellParticleType;
+uint TargetParticleType;
 
 RWStructuredBuffer<float3> DEBUG;
 
@@ -379,14 +380,16 @@ groupshared float LocalWeight[THREAD_COUNT_1D];
 groupshared float3 LocalWeightedVelocity[THREAD_COUNT_1D];
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
-void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 GroupIdx : SV_GroupID)
+void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 GroupIdx : SV_GroupID)
 {
     uint CurrLaneIndex = WaveGetLaneIndex();
     uint CurrLaneCount = WaveGetLaneCount();
     uint CurrWarpIndex = ThreadIdx / CurrLaneCount;
     
-    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i >= ParticleIndrectArgment_R[ParticleCountArgumentOffset])
+    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+    uint Offset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
+    uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i - Offset >= Count)
         return;
     
     float3 CurrPosition = ParticlePosition_R[i];
@@ -475,7 +478,7 @@ void scatterOnlyTallCellParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uin
 }
 
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
-void scatterOnlyTallCellParticleToGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThreadID)
+void scatterParticleToTallCellGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     if (any(DispatchThreadID.xy >= XZResolution))
         return;

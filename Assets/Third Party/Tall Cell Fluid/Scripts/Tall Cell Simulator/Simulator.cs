@@ -142,27 +142,25 @@ public class Simulator
         Profiler.BeginSample("ClearCache");
         m_Grid.RestCache();
         Profiler.EndSample();
-
-        Profiler.BeginSample("ZSortRegularCellParticle");
-        m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        Profiler.BeginSample("ZSortIntersectCellParticle");
+        m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, IntersectCellParticleTypeIndex);
         Profiler.EndSample();
-
-        Profiler.BeginSample("OnlyRegularCellParticleToGrid");
-        m_ParticleInCellTools.ScatterRegularParticleToGrid(m_DynamicParticle, m_Grid);
-        Profiler.EndSample();
-
-        //Profiler.BeginSample("ZSortIntersectCellParticle");
-        //m_ParticleSortTools.SortIntersectCellParticle(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        //Profiler.EndSample();
 
         Profiler.BeginSample("ZSortOnlyTallCellparticle");
-        m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
+        m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, OnlyTallCellParticleTypeIndex);
         Profiler.EndSample();
 
-        Profiler.BeginSample("OnlyTallCellParticleToGrid");
-        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid);
+        Profiler.BeginSample("ScatterParticleToTallCellGrid");
+        m_ParticleInCellTools.ScatterParticleToTallCellGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 
+        Profiler.BeginSample("ZSortRegularCellParticle");
+        m_ParticleSortTools.SortParticleHashRegular(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength, OnlyRegularCellParticleTypeIndex);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("ScatterParticleToRegularGrid");
+        m_ParticleInCellTools.ScatterParticleToRegularGrid(m_DynamicParticle, m_Grid);
+        Profiler.EndSample();
         //TODO: update mark for fine level
     }
 
