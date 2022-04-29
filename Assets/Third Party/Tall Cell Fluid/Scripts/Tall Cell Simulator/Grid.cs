@@ -181,8 +181,8 @@ public class Grid
                     break;
                 case ShowInfo.RigidBodyPercentage:
                     m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 0);
-                    m_VisualGridMaterial.SetTexture("TopValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.TallCellTopValue);
-                    m_VisualGridMaterial.SetTexture("BottomValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.TallCellBottomValue);
+                    m_VisualGridMaterial.SetTexture("TopShowValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.TallCellTopValue);
+                    m_VisualGridMaterial.SetTexture("BottomShowValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.TallCellBottomValue);
                     break;
                 case ShowInfo.RigidBodyVelocity:
                     m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 1);
@@ -228,10 +228,10 @@ public class Grid
             switch (VisualGridInfo.m_ShowInfo)
             {
                 case ShowInfo.WaterMark:
-                    m_VisualGridMaterial.SetTexture("Value", m_GridData[VisualGridInfo.m_GridLevel].RegularCellMark);
+                    m_VisualGridMaterial.SetTexture("ShowValue", m_GridData[VisualGridInfo.m_GridLevel].RegularCellMark);
                     break;
                 case ShowInfo.RigidBodyPercentage:
-                    m_VisualGridMaterial.SetTexture("Value", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.RegularCellValue);
+                    m_VisualGridMaterial.SetTexture("ShowValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.RegularCellValue);
                     break;
                 case ShowInfo.RigidBodyVelocity:
                     m_VisualGridMaterial.SetInt("ShowInfoMode", 1);
@@ -250,7 +250,7 @@ public class Grid
                     m_VisualGridMaterial.SetTexture("Velocity", m_GridData[VisualGridInfo.m_GridLevel].Velocity.RegularCellValue);
                     break;
                 case ShowInfo.Pressure:
-                    m_VisualGridMaterial.SetTexture("Value", m_GridData[VisualGridInfo.m_GridLevel].Pressure.RegularCellValue);
+                    m_VisualGridMaterial.SetTexture("ShowValue", m_GridData[VisualGridInfo.m_GridLevel].Pressure.RegularCellValue);
                     break;
             }
 

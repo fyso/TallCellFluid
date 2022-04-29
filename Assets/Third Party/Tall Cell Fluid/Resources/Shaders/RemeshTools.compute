@@ -51,7 +51,8 @@ void computeH1H2WithSeaLevel(uint3 DispatchThreadID : SV_DispatchThreadID)
         return;
     
     float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
-    WaterSurfaceH1H2_RW[DispatchThreadID.xy] = float2(TerrianHeight, SeaLevel > TerrianHeight ? SeaLevel : TerrianHeight);
+    //WaterSurfaceH1H2_RW[DispatchThreadID.xy] = float2(TerrianHeight, SeaLevel > TerrianHeight ? SeaLevel : TerrianHeight);
+    WaterSurfaceH1H2_RW[DispatchThreadID.xy] = float2(TerrianHeight, SeaLevel + DispatchThreadID.x % 5 > TerrianHeight ? SeaLevel + DispatchThreadID.x % 5 : TerrianHeight);
 }
 
 uint GridLow;
@@ -357,13 +358,13 @@ RWTexture2D<float3> OutTallCellTopRigidbodyVelocity;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void updateTallCellTopSolidInfos(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    float3 SamplePos = Min + (DispatchThreadID + float3(0.5, 0.5, -0.5)) * CellLength;
-    SamplePos.y += TallCellHeight_R[DispatchThreadID.xz];
-    SamplePos.y += TerrianHeight_R[DispatchThreadID.xz];
+    float3 SamplePos = Min + float3(DispatchThreadID.x + 0.5, -0.5, DispatchThreadID.y + 0.5) * CellLength;
+    SamplePos.y += TallCellHeight_R[DispatchThreadID.xy];
+    SamplePos.y += TerrianHeight_R[DispatchThreadID.xy];
     
     float4 Result = updateSolidInfos(SamplePos);
-    OutTallCellTopRigidBodyPercentage[DispatchThreadID.xy] = Result.xyz;
-    OutTallCellTopRigidbodyVelocity[DispatchThreadID.xy] = Result.w;
+    OutTallCellTopRigidBodyPercentage[DispatchThreadID.xy] = Result.w;
+    OutTallCellTopRigidbodyVelocity[DispatchThreadID.xy] = Result.xyz;
 }
 
 RWTexture2D<float> OutTallCellBottomRigidBodyPercentage;
@@ -371,11 +372,11 @@ RWTexture2D<float3> OutTallCellBottomRigidbodyVelocity;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void updateTallCellBottomSolidInfos(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    float3 SamplePos = Min + (DispatchThreadID + float3(0.5, 0.5, 0.5)) * CellLength;
-    SamplePos.y += TerrianHeight_R[DispatchThreadID.xz];
+    float3 SamplePos = Min + float3(DispatchThreadID.x + 0.5, 0.5, DispatchThreadID.y + 0.5) * CellLength;
+    SamplePos.y += TerrianHeight_R[DispatchThreadID.xy];
     
     float4 Result = updateSolidInfos(SamplePos);
-    OutTallCellBottomRigidBodyPercentage[DispatchThreadID.xy] = Result.xyz;
-    OutTallCellBottomRigidbodyVelocity[DispatchThreadID.xy] = Result.w;
+    OutTallCellBottomRigidBodyPercentage[DispatchThreadID.xy] = Result.w;
+    OutTallCellBottomRigidbodyVelocity[DispatchThreadID.xy] = Result.xyz;
 }
 

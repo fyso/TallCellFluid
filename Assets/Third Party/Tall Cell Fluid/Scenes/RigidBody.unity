@@ -138,7 +138,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &255287186
 Transform:
   m_ObjectHideFlags: 0
@@ -199,7 +199,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 507535840}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -373,7 +373,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 717511348}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -887,7 +887,7 @@ MonoBehaviour:
   ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 0
-    m_ShowInfo: 4
+    m_ShowInfo: 2
     MinShowValue: 0
     MinShowColor: {r: 0, g: 0, b: 0, a: 0}
     MaxShowValue: 1

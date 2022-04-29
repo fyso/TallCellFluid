@@ -116,8 +116,8 @@ Shader "Custom/VisualGrid"
             int TallCellShowInfoMode; // -1 is no draw, 0 is to draw scalar, 1 is to draw direction, 2 is to draw size
             Texture2D<float3> TopVelocity;
             Texture2D<float3> BottomVelocity;
-            Texture2D<float> ShowTopValue;
-            Texture2D<float> ShowBottomValue;
+            Texture2D<float> TopShowValue;
+            Texture2D<float> BottomShowValue;
             float4 MinShowColor;
             float4 MaxShowColor;
 
@@ -193,8 +193,8 @@ Shader "Custom/VisualGrid"
                 }
                 else if (TallCellShowInfoMode == 0)
                 {
-                    if (vertices[vertexID * 3 + 1] > 0) o.value = clamp(ShowTopValue[tallCellIndex], MinShowColor.w, MaxShowColor.w);
-                    else  o.value = clamp(ShowBottomValue[tallCellIndex], MinShowColor.w, MaxShowColor.w);
+                    if (vertices[vertexID * 3 + 1] > 0) o.value = clamp(TopShowValue[tallCellIndex], MinShowColor.w, MaxShowColor.w);
+                    else  o.value = clamp(BottomShowValue[tallCellIndex], MinShowColor.w, MaxShowColor.w);
                 }
 
                 float terrainHeight = TerrainHeight[tallCellIndex];
