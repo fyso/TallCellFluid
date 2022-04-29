@@ -171,7 +171,6 @@ public class Grid
             m_VisualGridMaterial.SetTexture("TerrainHeight", m_GridData[VisualGridInfo.m_GridLevel].TerrainHeight);
             m_VisualGridMaterial.SetTexture("TallCellHeight", m_GridData[VisualGridInfo.m_GridLevel].TallCellHeight);
 
-            m_VisualGridMaterial.SetInt("ShowInfoMode", 0);
             m_VisualGridMaterial.SetVector("MinShowColor", new Vector4(VisualGridInfo.MinShowColor.r, VisualGridInfo.MinShowColor.g, VisualGridInfo.MinShowColor.b, VisualGridInfo.MinShowValue));
             m_VisualGridMaterial.SetVector("MaxShowColor", new Vector4(VisualGridInfo.MaxShowColor.r, VisualGridInfo.MaxShowColor.g, VisualGridInfo.MaxShowColor.b, VisualGridInfo.MaxShowValue));
 
