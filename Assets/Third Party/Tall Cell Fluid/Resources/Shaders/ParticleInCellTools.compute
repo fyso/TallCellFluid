@@ -419,11 +419,11 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     float CenterTerrianHeight = TerrianHeight_R[RelativeXZ];
     float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
     
-    if (RelativePosition.y > CenterTerrianHeight + CenterTallCellHeight + CellLength)
+    if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength)
         return;
     
     int ParticleIncFactor = 1;
-    float X = (RelativePosition.y) / (CenterTerrianHeight + CenterTallCellHeight + CellLength);
+    float X = (RelativePosition.y - CenterTerrianHeight) / (CenterTallCellHeight + CellLength);
     float XX = X * X;
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
@@ -509,8 +509,8 @@ void scatterParticleToTallCellGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThr
     float Factor = M * XXSum - pow(XSum, 2);
     float3 Sigma0 = (XXSum * YSum - XSum * XYSum) / Factor;
     float3 Sigma1 = (M * XYSum - XSum * YSum) / Factor;
-    float3 TopValue = Sigma0 + Sigma1 * ((CenterTallCellHeight + CenterTerrianHeight) / (CenterTerrianHeight + CenterTallCellHeight + CellLength));
-    float3 BottomValue = Sigma0 + Sigma1 * (CenterTerrianHeight / (CenterTerrianHeight + CenterTallCellHeight + CellLength));
+    float3 TopValue = Sigma0 + Sigma1 * (CenterTallCellHeight / (CenterTallCellHeight + CellLength));
+    float3 BottomValue = Sigma0;
     
     if (abs(Factor - 0.0f) < EPSILON)
     {
@@ -625,7 +625,7 @@ void scatterOnlyRegularParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatch
     );
     
     float3 FinalValue = float3(0, 0, 0);
-    if (Weight != 0)
+    if (abs(Weight - 0.0f) > EPSILON)
         FinalValue = WeightedVelocity / Weight;
     RegularCellVelocity_RW[DispatchThreadID] = FinalValue;
 }
