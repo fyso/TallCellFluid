@@ -133,7 +133,7 @@ Texture2D<float> NextLevelTallCellHeight;
 Texture2D<float> TerrainHeight;
 Texture2D<float> TallCellHeight;
 Texture3D<float> SrcRegularCellRigidBodyPercentage;
-Texture3D<int> SrcRegularMark; //TODO: Provisional: water is 0, air is 1
+Texture3D<int> SrcRegularMark; //TODO: air is 0, water is 1
 float SrcRegularCellLength;
 int SaveMoreAir;
 uint3 OutResolution;
@@ -142,7 +142,7 @@ RWTexture3D<int> OutRegularMark;
 [numthreads(4, 4, 4)]
 void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xyz > OutResolution))
+    if (any(DispatchThreadID.xyz >= OutResolution))
         return;
     
     float NextLevelHeight = NextLevelTallCellHeight[DispatchThreadID.xz] + TerrainHeight[DispatchThreadID.xz] + 0.0001 * SrcRegularCellLength;
@@ -167,16 +167,16 @@ void downSampleRegularCell(uint3 DispatchThreadID : SV_DispatchThreadID)
     {
         if (Index[k].y < OutResolution.y * 2)
         {
-            if (SrcRegularMark[Index[k]] == 0)
+            if (SrcRegularMark[Index[k]] == 1)
             {
-                RigidBodyPercentageResult += SrcRegularCellRigidBodyPercentage[Index[k]];
                 CellNumWithFluid++;
             }
+            RigidBodyPercentageResult += SrcRegularCellRigidBodyPercentage[Index[k]];
             CellNum++;
         }
     }
     OutRegularCellRigidBodyPercentage[DispatchThreadID] = RigidBodyPercentageResult / CellNum;
-    OutRegularMark[DispatchThreadID] = SaveMoreAir ? CellNumWithFluid != CellNum : CellNumWithFluid == 0;
+    OutRegularMark[DispatchThreadID] = SaveMoreAir ? CellNumWithFluid == CellNum : CellNumWithFluid != 0;
 }
 
 Texture2D<float3> SrcTallCellTop;
@@ -186,7 +186,7 @@ RWTexture2D<float3> OutTallCellBottom;
 [numthreads(8, 8, 1)]
 void downSampleTallCell(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xyz > OutResolution))
+    if (any(DispatchThreadID.xy >= OutResolution.xz))
         return;
     
     float Sumx = 0;
