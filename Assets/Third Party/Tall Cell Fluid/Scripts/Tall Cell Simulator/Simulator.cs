@@ -5,6 +5,7 @@ using UnityEngine.Profiling;
 public class Simulator
 {
     public static int OnlyTallCellParticleTypeIndex {get{ return 3; }}
+    public static int IntersectCellParticleTypeIndex { get{ return 1; }}
     public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
     public static int ScatterOnlyTallCellParticleArgmentOffset { get{ return 0; }}
 
@@ -62,7 +63,8 @@ public class Simulator
         {
             for (int y = 0; y < Top.height; y++)
             {
-                Color TopVelocity = new Color((float)x / Top.width, 0.0f, (float)y / Top.height, 1.0f);
+                Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
+                //Color TopVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
                 Color BottomVelocity = new Color(0.8f, 0, 0, 1.0f);
                 Bottom.SetPixel(x, y, BottomVelocity);
@@ -80,7 +82,8 @@ public class Simulator
             {
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
-                    Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, (float)z / FineGrid.ResolutionXZ.y, 1.0f);
+                    Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, 0.0f, 1.0f);
+                    //Color RegularVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
             }
@@ -128,6 +131,10 @@ public class Simulator
         m_ParticleInCellTools.GatherGridToOnlyRegularParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
+        Profiler.BeginSample("GatherGridToIntersectCellParticle");
+        m_ParticleInCellTools.GatherGridToIntersectCellParticle(m_DynamicParticle, m_Grid.FineGrid);
+        Profiler.EndSample();
+
         Profiler.BeginSample("GatherGridToOnlyTallCellParticle");
         m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
@@ -137,23 +144,29 @@ public class Simulator
         Profiler.BeginSample("ClearCache");
         m_Grid.RestCache();
         Profiler.EndSample();
-
-        Profiler.BeginSample("ZSortRegularCellParticle");
-        m_ParticleSortTools.SortRegularCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        Profiler.BeginSample("ZSortIntersectCellParticleHashTallCell");
+        m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, IntersectCellParticleTypeIndex);
         Profiler.EndSample();
 
-        Profiler.BeginSample("OnlyRegularCellParticleToGrid");
-        m_ParticleInCellTools.ScatterRegularParticleToGrid(m_DynamicParticle, m_Grid);
+        Profiler.BeginSample("ZSortOnlyTallCellparticleHashTallCell");
+        m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, OnlyTallCellParticleTypeIndex);
         Profiler.EndSample();
 
-        Profiler.BeginSample("ZSortOnlyTallCellparticle");
-        m_ParticleSortTools.SortOnlyTallCellParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength);
+        Profiler.BeginSample("ScatterParticleToTallCellGrid");
+        m_ParticleInCellTools.ScatterParticleToTallCellGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 
-        Profiler.BeginSample("OnlyTallCellParticleToGrid");
-        m_ParticleInCellTools.ScatterOnlyTallCellParticleToGrid(m_DynamicParticle, m_Grid, m_Argument);
+        Profiler.BeginSample("ZSortRegularCellParticleHashRegular");
+        m_ParticleSortTools.SortParticleHashRegular(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength, OnlyRegularCellParticleTypeIndex);
         Profiler.EndSample();
 
+        Profiler.BeginSample("ZSortIntersectCellParticleHashRegular");
+        m_ParticleSortTools.SortParticleHashRegular(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength, IntersectCellParticleTypeIndex);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("ScatterParticleToRegularGrid");
+        m_ParticleInCellTools.ScatterParticleToRegularGrid(m_DynamicParticle, m_Grid);
+        Profiler.EndSample();
         //TODO: update mark for fine level
     }
 

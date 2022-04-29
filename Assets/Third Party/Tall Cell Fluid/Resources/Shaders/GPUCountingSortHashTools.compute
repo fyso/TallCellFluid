@@ -15,7 +15,7 @@ float HashGridCellLength;
 int TargetParticleType;
 
 
-#if HashRegularCell || HashTallCell
+#if HashRegularCell
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
 #endif
@@ -58,20 +58,13 @@ void insertParticleIntoHashGrid(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : 
     float3 Postion = ParticlePosition_R[i];
     uint2 CellXZIndex = uint2((Postion.xz - HashGridMin.xz) / HashGridCellLength);
     uint CellLinerIndex = computeMorton2D(CellXZIndex);
-    
-    //float CurrTerrianHeight = TerrianHeight_R[CellXZIndex];
-    //float CurrTallCellHeight = TallCellHeight_R[CellXZIndex];
-    //uint CellYIndex = (Postion.y - CurrTerrianHeight) / HashGridCellLength;
-    //uint3 Cell3DIndex = uint3(CellXZIndex.x, CellYIndex, CellXZIndex.y);
-    //uint CellLinerIndex = computeMorton3D(Cell3DIndex);
-    
 #elif HashRegularCell
     float3 CurrPosition = ParticlePosition_R[i];
     float2 RelativeXZ = CurrPosition.xz - HashGridMin.xz;
     uint2 CurrGridXZIndex = RelativeXZ / HashGridCellLength;
     float CurrTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
     float CurrTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
-    uint CurrGridYIndex = (CurrPosition.y - CurrTerrianHeight - CurrTallCellHeight) / HashGridCellLength;
+    uint CurrGridYIndex = (CurrPosition.y - CurrTerrianHeight - CurrTallCellHeight - HashGridCellLength) / HashGridCellLength;
     uint3 Cell3DIndex = uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y);
     uint CellLinerIndex = computeMorton3D(Cell3DIndex);
 #else
