@@ -17,6 +17,9 @@ Shader "Custom/VisualGrid"
             #pragma enable_d3d11_debug_symbols 
             #include "UnityCG.cginc"
 
+            int OnlyShowXZCell;
+            int X;
+            int Z;
             float3 MinPos;
             float CellLength;
             int ResolutionX;
@@ -79,13 +82,19 @@ Shader "Custom/VisualGrid"
             v2f VisualGridVert(uint vertexID : SV_VertexID, uint instanceID: SV_InstanceID)
             {
                 uint2 terrainCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
+                v2f o;
+                if (OnlyShowXZCell && (terrainCellIndex.x != X || terrainCellIndex.y != Z))
+                {
+                    o.pos = float4(100, 100, 100, 1);
+                    return o;
+                }
+
                 float terrainHeight = TerrainHeight[terrainCellIndex];
                 float3 pos = MinPos +
                     float3((vertices[vertexID * 3] + terrainCellIndex.x + 0.5) * CellLength,
                            vertices[vertexID * 3 + 1] * terrainHeight + terrainHeight * 0.5,
                            (vertices[vertexID * 3 + 2] + terrainCellIndex.y + 0.5) * CellLength);
 
-                v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(pos, 1));
                 return o;
             }
@@ -105,7 +114,10 @@ Shader "Custom/VisualGrid"
             #pragma fragment VisualGridFrag
             #pragma enable_d3d11_debug_symbols 
             #include "UnityCG.cginc"
-
+                        
+            int OnlyShowXZCell;
+            int X;
+            int Z;
             float3 MinPos;
             float CellLength;
             int ResolutionX;
@@ -181,6 +193,11 @@ Shader "Custom/VisualGrid"
             {
                 v2f o;
                 uint2 tallCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
+                if (OnlyShowXZCell && (tallCellIndex.x != X || tallCellIndex.y != Z))
+                {
+                    o.pos = float4(100, 100, 100, 1);
+                    return o;
+                }
                 if (TallCellShowInfoMode == 1)
                 {
                     if(vertices[vertexID * 3 + 1] > 0) o.velocity = TopVelocity[tallCellIndex];
@@ -235,7 +252,10 @@ Shader "Custom/VisualGrid"
             #pragma fragment VisualGridFrag
             #pragma enable_d3d11_debug_symbols 
             #include "UnityCG.cginc"
-
+                        
+            int OnlyShowXZCell;
+            int X;
+            int Z;
             float3 MinPos;
             float CellLength;
             int ResolutionX;
@@ -308,6 +328,12 @@ Shader "Custom/VisualGrid"
             v2f VisualGridVert(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
                 uint3 regularCellIndex = uint3(instanceID % ResolutionX, instanceID / ResolutionX % ResolutionY, instanceID / (ResolutionX * ResolutionY));
+                v2f o;
+                if (OnlyShowXZCell && (regularCellIndex.x != X || regularCellIndex.z != Z))
+                {
+                    o.pos = float4(100, 100, 100, 1);
+                    return o;
+                }
                 float terrainHeight = TerrainHeight[regularCellIndex.xz];
                 float tallCellHeight = TallCellHeight[regularCellIndex.xz];
                 float3 pos = MinPos +
@@ -316,7 +342,6 @@ Shader "Custom/VisualGrid"
                             vertices[vertexID * 3 + 2] + 0.5) + regularCellIndex) * CellLength;
                 pos.y += 0.5 * CellLength + terrainHeight + tallCellHeight;
 
-                v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(pos, 1));
                 if (ShowInfoMode == 1)
                 {

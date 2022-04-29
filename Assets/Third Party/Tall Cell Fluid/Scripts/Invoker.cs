@@ -32,6 +32,8 @@ public struct VisualGridInfo
     public bool m_ShowRegularCell;
     public bool m_ShowTallCell;
     public bool m_ShowTerrainCell;
+    public bool m_OnlyShowXZCell;
+    public Vector2Int XZ;
 }
 
 public class Invoker : MonoBehaviour
