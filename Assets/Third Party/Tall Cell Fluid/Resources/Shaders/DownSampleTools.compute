@@ -28,9 +28,11 @@ void downSampleTerrainHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThre
 {    
     float Src1 = min4To1(SrcTex[DispatchThreadID.xy * 2], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)], SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)]);
     OutMip1[DispatchThreadID.xy] = Src1;
-    if (NumMipLevels == 1)
-        return;
-    gs_Result[GroupIndex] = Src1;
+    if (NumMipLevels > 1)
+    {
+        gs_Result[GroupIndex] = Src1;
+    }
+    else return;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x9) == 0)
@@ -38,9 +40,11 @@ void downSampleTerrainHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThre
         Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
         OutMip2[DispatchThreadID.xy >> 1] = Src1;
     }
-    if (NumMipLevels == 2)
-        return;
-    gs_Result[GroupIndex] = Src1;
+    if (NumMipLevels > 2)
+    {
+        gs_Result[GroupIndex] = Src1;
+    }
+    else return;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x1B) == 0)
@@ -48,9 +52,11 @@ void downSampleTerrainHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThre
         Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
         OutMip3[DispatchThreadID.xy >> 2] = Src1;
     }
-    if (NumMipLevels == 3)
-        return;
-    gs_Result[GroupIndex] = Src1;
+    if (NumMipLevels > 3)
+    {
+        gs_Result[GroupIndex] = Src1;
+    }
+    else return;
     GroupMemoryBarrierWithGroupSync();
     
     if (GroupIndex == 0)
@@ -77,40 +83,46 @@ void downSampleTallCellHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThr
         SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)] + Terrain4);
     float NextLevelTerrain = min4To1(Terrain1, Terrain2, Terrain3, Terrain4);
     OutMip1[DispatchThreadID.xy] = Src1 - NextLevelTerrain;
-    if (NumMipLevels == 1)
-        return;
-    gs_Result[GroupIndex] = Src1;
-    gs_Terrain[GroupIndex] = NextLevelTerrain;
+    if (NumMipLevels > 1)
+    {
+        gs_Result[GroupIndex] = Src1;
+        gs_Terrain[GroupIndex] = NextLevelTerrain;        
+    }
+    else return;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x9) == 0)
     {
-        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
-        NextLevelTerrain = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);        
+        Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
+        NextLevelTerrain = min4To1(NextLevelTerrain, gs_Terrain[GroupIndex + 0x01], gs_Terrain[GroupIndex + 0x08], gs_Terrain[GroupIndex + 0x09]);
         OutMip2[DispatchThreadID.xy >> 1] = Src1 - NextLevelTerrain;
     }
-    if (NumMipLevels == 2)
-        return;
-    gs_Result[GroupIndex] = Src1;
-    gs_Terrain[GroupIndex] = NextLevelTerrain;
+    if (NumMipLevels > 2)
+    {
+        gs_Result[GroupIndex] = Src1;
+        gs_Terrain[GroupIndex] = NextLevelTerrain;
+    }
+    else return;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x1B) == 0)
     {
         Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
-        NextLevelTerrain = min4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        NextLevelTerrain = min4To1(NextLevelTerrain, gs_Terrain[GroupIndex + 0x02], gs_Terrain[GroupIndex + 0x10], gs_Terrain[GroupIndex + 0x12]);
         OutMip3[DispatchThreadID.xy >> 2] = Src1 - NextLevelTerrain;
     }
-    if (NumMipLevels == 3)
-        return;
-    gs_Result[GroupIndex] = Src1;
-    gs_Terrain[GroupIndex] = NextLevelTerrain;
+    if (NumMipLevels > 3)
+    {
+        gs_Result[GroupIndex] = Src1;
+        gs_Terrain[GroupIndex] = NextLevelTerrain;        
+    }
+    else return;
     GroupMemoryBarrierWithGroupSync();
     
     if (GroupIndex == 0)
     {
         Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
-        NextLevelTerrain = min4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        NextLevelTerrain = min4To1(NextLevelTerrain, gs_Terrain[GroupIndex + 0x04], gs_Terrain[GroupIndex + 0x20], gs_Terrain[GroupIndex + 0x24]);
         OutMip4[DispatchThreadID.xy >> 3] = Src1 - NextLevelTerrain;
     }
 }

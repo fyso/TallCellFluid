@@ -178,34 +178,35 @@ public class Grid
             switch (VisualGridInfo.m_ShowInfo)
             {
                 case ShowInfo.WaterMark:
-                    m_VisualGridMaterial.SetInt("ShowInfoMode", -1);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", -1);
                     break;
                 case ShowInfo.RigidBodyPercentage:
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 0);
                     m_VisualGridMaterial.SetTexture("TopValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.TallCellTopValue);
                     m_VisualGridMaterial.SetTexture("BottomValue", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyPercentage.TallCellBottomValue);
                     break;
                 case ShowInfo.RigidBodyVelocity:
-                    m_VisualGridMaterial.SetInt("ShowInfoMode", 1);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 1);
                     m_VisualGridMaterial.SetTexture("TopVelocity", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyVelocity.TallCellTopValue);
                     m_VisualGridMaterial.SetTexture("BottomVelocity", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyVelocity.TallCellBottomValue);
                     break;
                 case ShowInfo.RigidBodySpeed:
-                    m_VisualGridMaterial.SetInt("ShowInfoMode", 2);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 2);
                     m_VisualGridMaterial.SetTexture("TopVelocity", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyVelocity.TallCellTopValue);
                     m_VisualGridMaterial.SetTexture("BottomVelocity", m_GridData[VisualGridInfo.m_GridLevel].RigidBodyVelocity.TallCellBottomValue);
                     break;
                 case ShowInfo.Velocity:
-                    m_VisualGridMaterial.SetInt("ShowInfoMode", 1);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 1);
                     m_VisualGridMaterial.SetTexture("TopVelocity", m_GridData[VisualGridInfo.m_GridLevel].Velocity.TallCellTopValue);
                     m_VisualGridMaterial.SetTexture("BottomVelocity", m_GridData[VisualGridInfo.m_GridLevel].Velocity.TallCellBottomValue);
                     break;
                 case ShowInfo.Speed:
-                    m_VisualGridMaterial.SetInt("ShowInfoMode", 2);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 2);
                     m_VisualGridMaterial.SetTexture("TopVelocity", m_GridData[VisualGridInfo.m_GridLevel].Velocity.TallCellTopValue);
                     m_VisualGridMaterial.SetTexture("BottomVelocity", m_GridData[VisualGridInfo.m_GridLevel].Velocity.TallCellBottomValue);
                     break;
                 case ShowInfo.Pressure:
-                    m_VisualGridMaterial.SetInt("ShowInfoMode", -1);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", -1);
                     break;
             }
             Graphics.DrawProceduralNow(VisualGridInfo.m_ShowMode == ShowMode.Entity ? MeshTopology.Triangles : MeshTopology.Lines, 36, ResolutionXZ.x * ResolutionXZ.y);
@@ -347,6 +348,8 @@ public class Grid
     {
         m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTex", m_GridData[vSrcLevel].TallCellHeight);
         m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTerrain", m_GridData[vSrcLevel].TerrainHeight);
+        m_DownsampleCS.SetInts("SrcResolution", m_GridData[vSrcLevel].ResolutionXZ.x, m_GridData[vSrcLevel].ResolutionXZ.y);
+        m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
         for (int i = 1; i <= 4; i++)
         {
             if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
