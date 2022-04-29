@@ -142,11 +142,11 @@ public class Simulator
         Profiler.BeginSample("ClearCache");
         m_Grid.RestCache();
         Profiler.EndSample();
-        Profiler.BeginSample("ZSortIntersectCellParticle");
+        Profiler.BeginSample("ZSortIntersectCellParticleHashTallCell");
         m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, IntersectCellParticleTypeIndex);
         Profiler.EndSample();
 
-        Profiler.BeginSample("ZSortOnlyTallCellparticle");
+        Profiler.BeginSample("ZSortOnlyTallCellparticleHashTallCell");
         m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, OnlyTallCellParticleTypeIndex);
         Profiler.EndSample();
 
@@ -154,8 +154,12 @@ public class Simulator
         m_ParticleInCellTools.ScatterParticleToTallCellGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 
-        Profiler.BeginSample("ZSortRegularCellParticle");
+        Profiler.BeginSample("ZSortRegularCellParticleHashRegular");
         m_ParticleSortTools.SortParticleHashRegular(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength, OnlyRegularCellParticleTypeIndex);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("ZSortIntersectCellParticleHashRegular");
+        m_ParticleSortTools.SortParticleHashRegular(m_DynamicParticle, m_Grid, m_SimulatorGPUCache, m_Min, m_CellLength, IntersectCellParticleTypeIndex);
         Profiler.EndSample();
 
         Profiler.BeginSample("ScatterParticleToRegularGrid");

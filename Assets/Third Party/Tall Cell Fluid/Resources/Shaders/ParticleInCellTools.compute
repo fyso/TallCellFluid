@@ -526,8 +526,8 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     uint CurrLaneIndex = WaveGetLaneIndex();
     uint CurrLaneCount = WaveGetLaneCount();
     
-    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + OnlyRegularCellParticleType];
-    uint Offset = OnlyRegularCellParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + OnlyRegularCellParticleType - 1];
+    uint Count = ParticleIndrectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
+    uint Offset = TargetParticleType == 0 ? 0 : ParticleIndrectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
     if (i - Offset >= Count)
         return;
@@ -545,7 +545,7 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
     float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
     
-    uint CurrGridYIndex = (RelativeY - CenterTerrianHeight - CenterTallCellHeight) / CellLength;
+    uint CurrGridYIndex = (RelativeY - CenterTerrianHeight - CenterTallCellHeight - CellLength) / CellLength;
     
     uint CurrRegularCellLinerIndex = computeMorton3D(uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y));
     uint PrevRegularCellLinerIndex = ThreadIdx == 0 ? 0 : WaveReadLaneAt(CurrRegularCellLinerIndex, CurrLaneIndex - 1);
