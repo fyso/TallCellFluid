@@ -227,6 +227,7 @@ GameObject:
   - component: {fileID: 1038799709}
   - component: {fileID: 1038799708}
   - component: {fileID: 1038799707}
+  - component: {fileID: 1038799710}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -299,6 +300,23 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 76.021, z: 0}
+--- !u!114 &1038799710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1038799706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f830b9fa668f09a418c8e271b6b55a3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minimumY: 0.2
+  zoomSpeed: 30
+  keyBoardMoveSpeed: 1
+  rotSpeed: 0.05
+  distance: 5
 --- !u!1 &1456825978
 GameObject:
   m_ObjectHideFlags: 0
@@ -337,10 +355,10 @@ MonoBehaviour:
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
-  VisualParticle: 0
+  VisualParticle: 1
   ShowGridDebugInfo: 1
   VisualGridInfo:
-    m_ShowMode: 0
+    m_ShowMode: 1
     m_ShowInfo: 4
     MinShowValue: 0
     MinShowColor: {r: 1, g: 1, b: 1, a: 0}
@@ -350,6 +368,8 @@ MonoBehaviour:
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 0
+    m_OnlyShowXZCell: 0
+    XZ: {x: 63, y: 38}
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
 --- !u!4 &1456825980
 Transform:

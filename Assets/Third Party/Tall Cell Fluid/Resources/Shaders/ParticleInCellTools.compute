@@ -263,11 +263,24 @@ void gatherGridToIntersectCellParticle(uint ThreadIdx : SV_GroupIndex, uint Grou
         WeightValue += Value * Weight;
         WeightSum += Weight;
     }
-    
-    float3 FinalValue = float3(0, 0, 0);
+    float3 RegularVelocity = float3(0, 0, 0);
     if (WeightSum != 0)
-        FinalValue = WeightValue / WeightSum;
-    ParticleVelocity_RW[i] = FinalValue;
+        RegularVelocity = WeightValue / WeightSum;
+    
+    float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
+    float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
+    float3 TallCellVelocity = float3(0, 0, 0);
+    float HybridFactor = 0.0f;
+    if (RelativePosition.y >= CenterTerrianHeight && RelativePosition.y < CenterTerrianHeight + CenterTallCellHeight)
+    {
+        float3 TopValue = TopCellVelocity_R[RelativeXZ];
+        float3 BottomValue = BottomCellVelocity_R[RelativeXZ];
+        float RelativeHeight = (RelativePosition.y - CenterTerrianHeight) / CenterTallCellHeight;
+        TallCellVelocity = RelativeHeight * (TopValue - BottomValue) + BottomValue;
+        HybridFactor = clamp((CenterTerrianHeight + CenterTallCellHeight - RelativePosition.y) / (CellLength * 6), 0.0f, 1.0f);
+    }
+    
+    ParticleVelocity_RW[i] = (1.0f - HybridFactor) * RegularVelocity + HybridFactor * TallCellVelocity;
 }
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
