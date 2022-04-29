@@ -391,8 +391,6 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
     uint Offset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i - Offset >= Count)
-        return;
     
     float3 CurrPosition = ParticlePosition_R[i];
     float3 CurrVelocity = ParticleVelocity_R[i];
@@ -419,14 +417,20 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     float CenterTerrianHeight = TerrianHeight_R[RelativeXZ];
     float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
     
-    if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength)
-        return;
-    
     int ParticleIncFactor = 1;
     float X = (RelativePosition.y - CenterTerrianHeight) / (CenterTallCellHeight + CellLength);
     float XX = X * X;
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
+    
+    if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength || i - Offset >= Count)
+    {
+        int ParticleIncFactor = 0;
+        float X = 0;
+        float XX = X * X;
+        float3 Y = float3(0, 0, 0);
+        float3 XY = X * Y;
+    }
         
     for (int k = 0; k < ceil(log2(RegionLength)); k++)
     {
@@ -538,8 +542,6 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
     uint Offset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i - Offset >= Count)
-        return;
 
     float3 CurrPosition = ParticlePosition_R[i];
     float3 CurrVelocity = ParticleVelocity_R[i];
@@ -584,6 +586,12 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
         float3 AdjContributePoint = float3(AdjContributePointXZIndex.x * CellLength + 0.5f * CellLength, AdjContributePointHeight, AdjContributePointXZIndex.y * CellLength + 0.5f * CellLength);
         float Weight = CubicKernel(length(RelativePoition - AdjContributePoint) / CellLength);
         float3 WeightVelocity = Weight * CurrVelocity;
+        
+        if (i - Offset >= Count)
+        {
+            Weight = 0.0f;
+            WeightVelocity = float3(0, 0, 0);
+        }
 
         for (int k = 0; k < ceil(log2(RegionLength)); k++)
         {

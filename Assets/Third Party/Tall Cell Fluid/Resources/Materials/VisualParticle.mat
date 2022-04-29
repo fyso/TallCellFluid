@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: VisualParticle
   m_Shader: {fileID: 4800000, guid: be20f13f7b69a6644a63f704682a8e34, type: 3}
-  m_ShaderKeywords: _VISUALDATATYPE_VELOCITY
+  m_ShaderKeywords: _VISUALDATATYPE_PARTICLETYPE
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -90,7 +90,7 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
-    - _visualDataType: 0
+    - _visualDataType: 1
     - _visualVelocity: 0
     m_Colors:
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}

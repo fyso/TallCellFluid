@@ -337,7 +337,7 @@ MonoBehaviour:
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
-  VisualParticle: 1
+  VisualParticle: 0
   ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 0
@@ -347,7 +347,7 @@ MonoBehaviour:
     MaxShowValue: 2
     MaxShowColor: {r: 0, g: 0.30699968, b: 1, a: 0}
     m_GridLevel: 0
-    m_ShowRegularCell: 0
+    m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}

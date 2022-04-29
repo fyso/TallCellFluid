@@ -79,6 +79,13 @@ Shader "Custom/VisualGrid"
             v2f VisualGridVert(uint vertexID : SV_VertexID, uint instanceID: SV_InstanceID)
             {
                 uint2 terrainCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
+                //if (terrainCellIndex.x != 3 || terrainCellIndex.y != 33)
+                //{
+                //    v2f o;
+                //    o.pos = float4(100, 100, 100, 1);
+                //    return o;
+                //}
+
                 float terrainHeight = TerrainHeight[terrainCellIndex];
                 float3 pos = MinPos +
                     float3((vertices[vertexID * 3] + terrainCellIndex.x + 0.5) * CellLength,
@@ -181,6 +188,12 @@ Shader "Custom/VisualGrid"
             {
                 v2f o;
                 uint2 tallCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
+                //if (tallCellIndex.x != 3 || tallCellIndex.y != 33)
+                //{
+                //    v2f o;
+                //    o.pos = float4(100, 100, 100, 1);
+                //    return o;
+                //}
                 if (TallCellShowInfoMode == 1)
                 {
                     if(vertices[vertexID * 3 + 1] > 0) o.velocity = TopVelocity[tallCellIndex];
@@ -308,6 +321,12 @@ Shader "Custom/VisualGrid"
             v2f VisualGridVert(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
                 uint3 regularCellIndex = uint3(instanceID % ResolutionX, instanceID / ResolutionX % ResolutionY, instanceID / (ResolutionX * ResolutionY));
+                //if (regularCellIndex.x != 3 || regularCellIndex.z != 33)
+                //{
+                //    v2f o;
+                //    o.pos = float4(100, 100, 100, 1);
+                //    return o;
+                //}
                 float terrainHeight = TerrainHeight[regularCellIndex.xz];
                 float tallCellHeight = TallCellHeight[regularCellIndex.xz];
                 float3 pos = MinPos +
