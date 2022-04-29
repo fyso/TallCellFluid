@@ -11,8 +11,10 @@ public class SimulatorGPUCache
     public Particle ParticleCache { get { return m_ParticleCache; } set { m_ParticleCache = value; } }
     public GPUScanHillis GPUScan { get { return m_GPUScan; } }
     public GPUScanHillisPlan GPUScanHillisCache { get { return m_GPUScanHillisCache; } }
+    public RenderTexture WaterSurfaceMinInterlockedCahce { get { return m_WaterSurfaceMinInterlockedCahce; } }
+    public RenderTexture WaterSurfaceMaxInterlockedCahce { get { return m_WaterSurfaceMaxInterlockedCahce; } }
 
-    public SimulatorGPUCache(int vMaxParticleCount)
+    public SimulatorGPUCache(int vMaxParticleCount, Vector2Int vResolutionXZ)
     {
         m_GPUScan = new GPUScanHillis();
         m_GPUScanHillisCache = new GPUScanHillisPlan();
@@ -24,6 +26,20 @@ public class SimulatorGPUCache
 
         m_CellIndexCache = new ComputeBuffer(vMaxParticleCount, sizeof(uint));
         m_InnerSortIndexCache = new ComputeBuffer(vMaxParticleCount, sizeof(uint));
+
+        m_WaterSurfaceMinInterlockedCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        {
+            enableRandomWrite = true,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        m_WaterSurfaceMaxInterlockedCahce = new RenderTexture(vResolutionXZ.x, vResolutionXZ.y, 0, RenderTextureFormat.RInt)
+        {
+            enableRandomWrite = true,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp
+        };
     }
 
     ~SimulatorGPUCache()
@@ -41,4 +57,7 @@ public class SimulatorGPUCache
     private ComputeBuffer m_CellIndexCache;
     private ComputeBuffer m_InnerSortIndexCache;
     private Particle m_ParticleCache;
+
+    private RenderTexture m_WaterSurfaceMinInterlockedCahce;
+    private RenderTexture m_WaterSurfaceMaxInterlockedCahce;
 }

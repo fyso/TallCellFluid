@@ -18,6 +18,8 @@ public class ParticleInCellTools
         scatterParticleToTallCellGrid_Pass2 = m_ParticleInCellToolsCS.FindKernel("scatterParticleToTallCellGrid_Pass2");
         scatterOnlyRegularParticleToGrid_Pass1 = m_ParticleInCellToolsCS.FindKernel("scatterOnlyRegularParticleToGrid_Pass1");
         scatterOnlyRegularParticleToGrid_Pass2 = m_ParticleInCellToolsCS.FindKernel("scatterOnlyRegularParticleToGrid_Pass2");
+        computeH1H2WithParticle_Pass1 = m_ParticleInCellToolsCS.FindKernel("computeH1H2WithParticle_Pass1");
+        computeH1H2WithParticle_Pass2 = m_ParticleInCellToolsCS.FindKernel("computeH1H2WithParticle_Pass2");
         UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
     }
 
@@ -176,6 +178,28 @@ public class ParticleInCellTools
         Profiler.EndSample();
     }
 
+    public void ComputeH1H2WithParticle(DynamicParticle vParticle, Grid vTargetGrid, SimulatorGPUCache vCache)
+    {
+        Profiler.BeginSample("Pass1");
+        m_ParticleInCellToolsCS.SetBuffer(computeH1H2WithParticle_Pass1, "ParticleIndirectArgment_R", vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(computeH1H2WithParticle_Pass1, "ParticlePosition_R", vParticle.MainParticle.Position);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass1, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass1, "TallCellHeight_R", vTargetGrid.FineGrid.TallCellHeight);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass1, "WaterSurfaceMin_RW", vCache.WaterSurfaceMinInterlockedCahce);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass1, "WaterSurfaceMax_RW", vCache.WaterSurfaceMaxInterlockedCahce);
+        m_ParticleInCellToolsCS.DispatchIndirect(computeH1H2WithParticle_Pass1, vParticle.Argument);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("Pass2");
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "TerrianHeight_R", vTargetGrid.FineGrid.TerrainHeight);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "TallCellHeight_R", vTargetGrid.FineGrid.TallCellHeight);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "WaterSurfaceMin_R", vCache.WaterSurfaceMinInterlockedCahce);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "WaterSurfaceMax_R", vCache.WaterSurfaceMaxInterlockedCahce);
+        m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "WaterSurfaceH1H2_RW", vTargetGrid.GPUCache.H1H2Cahce);
+        m_ParticleInCellToolsCS.Dispatch(computeH1H2WithParticle_Pass2, Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.x / Common.ThreadCount2D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount2D), 1);
+        Profiler.EndSample();
+    }
+
     public void InitParticleDataWithSeaLevel(GridPerLevel vFineLayer, float vSeaLevel, DynamicParticle voTarget)
     {
         Texture2D TerrianHeight = Common.CopyRenderTextureToCPU(vFineLayer.TerrainHeight);
@@ -246,6 +270,8 @@ public class ParticleInCellTools
     private int scatterParticleToTallCellGrid_Pass2;
     private int scatterOnlyRegularParticleToGrid_Pass1;
     private int scatterOnlyRegularParticleToGrid_Pass2;
+    private int computeH1H2WithParticle_Pass1;
+    private int computeH1H2WithParticle_Pass2;
 
     private uint OnlyRegularCellParticleArgumentOffset;
     private uint IntersectCellParticleArgumentOffset;
