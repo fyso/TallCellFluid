@@ -4,4 +4,8 @@ using UnityEngine;
 
 public class SparseBlackRedGaussSeidelMultigridSolver
 {
+    public SparseBlackRedGaussSeidelMultigridSolver()
+    {
+
+    }
 }
