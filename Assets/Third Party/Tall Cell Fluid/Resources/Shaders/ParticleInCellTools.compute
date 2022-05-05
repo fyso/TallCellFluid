@@ -269,13 +269,7 @@ void gatherGridToIntersectCellParticle(uint ThreadIdx : SV_GroupIndex, uint Grou
     float HybridFactor = 0.0f;
     if (RelativePosition.y >= CenterTerrianHeight && RelativePosition.y < CenterTerrianHeight + CenterTallCellHeight)
     {
-        float3 TopValue = TopCellVelocity_R[RelativeXZ];
-        float3 BottomValue = BottomCellVelocity_R[RelativeXZ];
-        
-        float3 a = (TopValue - BottomValue) / CenterTallCellHeight;
-        float3 b = BottomValue - a * (CenterTerrianHeight + 0.5 * CellLength);
-        TallCellVelocity = a * RelativePosition.y + b;
-        
+        TallCellVelocity = sampleTallCellValue(TopCellVelocity_R, BottomCellVelocity_R, CenterTerrianHeight, CenterTallCellHeight, RelativeXZ, RelativePosition.y);
         HybridFactor = clamp((CenterTerrianHeight + CenterTallCellHeight - RelativePosition.y) / (CellLength * 6), 0.0f, 1.0f);
     }
     

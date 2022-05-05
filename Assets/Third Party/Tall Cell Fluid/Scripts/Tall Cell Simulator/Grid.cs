@@ -136,7 +136,7 @@ public class Grid
             float CellLength = vCellLength * Mathf.Pow(2, i);
             m_GridData[i] = new GridPerLevel(LayerResolutionXZ, RegularCellYCount, CellLength, i == 0);
         }
-
+        m_LinerSolver = new SparseBlackRedGaussSeidelMultigridSolver();
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellYCount);
         m_GPUCache = new GridGPUCache(vResolutionXZ, vCellLength, vRegularCellYCount);
         m_Utils = new Utils();
@@ -336,6 +336,11 @@ public class Grid
         Profiler.EndSample();
     }
 
+    public void SparseMultiGridRedBlackGaussSeidel()
+    {
+        m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
+    }
+
     #region DownSample
     private ComputeShader m_DownsampleCS;
     private int downSampleTerrainHeight;
@@ -459,6 +464,7 @@ public class Grid
     private int m_HierarchicalLevel;
     private GridPerLevel[] m_GridData;
     private RemeshTools m_RemeshTools;
+    private SparseBlackRedGaussSeidelMultigridSolver m_LinerSolver;
     private Utils m_Utils;
 
     private GridGPUCache m_GPUCache;

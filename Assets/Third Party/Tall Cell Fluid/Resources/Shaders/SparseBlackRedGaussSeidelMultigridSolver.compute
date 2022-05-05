@@ -1,7 +1,7 @@
 #include "Common.hlsl"
 
 #pragma enable_d3d11_debug_symbols
-#pragma kernel computeVectorB_Regular
+#pragma kernel computeVectorB
 #pragma kernel smooth
 #pragma kernel restrict
 #pragma kernel prolong
@@ -21,16 +21,6 @@ Texture3D<float3> RegularCellRigidBodyVelocity_R;
 Texture2D<float3> TopCellRigidBodyVelocity_R;
 Texture2D<float3> BottomRigidBodyVelocity_R;
 
-static int3 Divergence3D[6] =
-{
-    { -1, 0, 0 },
-    { 1, 0, 0 },
-    { 0, -1, 0 },
-    { 0, 1, 0 },
-    { 0, -1, 0 },
-    { 0, 1, 0 }
-};
-
 float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterValue)
 {
     float3 Position = vCenterPosition + vOffset;
@@ -42,16 +32,20 @@ float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterV
     float3 Velocity = float3(0, 0, 0);
     if (Position.y >= TerrianHeight && Position.y < TerrianHeight + TallCellHeight)
     {
-        float3 TopValue = TopCellVelocity_R[XZ];
-        float3 BottomValue = BottomCellVelocity_R[XZ];
-        float3 a = (TopValue - BottomValue) / TallCellHeight;
-        float3 b = BottomValue - a * (TerrianHeight + 0.5 * CellLength);
-        Velocity = a * Position.y + b;
-
+        float SolidFacctor = sampleTallCellValue(TopCellRigidBodyPercentage_R, BottomRigidBodyPercentage_R, TerrianHeight, TallCellHeight, XZ, Position.y);
+        if(SolidFacctor > 0.9f)
+            Velocity = sampleTallCellValue(TopCellRigidBodyVelocity_R, BottomRigidBodyVelocity_R, TerrianHeight, TallCellHeight, XZ, Position.y);
+        else
+            Velocity = (sampleTallCellValue(TopCellVelocity_R, BottomCellVelocity_R, TerrianHeight, TallCellHeight, XZ, Position.y) + CenterValue) * 0.5f;
     }
     else if (Position.y >= TerrianHeight + TallCellHeight && Position.y < TerrianHeight + TallCellHeight + ConstantCellNum * CellLength)
     {
-        
+        int Y = (Position.y - (TerrianHeight + TallCellHeight)) / CellLength;
+        float SolidFacctor = RegularCellRigidBodyPercentage_R[int3(XZ.x, Y, XZ.y)];
+        if (SolidFacctor > 0.9f)
+            Velocity = RegularCellRigidBodyVelocity_R[int3(XZ.x, Y, XZ.y)];
+        else
+            Velocity = (RegularCellVelocity_R[int3(XZ.x, Y, XZ.y)] + CenterValue) * 0.5f;
     }
     else if (Position.y >= TerrianHeight + TallCellHeight + ConstantCellNum * CellLength)
     {
@@ -59,19 +53,59 @@ float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterV
     }
     else
     {
-        
+        Velocity = float3(0, 0, 0);
     }
     return Velocity;
 }
 
 RWTexture3D<float> VectorB_Regular_RW;
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
-void computeVectorB_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
+void computeVectorB(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum)
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum + 2)
         return;
     
-    float3 CenterCellPosition = DispatchThreadID * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xz];
+    float TallCellHeight = TallCellHeight_R[DispatchThreadID.xz];
+    
+    float SolidFactor = 0.0f;
+    if (DispatchThreadID.y == 0)
+        SolidFactor = BottomRigidBodyPercentage_R[DispatchThreadID.xz];
+    else if (DispatchThreadID.y == 1)
+        SolidFactor = TopCellRigidBodyPercentage_R[DispatchThreadID.xz];
+    else
+        SolidFactor = RegularCellRigidBodyPercentage_R[DispatchThreadID];
+    
+    if(SolidFactor > 0.9f)
+        return;
+    
+    float3 CenterVelocity, CenterCellPosition = float3(0, 0, 0);
+    if(DispatchThreadID.y == 0)
+    {
+        CenterVelocity = BottomCellVelocity_R[DispatchThreadID.xz];
+        float2 XZ = DispatchThreadID.xz * CellLength + float2(0.5f, 0.5f) * CellLength;
+        CenterCellPosition = float3(XZ.x, TerrianHeight + 0.5f * CellLength, XZ.y);
+    }
+    else if (DispatchThreadID.y == 1)
+    {
+        CenterVelocity = TopCellVelocity_R[DispatchThreadID.xz];
+        float2 XZ = DispatchThreadID.xz * CellLength + float2(0.5f, 0.5f) * CellLength;
+        CenterCellPosition = float3(XZ.x, TallCellHeight - 0.5f * CellLength, XZ.y);
+    }
+    else
+    {
+        CenterVelocity = RegularCellVelocity_R[DispatchThreadID];
+        CenterCellPosition = DispatchThreadID * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+    }
+    
+    float3 LeftVelocity = sampleTallCellGrid(CenterCellPosition, int3(-1, 0, 0) * CellLength, CenterVelocity);
+    float3 RightVelocity = sampleTallCellGrid(CenterCellPosition, int3(1, 0, 0) * CellLength, CenterVelocity);
+    float3 DownVelocity = sampleTallCellGrid(CenterCellPosition, int3(0, -1, 0) * CellLength, CenterVelocity);
+    float3 UpVelocity = sampleTallCellGrid(CenterCellPosition, int3(0, 1, 0) * CellLength, CenterVelocity);
+    float3 BackVelocity = sampleTallCellGrid(CenterCellPosition, int3(0, 0, -1) * CellLength, CenterVelocity);
+    float3 FrontVelocity = sampleTallCellGrid(CenterCellPosition, int3(0, 0, 1) * CellLength, CenterVelocity);
+
+    VectorB_Regular_RW[DispatchThreadID] = ((RightVelocity.x - LeftVelocity.x) + (UpVelocity.y - DownVelocity.y) + (FrontVelocity.z - BackVelocity.z)) / CellLength;
 }
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
