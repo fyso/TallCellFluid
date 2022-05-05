@@ -273,7 +273,6 @@ public class Grid
 
     public void RestCache()
     {
-       
         m_Utils.ClearIntTexture2D(GPUCache.TallCellParticleCountCahce);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce1);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce2);

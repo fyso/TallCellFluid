@@ -31,7 +31,7 @@ public class SparseBlackRedGaussSeidelMultigridSolver
         m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB, "TopCellRigidBodyVelocity_R", vFineLevel.RigidBodyVelocity.TallCellTopValue);
         m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB, "BottomRigidBodyVelocity_R", vFineLevel.RigidBodyVelocity.TallCellBottomValue);
 
-        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB, "VectorB_Regular_RW", vCache.VectorBForFineLevel);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB, "VectorB_RW", vCache.VectorBForFineLevel);
 
         m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(
             computeVectorB,

@@ -27,7 +27,7 @@ public class Simulator
 
         m_Argument = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
         uint[] InitArgument = new uint[3] {
-                1, 1, 1
+            1, 1, 1
         };
         m_Argument.SetData(InitArgument);
 
@@ -171,6 +171,12 @@ public class Simulator
         Profiler.EndSample();
 
         //TODO: update mark for fine level
+        Profiler.BeginSample("ComputeH1H2WithParticle");
+        m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMaxInterlockedCahce, int.MaxValue);
+        m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMinInterlockedCahce, int.MinValue);
+        m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, -1);
+        m_ParticleInCellTools.ComputeH1H2WithParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
+        Profiler.EndSample();
     }
 
     private Vector3 m_Min;

@@ -104,7 +104,7 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        VectorBForFineLevel = new RenderTexture(vResolutionXZ.x, vRegularCellYCount + 2, 0, RenderTextureFormat.RInt)
+        VectorBForFineLevel = new RenderTexture(vResolutionXZ.x, vRegularCellYCount + 2, 0, RenderTextureFormat.RFloat)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,

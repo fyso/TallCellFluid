@@ -58,7 +58,7 @@ float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterV
     return Velocity;
 }
 
-RWTexture3D<float> VectorB_Regular_RW;
+RWTexture3D<float> VectorB_RW;
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void computeVectorB(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
@@ -105,7 +105,7 @@ void computeVectorB(uint3 DispatchThreadID : SV_DispatchThreadID)
     float3 BackVelocity = sampleTallCellGrid(CenterCellPosition, int3(0, 0, -1) * CellLength, CenterVelocity);
     float3 FrontVelocity = sampleTallCellGrid(CenterCellPosition, int3(0, 0, 1) * CellLength, CenterVelocity);
 
-    VectorB_Regular_RW[DispatchThreadID] = ((RightVelocity.x - LeftVelocity.x) + (UpVelocity.y - DownVelocity.y) + (FrontVelocity.z - BackVelocity.z)) / CellLength;
+    VectorB_RW[DispatchThreadID] = ((RightVelocity.x - LeftVelocity.x) + (UpVelocity.y - DownVelocity.y) + (FrontVelocity.z - BackVelocity.z)) / CellLength;
 }
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]

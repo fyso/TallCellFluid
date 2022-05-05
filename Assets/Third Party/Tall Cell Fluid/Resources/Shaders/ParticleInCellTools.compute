@@ -691,12 +691,12 @@ void computeH1H2WithParticle_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx
         uint IntraEnd = floor((float) RegionLength / pow(2.0f, k + 1));
         uint Offset = ceil((float) RegionLength / pow(2.0f, k + 1));
             
-        int AnotherMinY = WaveReadLaneAt(MinY, CurrLaneIndex + Offset);
-        int AnotherMaxY = WaveReadLaneAt(MaxY, CurrLaneIndex + Offset);
+        float AnotherMinY = WaveReadLaneAt(MinY, CurrLaneIndex + Offset);
+        float AnotherMaxY = WaveReadLaneAt(MaxY, CurrLaneIndex + Offset);
         if (IntraOffset < IntraEnd)
         {
             MinY = min(AnotherMinY, MinY);
-            MaxY = min(AnotherMaxY, MaxY);
+            MaxY = max(AnotherMaxY, MaxY);
         }
     }
         
@@ -716,9 +716,6 @@ void computeH1H2WithParticle_Pass2(uint3 DispatchThreadID : SV_DispatchThreadID)
     float CenterTerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
     float CenterTallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
     
-    float MinY = (WaterSurfaceMin_R[DispatchThreadID.xy] / (float) ZIP) * (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
-    float MaxY = (WaterSurfaceMax_R[DispatchThreadID.xy] / (float) ZIP) * (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
-    
-    WaterSurfaceH1H2_RW[DispatchThreadID.xy].x = MinY;
-    WaterSurfaceH1H2_RW[DispatchThreadID.xy].y = MaxY;
+    WaterSurfaceH1H2_RW[DispatchThreadID.xy].x = (WaterSurfaceMin_R[DispatchThreadID.xy] / (float) ZIP) * (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
+    WaterSurfaceH1H2_RW[DispatchThreadID.xy].y = (WaterSurfaceMax_R[DispatchThreadID.xy] / (float) ZIP) * (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
 }

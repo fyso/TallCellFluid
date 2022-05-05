@@ -11,6 +11,7 @@ public class Utils
         copyFloat4Texture3DToAnother = UtilsCS.FindKernel("copyFloat4Texture3DToAnother");
         clearIntTexture2D = UtilsCS.FindKernel("clearIntTexture2D");
         clearIntTexture3D = UtilsCS.FindKernel("clearIntTexture3D");
+        clearFloat3Texture2D = UtilsCS.FindKernel("clearFloat3Texture2D");
         updateArgment = UtilsCS.FindKernel("updateArgment");
     }
 
@@ -47,13 +48,25 @@ public class Utils
         UtilsCS.Dispatch(clearIntTexture3D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.volumeDepth / Common.ThreadCount3D));
     }
 
-    public void ClearIntTexture2D(RenderTexture vClearTarget)
+    public void ClearIntTexture2D(RenderTexture vClearTarget, int vClearValue = 0)
     {
         if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
             Debug.LogError("need 2d texture but given a non 2d texture!");
 
+        UtilsCS.SetInt("ClearIntTexture3DValue", vClearValue);
         UtilsCS.SetTexture(clearIntTexture2D, "ClearTarget2D_RW", vClearTarget);
         UtilsCS.Dispatch(clearIntTexture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
+    }
+
+    public void ClearFloat3Texture2D(RenderTexture vClearTarget, Vector3 vClearValue)
+    {
+        if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
+            Debug.LogError("need 2d texture but given a non 2d texture!");
+
+        UtilsCS.SetFloats("ClearFloat3Value", vClearValue.x, vClearValue.y, vClearValue.z);
+
+        UtilsCS.SetTexture(clearFloat3Texture2D, "ClearFloat3Target3D_RW", vClearTarget);
+        UtilsCS.Dispatch(clearFloat3Texture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
     }
 
     public void UpdateArgment(ComputeBuffer vTallCellArgument, ComputeBuffer vParticleArgument, int vOnlyTallCellParticleXGridCountArgumentOffset, int vScatterOnlyTallCellParticleArgmentOffset)
@@ -70,5 +83,6 @@ public class Utils
     private int copyFloat4Texture3DToAnother;
     private int clearIntTexture2D;
     private int clearIntTexture3D;
+    private int clearFloat3Texture2D;
     private int updateArgment;
 }
