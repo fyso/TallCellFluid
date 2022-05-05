@@ -33,7 +33,7 @@ float HeightScale;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void computeTerrianHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xy > XZResolution))
+    if (any(DispatchThreadID.xy >= XZResolution))
         return;
     
     float2 UV = DispatchThreadID.xy / (float2) XZResolution;
@@ -47,7 +47,7 @@ float SeaLevel;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void computeH1H2WithSeaLevel(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xy > XZResolution))
+    if (any(DispatchThreadID.xy >= XZResolution))
         return;
     
     float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
@@ -61,7 +61,7 @@ uint D;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void computeTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xy > XZResolution))
+    if (any(DispatchThreadID.xy >= XZResolution))
         return;
     
     float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
@@ -90,7 +90,7 @@ float BlurRadius;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void smoothTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xy > XZResolution))
+    if (any(DispatchThreadID.xy >= XZResolution))
         return;
     
     float2 UV = (float2) DispatchThreadID.xy / XZResolution;
@@ -129,7 +129,7 @@ void smoothTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xy > XZResolution))
+    if (any(DispatchThreadID.xy >= XZResolution))
         return;
     
     float2 Center = TallCellHeight_R[DispatchThreadID.xy];

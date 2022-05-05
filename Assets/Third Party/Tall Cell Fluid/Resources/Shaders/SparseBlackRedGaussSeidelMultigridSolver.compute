@@ -1,17 +1,77 @@
 #include "Common.hlsl"
-#pragma kernel computeVectorB
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel computeVectorB_Regular
 #pragma kernel smooth
 #pragma kernel restrict
 #pragma kernel prolong
 
-uint BlackRedSwitch;
+Texture2D<float> TerrianHeight_R;
+Texture2D<float> TallCellHeight_R;
 
-RWTexture3D<float> VectorB_RW;
-RWTexture3D<float> VectorB_R;
-[numthreads(THREAD_COUNT_1D, 1, 1)]
-void computeVectorB(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+Texture3D<float3> RegularCellVelocity_R;
+Texture2D<float3> TopCellVelocity_R;
+Texture2D<float3> BottomCellVelocity_R;
+
+Texture3D<float> RegularCellRigidBodyPercentage_R;
+Texture2D<float> TopCellRigidBodyPercentage_R;
+Texture2D<float> BottomRigidBodyPercentage_R;
+
+Texture3D<float3> RegularCellRigidBodyVelocity_R;
+Texture2D<float3> TopCellRigidBodyVelocity_R;
+Texture2D<float3> BottomRigidBodyVelocity_R;
+
+static int3 Divergence3D[6] =
 {
+    { -1, 0, 0 },
+    { 1, 0, 0 },
+    { 0, -1, 0 },
+    { 0, 1, 0 },
+    { 0, -1, 0 },
+    { 0, 1, 0 }
+};
+
+float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterValue)
+{
+    float3 Position = vCenterPosition + vOffset;
+    int2 XZ = clamp(Position.xz / CellLength, int2(0, 0), XZResolution - int2(1, 1));
     
+    float TerrianHeight = TerrianHeight_R[XZ];
+    float TallCellHeight = TallCellHeight_R[XZ];
+    
+    float3 Velocity = float3(0, 0, 0);
+    if (Position.y >= TerrianHeight && Position.y < TerrianHeight + TallCellHeight)
+    {
+        float3 TopValue = TopCellVelocity_R[XZ];
+        float3 BottomValue = BottomCellVelocity_R[XZ];
+        float3 a = (TopValue - BottomValue) / TallCellHeight;
+        float3 b = BottomValue - a * (TerrianHeight + 0.5 * CellLength);
+        Velocity = a * Position.y + b;
+
+    }
+    else if (Position.y >= TerrianHeight + TallCellHeight && Position.y < TerrianHeight + TallCellHeight + ConstantCellNum * CellLength)
+    {
+        
+    }
+    else if (Position.y >= TerrianHeight + TallCellHeight + ConstantCellNum * CellLength)
+    {
+        Velocity = CenterValue;
+    }
+    else
+    {
+        
+    }
+    return Velocity;
+}
+
+RWTexture3D<float> VectorB_Regular_RW;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void computeVectorB_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum)
+        return;
+    
+    float3 CenterCellPosition = DispatchThreadID * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
 }
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
