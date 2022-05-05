@@ -350,7 +350,10 @@ MonoBehaviour:
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 1
+    m_OnlyShowXZCell: 0
+    XZ: {x: 0, y: 0}
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
+  m_ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0

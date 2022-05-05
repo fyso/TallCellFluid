@@ -31,5 +31,6 @@ float4x4 glstate_matrix_inv_projection;
 float4x4 glstate_matrix_view_projection;
 float4x4 glstate_matrix_inv_view_projection;
 float4 _WorldSpaceLightPos0;
+float4 _WorldSpaceLightDir0;
 float4 _LightColor0;
 #endif

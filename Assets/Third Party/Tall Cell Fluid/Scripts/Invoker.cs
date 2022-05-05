@@ -53,6 +53,7 @@ public class Invoker : MonoBehaviour
     public Material VisualParticleMaterial;
 
     private Simulator m_Simulator;
+    public ParticleData m_ParticleData;
 
     void Start()
     {
@@ -66,6 +67,7 @@ public class Invoker : MonoBehaviour
             m_MaxParticleCount
         );
         m_Simulator.GenerateRandomVelicty();
+        m_Simulator.SetupParticleDataForReconstruction(m_ParticleData);
     }
 
     void Update()
