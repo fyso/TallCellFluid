@@ -19,7 +19,7 @@ public class Simulator
         m_Grid.InitMesh(vTerrian, vSeaLevel);
 
         m_Utils = new Utils();
-        m_SimulatorGPUCache = new SimulatorGPUCache(vMaxParticleCount);
+        m_SimulatorGPUCache = new SimulatorGPUCache(vMaxParticleCount, vResolutionXZ);
         m_ParticleSortTools = new ParticleSortTools();
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
         m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
@@ -101,23 +101,23 @@ public class Simulator
     public void Step(float vTimeStep)
     {
         Profiler.BeginSample("ParticleInCell");
-        ParticleInCell();
+        __ParticleInCell();
         Profiler.EndSample();
 
-        Profiler.BeginSample("Remesh");
-        m_Grid.Remesh();
-        Profiler.EndSample();
+        //Profiler.BeginSample("Remesh");
+        //m_Grid.Remesh();
+        //Profiler.EndSample();
 
-        Profiler.BeginSample("UpdateGridValue");
-        m_Grid.UpdateGridValue();
-        Profiler.EndSample();
+        //Profiler.BeginSample("UpdateGridValue");
+        //m_Grid.UpdateGridValue();
+        //Profiler.EndSample();
 
-        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        SparseMultiGridRedBlackGaussSeidel();
-        Profiler.EndSample();
+        //Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
+        //__SparseMultiGridRedBlackGaussSeidel();
+        //Profiler.EndSample();
     }
 
-    private void ParticleInCell()
+    private void __ParticleInCell()
     {
         Profiler.BeginSample("MarkParticleWtihCellType");
         m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_Grid.FineGrid);
@@ -173,10 +173,11 @@ public class Simulator
         Profiler.BeginSample("ScatterParticleToRegularGrid");
         m_ParticleInCellTools.ScatterParticleToRegularGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
+
         //TODO: update mark for fine level
     }
 
-    private void SparseMultiGridRedBlackGaussSeidel()
+    private void __SparseMultiGridRedBlackGaussSeidel()
     {
         //multi grid gauss-seidel
     }

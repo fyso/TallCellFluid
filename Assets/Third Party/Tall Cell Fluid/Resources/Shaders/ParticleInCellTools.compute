@@ -9,6 +9,8 @@
 #pragma kernel scatterParticleToTallCellGrid_Pass2
 #pragma kernel scatterOnlyRegularParticleToGrid_Pass1
 #pragma kernel scatterOnlyRegularParticleToGrid_Pass2
+#pragma kernel computeH1H2WithParticle_Pass1
+#pragma kernel computeH1H2WithParticle_Pass2
 #pragma use_dxc
 
 uint ParticleCountArgumentOffset;
@@ -261,11 +263,24 @@ void gatherGridToIntersectCellParticle(uint ThreadIdx : SV_GroupIndex, uint Grou
         WeightValue += Value * Weight;
         WeightSum += Weight;
     }
-    
-    float3 FinalValue = float3(0, 0, 0);
+    float3 RegularVelocity = float3(0, 0, 0);
     if (WeightSum != 0)
-        FinalValue = WeightValue / WeightSum;
-    ParticleVelocity_RW[i] = FinalValue;
+        RegularVelocity = WeightValue / WeightSum;
+    
+    float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
+    float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
+    float3 TallCellVelocity = float3(0, 0, 0);
+    float HybridFactor = 0.0f;
+    if (RelativePosition.y >= CenterTerrianHeight && RelativePosition.y < CenterTerrianHeight + CenterTallCellHeight)
+    {
+        float3 TopValue = TopCellVelocity_R[RelativeXZ];
+        float3 BottomValue = BottomCellVelocity_R[RelativeXZ];
+        float RelativeHeight = (RelativePosition.y - CenterTerrianHeight) / CenterTallCellHeight;
+        TallCellVelocity = RelativeHeight * (TopValue - BottomValue) + BottomValue;
+        HybridFactor = clamp((CenterTerrianHeight + CenterTallCellHeight - RelativePosition.y) / (CellLength * 6), 0.0f, 1.0f);
+    }
+    
+    ParticleVelocity_RW[i] = (1.0f - HybridFactor) * RegularVelocity + HybridFactor * TallCellVelocity;
 }
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
@@ -363,7 +378,7 @@ uint4 MaskUnusedBit(uint4 vInput, uint vLaneCount)
     return vInput;
 }
 
-#define ZIP 5000000
+#define ZIP 10000000
 Texture2D<int> ParticleCount_R;
 Texture3D<int> XSum_R;
 Texture3D<int> XXSum_R;
@@ -389,8 +404,6 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
     uint Offset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i - Offset >= Count)
-        return;
     
     float3 CurrPosition = ParticlePosition_R[i];
     float3 CurrVelocity = ParticleVelocity_R[i];
@@ -418,10 +431,19 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
     
     int ParticleIncFactor = 1;
-    float X = (RelativePosition.y - CenterTerrianHeight) / (CenterTallCellHeight + ConstantCellNum * CellLength);
+    float X = (RelativePosition.y - CenterTerrianHeight) / (CenterTallCellHeight + CellLength);
     float XX = X * X;
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
+    
+    if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength || i - Offset >= Count)
+    {
+        int ParticleIncFactor = 0;
+        float X = 0;
+        float XX = X * X;
+        float3 Y = float3(0, 0, 0);
+        float3 XY = X * Y;
+    }
         
     for (int k = 0; k < ceil(log2(RegionLength)); k++)
     {
@@ -501,12 +523,16 @@ void scatterParticleToTallCellGrid_Pass2(uint3 DispatchThreadID : SV_DispatchThr
     float CenterTerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
     float CenterTallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
     
-    float Factor = M <= 1 ? 1 : M * XXSum - pow(XSum, 2);
+    float Factor = M * XXSum - pow(XSum, 2);
     float3 Sigma0 = (XXSum * YSum - XSum * XYSum) / Factor;
     float3 Sigma1 = (M * XYSum - XSum * YSum) / Factor;
-    
-    float3 TopValue = Sigma0 + Sigma1 * (CenterTallCellHeight / (CenterTallCellHeight + ConstantCellNum * CellLength));
+    float3 TopValue = Sigma0 + Sigma1 * (CenterTallCellHeight / (CenterTallCellHeight + CellLength));
     float3 BottomValue = Sigma0;
+    
+    if (abs(Factor - 0.0f) < EPSILON)
+    {
+        TopValue = BottomValue = (M == 0 ? float3(0, 0, 0) : YSum / (float) M);
+    }
     
     TopCellVelocity_RW[DispatchThreadID.xy] = TopValue;
     BottomCellVelocity_RW[DispatchThreadID.xy] = BottomValue;
@@ -529,8 +555,6 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     uint Count = ParticleIndirectArgment_R[DifferParticleCountArgumentOffset + TargetParticleType];
     uint Offset = TargetParticleType == 0 ? 0 : ParticleIndirectArgment_R[DifferParticleSplitPointArgumentOffset + TargetParticleType - 1];
     uint i = Offset + ThreadIdx + GroupIdx * THREAD_COUNT_1D;
-    if (i - Offset >= Count)
-        return;
 
     float3 CurrPosition = ParticlePosition_R[i];
     float3 CurrVelocity = ParticleVelocity_R[i];
@@ -575,6 +599,12 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
         float3 AdjContributePoint = float3(AdjContributePointXZIndex.x * CellLength + 0.5f * CellLength, AdjContributePointHeight, AdjContributePointXZIndex.y * CellLength + 0.5f * CellLength);
         float Weight = CubicKernel(length(RelativePoition - AdjContributePoint) / CellLength);
         float3 WeightVelocity = Weight * CurrVelocity;
+        
+        if (i - Offset >= Count)
+        {
+            Weight = 0.0f;
+            WeightVelocity = float3(0, 0, 0);
+        }
 
         for (int k = 0; k < ceil(log2(RegionLength)); k++)
         {
@@ -616,14 +646,18 @@ void scatterOnlyRegularParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatch
     );
     
     float3 FinalValue = float3(0, 0, 0);
-    if (Weight != 0)
+    if (abs(Weight - 0.0f) > EPSILON)
         FinalValue = WeightedVelocity / Weight;
     RegularCellVelocity_RW[DispatchThreadID] = FinalValue;
 }
 
+Texture2D<int> WaterSurfaceMin_R;
+Texture2D<int> WaterSurfaceMax_R;
+RWTexture2D<int> WaterSurfaceMin_RW;
+RWTexture2D<int> WaterSurfaceMax_RW;
 RWTexture2D<float2> WaterSurfaceH1H2_RW;
 [numthreads(THREAD_COUNT_1D, 1, 1)]
-void computeH1H2WithParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void computeH1H2WithParticle_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint CurrLaneIndex = WaveGetLaneIndex();
     uint CurrLaneCount = WaveGetLaneCount();
@@ -634,7 +668,6 @@ void computeH1H2WithParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
         return;
     
     float3 CurrPosition = ParticlePosition_R[i];
-    float3 CurrVelocity = ParticleVelocity_R[i];
     
     float2 RelativeXZ = CurrPosition.xz - Min.xz;
     float RelativeY = CurrPosition.y - Min.y;
@@ -657,17 +690,42 @@ void computeH1H2WithParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     //warp level reduce
     float CenterTerrianHeight = TerrianHeight_R[RelativeXZ];
     float CenterTallCellHeight = TallCellHeight_R[RelativeXZ];
+    float MinY = RelativeY / (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
+    float MaxY = RelativeY / (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
+    
     for (int k = 0; k < ceil(log2(RegionLength)); k++)
     {
         uint IntraEnd = floor((float) RegionLength / pow(2.0f, k + 1));
         uint Offset = ceil((float) RegionLength / pow(2.0f, k + 1));
-        
+            
+        int AnotherMinY = WaveReadLaneAt(MinY, CurrLaneIndex + Offset);
+        int AnotherMaxY = WaveReadLaneAt(MaxY, CurrLaneIndex + Offset);
         if (IntraOffset < IntraEnd)
         {
+            MinY = min(AnotherMinY, MinY);
+            MaxY = min(AnotherMaxY, MaxY);
         }
     }
         
     if (IntraOffset == 0)
     {
+        InterlockedMin(WaterSurfaceMin_RW[CurrGridXZIndex], MinY * ZIP);
+        InterlockedMax(WaterSurfaceMax_RW[CurrGridXZIndex], MaxY * ZIP);
     }
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void computeH1H2WithParticle_Pass2(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy >= XZResolution))
+        return;
+    
+    float CenterTerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    float CenterTallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
+    
+    float MinY = (WaterSurfaceMin_R[DispatchThreadID.xy] / (float) ZIP) * (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
+    float MaxY = (WaterSurfaceMax_R[DispatchThreadID.xy] / (float) ZIP) * (CenterTerrianHeight + CenterTallCellHeight + ConstantCellNum * CellLength);
+    
+    WaterSurfaceH1H2_RW[DispatchThreadID.xy].x = MinY;
+    WaterSurfaceH1H2_RW[DispatchThreadID.xy].y = MaxY;
 }

@@ -14,6 +14,12 @@
 
 #define MIN_WARP_COUNT 32
 
+#define EPSILON 1e-7f
+#define PI 3.14159274F
+#define FLT_MAX 3.402823466e+38F
+#define UINT_MAX 4294967295
+#define Density0 1000.0f
+
 float3 Min;
 float CellLength;
 uint2 XZResolution;

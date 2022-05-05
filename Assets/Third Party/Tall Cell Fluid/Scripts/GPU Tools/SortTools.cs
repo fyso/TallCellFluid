@@ -34,7 +34,7 @@ public class ParticleSortTools
 
         vCache.GPUScan.Scan(vCache.HashCount, vCache.HashOffset, vCache.GPUScanHillisCache);
 
-        RearrangePartileData(voTarget, vCache);
+        __RearrangePartileData(voTarget, vCache);
     }
 
     public void SortParticleHashTallCell(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength, int vTargetParticleType)
@@ -59,7 +59,7 @@ public class ParticleSortTools
 
         vCache.GPUScan.Scan(vCache.HashCount, vCache.HashOffset, vCache.GPUScanHillisCache);
 
-        RearrangePartileData(voTarget, vCache);
+        __RearrangePartileData(voTarget, vCache);
 
         GPUCountingSortHashCS.DisableKeyword("HashTallCell");
     }
@@ -88,12 +88,12 @@ public class ParticleSortTools
 
         vCache.GPUScan.Scan(vCache.HashCount, vCache.HashOffset, vCache.GPUScanHillisCache);
 
-        RearrangePartileData(voTarget, vCache);
+        __RearrangePartileData(voTarget, vCache);
 
         GPUCountingSortHashCS.DisableKeyword("HashRegularCell");
     }
 
-    private void RearrangePartileData(DynamicParticle voTarget, SimulatorGPUCache vCache)
+    private void __RearrangePartileData(DynamicParticle voTarget, SimulatorGPUCache vCache)
     {
         vCache.GPUScan.Scan(vCache.HashCount, vCache.HashOffset, vCache.GPUScanHillisCache);
 

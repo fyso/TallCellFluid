@@ -67,17 +67,15 @@ namespace GPUDPP
 
         void Update()
         {
-            Profiler.BeginSample("B Scan");
-            m_GPUScanBlelloch.Scan(m_Key, m_Result1);
-            Profiler.EndSample();
+            //Profiler.BeginSample("B Scan");
+            //m_GPUScanBlelloch.Scan(m_Key, m_Result1);
+            //Profiler.EndSample();
 
-            Profiler.BeginSample("H Scan");
-            m_GPUScanHillis.Scan(m_Key, m_Result2, m_GPUScanHillisPlan);
-            Profiler.EndSample();
+            //Profiler.BeginSample("H Scan");
+            //m_GPUScanHillis.Scan(m_Key, m_Result2, m_GPUScanHillisPlan);
+            //Profiler.EndSample();
 
-            ComputeBuffer BackBuffer = m_Key;
-
-            Profiler.BeginSample("MultiSplit");
+            //ComputeBuffer BackBuffer = m_Key;
 
             Profiler.BeginSample("ComputeNewIndex");
             m_GPUMultiSplit.ComputeNewIndex(m_Key, m_GPUMultiSplitPlan, BucketCount, m_Argument, 3, 0, 4);
