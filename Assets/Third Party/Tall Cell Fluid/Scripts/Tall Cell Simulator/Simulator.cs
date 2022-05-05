@@ -34,6 +34,12 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
+    public void SetupParticleDataForReconstruction(ParticleData vParticleData)
+    {
+        vParticleData.PositionBuffer = m_DynamicParticle.MainParticle.Position;
+        vParticleData.ArgumentBuffer = m_DynamicParticle.Argument;
+    }
+
     public void VisualParticle(Material vMaterial)
     {
         Profiler.BeginSample("VisualParticle");
@@ -45,9 +51,9 @@ public class Simulator
         Profiler.EndSample();
     }
 
-    public void VisualGrid(VisualGridInfo VisualGridInfo)
+    public void VisualGrid(VisualGridInfo vVisualGridInfo)
     {
-        m_Grid.VisualGrid(VisualGridInfo, m_Min);
+        m_Grid.VisualGrid(vVisualGridInfo, m_Min);
     }
 
     public void GenerateRandomVelicty()
