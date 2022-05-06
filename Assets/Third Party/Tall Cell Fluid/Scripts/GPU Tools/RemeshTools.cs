@@ -10,6 +10,7 @@ public class RemeshTools
         computeTallCellHeight = m_RemeshToolsCS.FindKernel("computeTallCellHeight");
         smoothTallCellHeight = m_RemeshToolsCS.FindKernel("smoothTallCellHeight");
         enforceDCondition = m_RemeshToolsCS.FindKernel("enforceDCondition");
+        subTerrianHeight = m_RemeshToolsCS.FindKernel("subTerrianHeight");
         updateRegularCellVelocity = m_RemeshToolsCS.FindKernel("updateRegularCellVelocity");
         updateTallCellVelocity = m_RemeshToolsCS.FindKernel("updateTallCellVelocity");
         updateRegularCellSolidInfos = m_RemeshToolsCS.FindKernel("updateRegularCellSolidInfos");
@@ -81,6 +82,13 @@ public class RemeshTools
         m_RemeshToolsCS.Dispatch(enforceDCondition, m_GPUGroupCount.x, m_GPUGroupCount.y, 1);
     }
 
+    public void SubTerrianHeight(RenderTexture vTerrianHeight, RenderTexture vTallCellHeight)
+    {
+        m_RemeshToolsCS.SetTexture(subTerrianHeight, "TerrianHeight_R", vTerrianHeight);
+        m_RemeshToolsCS.SetTexture(subTerrianHeight, "TallCellHeight_RW", vTallCellHeight);
+        m_RemeshToolsCS.Dispatch(subTerrianHeight, m_GPUGroupCount.x, m_GPUGroupCount.y, 1);
+    }
+
     public void UpdateFineGridVelocity(RenderTexture vLastFrameTallcellHeight, GridValuePerLevel vLastFrameVelocity, RenderTexture vTallcellHeight, GridValuePerLevel vVelocity)
     {
         m_RemeshToolsCS.SetInt("RegularCellYCount", vVelocity.RegularCellValue.height);
@@ -138,6 +146,7 @@ public class RemeshTools
     private int computeTallCellHeight;
     private int smoothTallCellHeight;
     private int enforceDCondition;
+    private int subTerrianHeight;
     private int updateRegularCellVelocity;
     private int updateTallCellVelocity;
     private int updateRegularCellSolidInfos;

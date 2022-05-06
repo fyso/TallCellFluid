@@ -6,6 +6,7 @@
 #pragma kernel computeTallCellHeight
 #pragma kernel smoothTallCellHeight
 #pragma kernel enforceDCondition
+#pragma kernel subTerrianHeight
 #pragma kernel updateRegularCellVelocity
 #pragma kernel updateTallCellVelocity
 #pragma kernel updateRegularCellSolidInfos
@@ -136,22 +137,36 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
     
     const int2 offsets[9] =
     {
-        float2(-1, 1), float2(0, 1), float2(1, 1),
-	    float2(-1, 0), float2(0, 0), float2(1, 0),
-		float2(-1, -1), float2(0, -1), float2(1, -1),
+        int2(-1, 1), int2(0, 1), int2(1, 1),
+	    int2(-1, 0), int2(0, 0), int2(1, 0),
+		int2(-1, -1), int2(0, -1), int2(1, -1),
     };
-    float Max = -1.0f;
+    float Min = FLT_MAX;
     for (int j = 0; j < 9; j++)
     {
         int2 Adj = (int2) DispatchThreadID.xy + offsets[j];
         if (any(Adj >= XZResolution) || any(Adj < 0))
             continue;
-        Max = max(Max, TallCellHeight_R[Adj]);
+        float AdjHeight = TallCellHeight_R[Adj];
+        Min = min(Min, AdjHeight);
     }
     
-    float FinalResult = min(Center, Max + D * CellLength) - TerrianHeight;
-    FinalResult = (ceil(FinalResult / CellLength) + 2) * CellLength;
+    float FinalResult = min(Center, Min + D * CellLength);
     TallCellHeightCache_RW[DispatchThreadID.xy] = FinalResult;
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void subTerrianHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy >= XZResolution))
+        return;
+    
+    float Center = TallCellHeight_RW[DispatchThreadID.xy];
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    
+    float FinalResult = Center - TerrianHeight;
+    FinalResult = max(ceil(FinalResult / CellLength) * CellLength, 2.0f * CellLength);
+    TallCellHeight_RW[DispatchThreadID.xy] = FinalResult;
 }
 
 int RegularCellYCount;

@@ -149,7 +149,7 @@ public class Simulator
         m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
-        if (Time.frameCount < 120)
+        if (Time.frameCount < 12000)
         {
             Profiler.BeginSample("Advect");
             m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);

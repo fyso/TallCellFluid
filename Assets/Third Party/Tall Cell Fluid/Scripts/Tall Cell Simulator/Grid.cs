@@ -451,10 +451,16 @@ public class Grid
     private void __ComputeTallCellHeightFromH1H2()
     {
         m_RemeshTools.ComputeTallCellHeight(FineGrid.TerrainHeight, m_GPUCache.H1H2Cahce, m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight);
+
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight);
         m_RemeshTools.SmoothTallCellHeight(m_GPUCache.MaxMinCahce, FineGrid.TallCellHeight, m_GPUCache.BackTallCellHeightCahce);
-        m_RemeshTools.EnforceDCondition(FineGrid.TerrainHeight, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight);
+
+        m_RemeshTools.EnforceDCondition(FineGrid.TerrainHeight, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight, 3);
+        m_RemeshTools.EnforceDCondition(FineGrid.TerrainHeight, FineGrid.TallCellHeight, m_GPUCache.BackTallCellHeightCahce, 3);
+        m_RemeshTools.EnforceDCondition(FineGrid.TerrainHeight, m_GPUCache.BackTallCellHeightCahce, FineGrid.TallCellHeight, 3);
+
+        m_RemeshTools.SubTerrianHeight(FineGrid.TerrainHeight, FineGrid.TallCellHeight);
     }
 
     private void __SwapFineGridVelocityWithCache()
