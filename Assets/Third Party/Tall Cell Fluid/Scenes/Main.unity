@@ -359,14 +359,14 @@ MonoBehaviour:
   ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 0
-    m_ShowInfo: 4
+    m_ShowInfo: 0
     MinShowValue: 0
     MinShowColor: {r: 1, g: 1, b: 1, a: 0}
     MaxShowValue: 1
     MaxShowColor: {r: 0, g: 0.30699968, b: 1, a: 0}
     m_GridLevel: 0
     m_ShowRegularCell: 1
-    m_ShowTallCell: 1
+    m_ShowTallCell: 0
     m_ShowTerrainCell: 0
     m_OnlyShowXZCell: 0
     XZ: {x: 63, y: 38}
