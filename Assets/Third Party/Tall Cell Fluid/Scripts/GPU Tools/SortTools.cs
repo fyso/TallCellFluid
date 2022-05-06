@@ -13,6 +13,29 @@ public class ParticleSortTools
         CountingSortFullKernel = GPUCountingSortHashCS.FindKernel("countingSortFull");
     }
 
+    public void SortParticleHashFull(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength)
+    {
+        m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);
+        GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
+        GPUCountingSortHashCS.SetFloat("HashGridCellLength", vCellLength);
+        GPUCountingSortHashCS.SetInt("TargetParticleType", -1);
+
+        GPUCountingSortHashCS.SetInt("ParticleCountArgumentOffset", DynamicParticle.ParticleCountArgumentOffset);
+        GPUCountingSortHashCS.SetInt("DifferParticleSplitPointArgumentOffset", DynamicParticle.DifferParticleSplitPointArgumentOffset);
+        GPUCountingSortHashCS.SetInt("DifferParticleCountArgumentOffset", DynamicParticle.DifferParticleCountArgumentOffset);
+
+        GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleIndirectArgment_R", voTarget.Argument);
+        GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticlePosition_R", voTarget.MainParticle.Position);
+        GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleCellIndex_RW", vCache.CellIndexCache);
+        GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "ParticleInnerSortIndex_RW", vCache.InnerSortIndexCache);
+        GPUCountingSortHashCS.SetBuffer(InsertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", vCache.HashCount);
+        GPUCountingSortHashCS.DispatchIndirect(InsertParticleIntoHashGridKernel, voTarget.Argument);
+
+        vCache.GPUScan.Scan(vCache.HashCount, vCache.HashOffset, vCache.GPUScanHillisCache);
+
+        __RearrangePartileData(voTarget, vCache);
+    }
+
     public void SortParticleHashTallCell(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength, int vTargetParticleType)
     {
         m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);

@@ -50,7 +50,7 @@ public class RemeshTools
     }
 
     public void ComputeTallCellHeight(RenderTexture vTerrianHeight, RenderTexture vWaterSurfaceH1H2, RenderTexture voTallCellHeightMaxMin, RenderTexture voTallCellHeight, 
-        int vGridAbove = 8, int vGridLow = 8, int vD = 6)
+        int vGridAbove = 8, int vGridLow = 8, int vD = 2)
     {
         m_RemeshToolsCS.SetInt("GridAbove", vGridAbove);
         m_RemeshToolsCS.SetInt("GridLow", vGridLow);
