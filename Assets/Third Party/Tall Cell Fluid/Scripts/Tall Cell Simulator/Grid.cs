@@ -155,9 +155,11 @@ public class Grid
         if (VisualGridInfo.m_ShowTerrainCell)
         {
             m_VisualGridMaterial.SetPass(0);
-            m_VisualGridMaterial.SetInt("OnlyShowXZCell", VisualGridInfo.m_OnlyShowXZCell ? 1: 0);
-            m_VisualGridMaterial.SetInt("X", VisualGridInfo.XZ.x);
-            m_VisualGridMaterial.SetInt("Z", VisualGridInfo.XZ.y);
+            m_VisualGridMaterial.SetInt("UseSpecifiedShowRange", VisualGridInfo.m_UseSpecifiedShowRange ? 1: 0);
+            m_VisualGridMaterial.SetInt("MinX", VisualGridInfo.m_MinX);
+            m_VisualGridMaterial.SetInt("MaxX", VisualGridInfo.m_MaxX);
+            m_VisualGridMaterial.SetInt("MinZ", VisualGridInfo.m_MinZ);
+            m_VisualGridMaterial.SetInt("MaxZ", VisualGridInfo.m_MaxZ);
             m_VisualGridMaterial.SetVector("MinPos", vMin);
             m_VisualGridMaterial.SetFloat("CellLength", m_GridData[VisualGridInfo.m_GridLevel].CellLength);
             m_VisualGridMaterial.SetInt("ResolutionX", m_GridData[VisualGridInfo.m_GridLevel].ResolutionXZ.x);
@@ -168,9 +170,11 @@ public class Grid
         if (VisualGridInfo.m_ShowTallCell)
         {
             m_VisualGridMaterial.SetPass(1);
-            m_VisualGridMaterial.SetInt("OnlyShowXZCell", VisualGridInfo.m_OnlyShowXZCell ? 1 : 0);
-            m_VisualGridMaterial.SetInt("X", VisualGridInfo.XZ.x);
-            m_VisualGridMaterial.SetInt("Z", VisualGridInfo.XZ.y);
+            m_VisualGridMaterial.SetInt("UseSpecifiedShowRange", VisualGridInfo.m_UseSpecifiedShowRange ? 1 : 0);
+            m_VisualGridMaterial.SetInt("MinX", VisualGridInfo.m_MinX);
+            m_VisualGridMaterial.SetInt("MaxX", VisualGridInfo.m_MaxX);
+            m_VisualGridMaterial.SetInt("MinZ", VisualGridInfo.m_MinZ);
+            m_VisualGridMaterial.SetInt("MaxZ", VisualGridInfo.m_MaxZ);
             m_VisualGridMaterial.SetVector("MinPos", vMin);
             m_VisualGridMaterial.SetFloat("CellLength", m_GridData[VisualGridInfo.m_GridLevel].CellLength);
             m_VisualGridMaterial.SetInt("ResolutionX", m_GridData[VisualGridInfo.m_GridLevel].ResolutionXZ.x);
@@ -221,9 +225,11 @@ public class Grid
         {
             m_VisualGridMaterial.SetPass(2);
             m_VisualGridMaterial.SetVector("MinPos", vMin);
-            m_VisualGridMaterial.SetInt("OnlyShowXZCell", VisualGridInfo.m_OnlyShowXZCell ? 1 : 0);
-            m_VisualGridMaterial.SetInt("X", VisualGridInfo.XZ.x);
-            m_VisualGridMaterial.SetInt("Z", VisualGridInfo.XZ.y);
+            m_VisualGridMaterial.SetInt("UseSpecifiedShowRange", VisualGridInfo.m_UseSpecifiedShowRange ? 1 : 0);
+            m_VisualGridMaterial.SetInt("MinX", VisualGridInfo.m_MinX);
+            m_VisualGridMaterial.SetInt("MaxX", VisualGridInfo.m_MaxX);
+            m_VisualGridMaterial.SetInt("MinZ", VisualGridInfo.m_MinZ);
+            m_VisualGridMaterial.SetInt("MaxZ", VisualGridInfo.m_MaxZ);
             m_VisualGridMaterial.SetFloat("CellLength", m_GridData[VisualGridInfo.m_GridLevel].CellLength);
             m_VisualGridMaterial.SetInt("ResolutionX", m_GridData[VisualGridInfo.m_GridLevel].ResolutionXZ.x);
             m_VisualGridMaterial.SetInt("ResolutionY", m_GridData[VisualGridInfo.m_GridLevel].RegularCellYCount);
@@ -339,7 +345,7 @@ public class Grid
 
     public void SparseMultiGridRedBlackGaussSeidel()
     {
-        m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
+        //m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
     }
 
     #region DownSample

@@ -34,6 +34,7 @@
 
                 float standardDeviation = _ScreenParams.y * _FilterRadiusWS * 0.5f / positionVS.z * glstate_matrix_projection[1][1];
                 int filterSize = min(MAX_FILTERSIZE_2D, standardDeviation * 3);
+                //int filterSize = 20;
 
                 float lower_clamp = positionVS.z - _ParticlesRadius * _ClampRatio;
 

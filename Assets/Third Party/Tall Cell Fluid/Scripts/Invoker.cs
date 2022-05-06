@@ -32,8 +32,11 @@ public struct VisualGridInfo
     public bool m_ShowRegularCell;
     public bool m_ShowTallCell;
     public bool m_ShowTerrainCell;
-    public bool m_OnlyShowXZCell;
-    public Vector2Int XZ;
+    public bool m_UseSpecifiedShowRange;
+    public int m_MinX;
+    public int m_MaxX;
+    public int m_MinZ;
+    public int m_MaxZ;
 }
 
 public class Invoker : MonoBehaviour

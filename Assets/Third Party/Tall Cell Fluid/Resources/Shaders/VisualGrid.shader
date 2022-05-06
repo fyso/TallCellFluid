@@ -17,9 +17,11 @@ Shader "Custom/VisualGrid"
             #pragma enable_d3d11_debug_symbols 
             #include "UnityCG.cginc"
 
-            int OnlyShowXZCell;
-            int X;
-            int Z;
+            int UseSpecifiedShowRange;
+            int MinX;
+            int MaxX;
+            int MinZ;
+            int MaxZ;
             float3 MinPos;
             float CellLength;
             int ResolutionX;
@@ -83,7 +85,7 @@ Shader "Custom/VisualGrid"
             {
                 uint2 terrainCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
                 v2f o;
-                if (OnlyShowXZCell && (terrainCellIndex.x != X || terrainCellIndex.y != Z))
+                if (UseSpecifiedShowRange && (terrainCellIndex.x < MinX || terrainCellIndex.x > MaxX || terrainCellIndex.y < MinZ || terrainCellIndex.y > MaxZ))
                 {
                     o.pos = float4(100, 100, 100, 1);
                     return o;
@@ -115,9 +117,11 @@ Shader "Custom/VisualGrid"
             #pragma enable_d3d11_debug_symbols 
             #include "UnityCG.cginc"
                         
-            int OnlyShowXZCell;
-            int X;
-            int Z;
+            int UseSpecifiedShowRange;
+            int MinX;
+            int MaxX;
+            int MinZ;
+            int MaxZ;
             float3 MinPos;
             float CellLength;
             int ResolutionX;
@@ -193,7 +197,7 @@ Shader "Custom/VisualGrid"
             {
                 v2f o;
                 uint2 tallCellIndex = uint2(instanceID % ResolutionX, instanceID / ResolutionX);
-                if (OnlyShowXZCell && (tallCellIndex.x != X || tallCellIndex.y != Z))
+                if (UseSpecifiedShowRange && (tallCellIndex.x < MinX || tallCellIndex.x > MaxX || tallCellIndex.y < MinZ || tallCellIndex.y > MaxZ))
                 {
                     o.pos = float4(100, 100, 100, 1);
                     return o;
@@ -255,9 +259,11 @@ Shader "Custom/VisualGrid"
 
             #include "UnityCG.cginc"
                         
-            int OnlyShowXZCell;
-            int X;
-            int Z;
+            int UseSpecifiedShowRange;
+            int MinX;
+            int MaxX;
+            int MinZ;
+            int MaxZ;
             float3 MinPos;
             float CellLength;
             int ResolutionX;
@@ -335,7 +341,7 @@ Shader "Custom/VisualGrid"
             {
                 uint3 regularCellIndex = uint3(instanceID % ResolutionX, instanceID / ResolutionX % ResolutionY, instanceID / (ResolutionX * ResolutionY));
                 v2f o;
-                if (OnlyShowXZCell && (regularCellIndex.x != X || regularCellIndex.z != Z))
+                if (UseSpecifiedShowRange && (regularCellIndex.x < MinX || regularCellIndex.x > MaxX || regularCellIndex.z < MinZ || regularCellIndex.z > MaxZ))
                 {
                     o.pos = float4(100, 100, 100, 1);
                     return o;
