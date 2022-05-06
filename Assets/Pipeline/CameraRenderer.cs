@@ -97,7 +97,7 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_CommandBuffer.name = "RenderScene";
         m_CommandBuffer.SetRenderTarget(m_SceneColorRT, m_SceneDepthRT);
-        m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
+        m_CommandBuffer.ClearRenderTarget(true, true, Color.gray);
         _ExecuteCommandBuffer();
 
         var drawingSettings = new DrawingSettings(new ShaderTagId("Diffuse"), new SortingSettings(m_Camera));

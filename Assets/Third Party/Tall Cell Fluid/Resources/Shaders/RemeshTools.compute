@@ -57,7 +57,6 @@ void computeH1H2WithSeaLevel(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 uint GridLow;
 uint GridAbove;
-uint D;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void computeTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
@@ -125,19 +124,17 @@ void smoothTallCellHeight(uint3 DispatchThreadID : SV_DispatchThreadID)
     TallCellHeightCache_RW[DispatchThreadID.xy] = clamp(Result, MaxMin.y, MaxMin.x);
 }
 
-
+uint D;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     if (any(DispatchThreadID.xy >= XZResolution))
         return;
     
-    float2 Center = TallCellHeight_R[DispatchThreadID.xy];
+    float Center = TallCellHeight_R[DispatchThreadID.xy];
     float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
-    float2 UV = (float2) DispatchThreadID.xy / XZResolution;
-    float2 h = 1.0f / XZResolution;
     
-    const float2 offsets[9] =
+    const int2 offsets[9] =
     {
         float2(-1, 1), float2(0, 1), float2(1, 1),
 	    float2(-1, 0), float2(0, 0), float2(1, 0),
@@ -146,7 +143,10 @@ void enforceDCondition(uint3 DispatchThreadID : SV_DispatchThreadID)
     float Max = -1.0f;
     for (int j = 0; j < 9; j++)
     {
-        Max = max(Max, TallCellHeight_R.SampleLevel(Sampler_Trilinear_Clamp, UV + h * offsets[j], 0));
+        int2 Adj = (int2) DispatchThreadID.xy + offsets[j];
+        if (any(Adj >= XZResolution) || any(Adj < 0))
+            continue;
+        Max = max(Max, TallCellHeight_R[Adj]);
     }
     
     float FinalResult = min(Center, Max + D * CellLength) - TerrianHeight;
