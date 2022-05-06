@@ -21,6 +21,8 @@ Texture3D<float3> RegularCellRigidBodyVelocity_R;
 Texture2D<float3> TopCellRigidBodyVelocity_R;
 Texture2D<float3> BottomRigidBodyVelocity_R;
 
+Texture3D<int> RegularCellMark_R;
+
 float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterValue)
 {
     float3 Position = vCenterPosition + vOffset;
@@ -62,8 +64,12 @@ RWTexture3D<float> VectorB_RW;
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void computeVectorB(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum + 2)
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum + 2 || (DispatchThreadID.y > 1 && RegularCellMark_R[DispatchThreadID - uint3(0, 2, 0)] == 0))
+    {
+        VectorB_RW[DispatchThreadID] = 0;
         return;
+    }
+    
     
     float TerrianHeight = TerrianHeight_R[DispatchThreadID.xz];
     float TallCellHeight = TallCellHeight_R[DispatchThreadID.xz];
@@ -74,7 +80,7 @@ void computeVectorB(uint3 DispatchThreadID : SV_DispatchThreadID)
     else if (DispatchThreadID.y == 1)
         SolidFactor = TopCellRigidBodyPercentage_R[DispatchThreadID.xz];
     else
-        SolidFactor = RegularCellRigidBodyPercentage_R[DispatchThreadID];
+        SolidFactor = RegularCellRigidBodyPercentage_R[DispatchThreadID - uint3(0, 2, 0)];
     
     if(SolidFactor > 0.9f)
         return;
@@ -94,8 +100,9 @@ void computeVectorB(uint3 DispatchThreadID : SV_DispatchThreadID)
     }
     else
     {
-        CenterVelocity = RegularCellVelocity_R[DispatchThreadID];
-        CenterCellPosition = DispatchThreadID * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+        uint3 Index3D = DispatchThreadID - uint3(0, 2, 0);
+        CenterVelocity = RegularCellVelocity_R[Index3D];
+        CenterCellPosition = Index3D * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
     }
     
     float3 LeftVelocity = sampleTallCellGrid(CenterCellPosition, int3(-1, 0, 0) * CellLength, CenterVelocity);
