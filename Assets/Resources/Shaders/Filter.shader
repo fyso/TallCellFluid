@@ -32,8 +32,7 @@
 
                 float3 positionVS = GetPositionVSFromDepthTex(_FluidDepthRT, _point_clamp_sampler, input.uv, true);
 
-                int standardDeviation = ceil(_ScreenParams.y * _FilterRadiusWS * 0.5f / positionVS.z * glstate_matrix_projection[1][1]);
-                //int standardDeviation = 16;
+                float standardDeviation = _ScreenParams.y * _FilterRadiusWS * 0.5f / positionVS.z * glstate_matrix_projection[1][1];
                 int filterSize = min(MAX_FILTERSIZE_2D, standardDeviation * 3);
 
                 float lower_clamp = positionVS.z - _ParticlesRadius * _ClampRatio;
