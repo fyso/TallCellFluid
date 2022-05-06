@@ -30,6 +30,7 @@ float3 sampleTallCellGrid(float3 vCenterPosition, float3 vOffset, float3 CenterV
     
     float TerrianHeight = TerrianHeight_R[XZ];
     float TallCellHeight = TallCellHeight_R[XZ];
+    Position.y += (TerrianHeight + TallCellHeight);
     
     float3 Velocity = float3(0, 0, 0);
     if (Position.y >= TerrianHeight && Position.y < TerrianHeight + TallCellHeight)
