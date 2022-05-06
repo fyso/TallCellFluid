@@ -5,6 +5,8 @@ using DParticle;
 using UnityEngine.Profiling;
 using System;
 
+//TODO: too many tall cell particles heavily solw down the speed of p2g/g2p, so we choose to
+//delete the only tall cell particle after least squares method (we need choose a new least squares method)
 public class ParticleInCellTools
 {
     public ParticleInCellTools(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vRegularCellYCount)
@@ -151,6 +153,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_R_RW", vTargetGrid.GPUCache.RegularCellVectorXCache);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_G_RW", vTargetGrid.GPUCache.RegularCellVectorYCache);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_B_RW", vTargetGrid.GPUCache.RegularCellVectorZCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellMark_RW", vTargetGrid.FineGrid.RegularCellMark);
         m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyRegularParticleToGrid_Pass1, vParticle.Argument, OnlyRegularCellParticleArgumentOffset);
         Profiler.EndSample();
 
@@ -165,6 +168,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_R_RW", vTargetGrid.GPUCache.RegularCellVectorXCache);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_G_RW", vTargetGrid.GPUCache.RegularCellVectorYCache);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellWeightedVelocity_B_RW", vTargetGrid.GPUCache.RegularCellVectorZCache);
+        m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass1, "RegularCellMark_RW", vTargetGrid.FineGrid.RegularCellMark);
         m_ParticleInCellToolsCS.DispatchIndirect(scatterOnlyRegularParticleToGrid_Pass1, vParticle.Argument, IntersectCellParticleArgumentOffset);
         Profiler.EndSample();
 

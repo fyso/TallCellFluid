@@ -79,7 +79,7 @@ public class GridPerLevel
             wrapMode = TextureWrapMode.Clamp
         };
 
-        m_RegularCellMark = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.R8)
+        m_RegularCellMark = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,
@@ -136,7 +136,7 @@ public class Grid
             float CellLength = vCellLength * Mathf.Pow(2, i);
             m_GridData[i] = new GridPerLevel(LayerResolutionXZ, RegularCellYCount, CellLength, i == 0);
         }
-
+        m_LinerSolver = new SparseBlackRedGaussSeidelMultigridSolver();
         m_RemeshTools = new RemeshTools(vResolutionXZ, vCellLength, vRegularCellYCount);
         m_GPUCache = new GridGPUCache(vResolutionXZ, vCellLength, vRegularCellYCount);
         m_Utils = new Utils();
@@ -273,7 +273,6 @@ public class Grid
 
     public void RestCache()
     {
-       
         m_Utils.ClearIntTexture2D(GPUCache.TallCellParticleCountCahce);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce1);
         m_Utils.ClearIntTexture3D(GPUCache.TallCellScalarCahce2);
@@ -334,6 +333,11 @@ public class Grid
         Profiler.BeginSample("down sample");
         __DownSampleValue();
         Profiler.EndSample();
+    }
+
+    public void SparseMultiGridRedBlackGaussSeidel()
+    {
+        m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
     }
 
     #region DownSample
@@ -459,6 +463,7 @@ public class Grid
     private int m_HierarchicalLevel;
     private GridPerLevel[] m_GridData;
     private RemeshTools m_RemeshTools;
+    private SparseBlackRedGaussSeidelMultigridSolver m_LinerSolver;
     private Utils m_Utils;
 
     private GridGPUCache m_GPUCache;

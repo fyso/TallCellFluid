@@ -27,7 +27,7 @@ public class Simulator
 
         m_Argument = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
         uint[] InitArgument = new uint[3] {
-                1, 1, 1
+            1, 1, 1
         };
         m_Argument.SetData(InitArgument);
 
@@ -70,6 +70,7 @@ public class Simulator
             for (int y = 0; y < Top.height; y++)
             {
                 Color TopVelocity = new Color((float)x / Top.width, 0.0f, (float)y / Top.height, 1.0f);
+                //Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
                 //Color TopVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
                 Color BottomVelocity = new Color(0.8f, 0, 0, 1.0f);
@@ -89,6 +90,7 @@ public class Simulator
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
                     Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, (float)z / FineGrid.ResolutionXZ.y, 1.0f);
+                    //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, 0.0f, 1.0f);
                     //Color RegularVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
@@ -104,17 +106,17 @@ public class Simulator
         __ParticleInCell();
         Profiler.EndSample();
 
-        //Profiler.BeginSample("Remesh");
-        //m_Grid.Remesh();
-        //Profiler.EndSample();
+        Profiler.BeginSample("Remesh");
+        m_Grid.Remesh();
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("UpdateGridValue");
-        //m_Grid.UpdateGridValue();
-        //Profiler.EndSample();
+        Profiler.BeginSample("UpdateGridValue");
+        m_Grid.UpdateGridValue();
+        Profiler.EndSample();
 
-        //Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        //__SparseMultiGridRedBlackGaussSeidel();
-        //Profiler.EndSample();
+        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
+        m_Grid.SparseMultiGridRedBlackGaussSeidel();
+        Profiler.EndSample();
     }
 
     private void __ParticleInCell()
@@ -171,15 +173,16 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("ScatterParticleToRegularGrid");
+        m_Utils.ClearIntTexture3D(m_Grid.FineGrid.RegularCellMark);
         m_ParticleInCellTools.ScatterParticleToRegularGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 
-        //TODO: update mark for fine level
-    }
-
-    private void __SparseMultiGridRedBlackGaussSeidel()
-    {
-        //multi grid gauss-seidel
+        Profiler.BeginSample("ComputeH1H2WithParticle");
+        m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMaxInterlockedCahce, int.MaxValue);
+        m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMinInterlockedCahce, int.MinValue);
+        m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, -1);
+        m_ParticleInCellTools.ComputeH1H2WithParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
+        Profiler.EndSample();
     }
 
     private Vector3 m_Min;
