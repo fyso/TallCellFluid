@@ -20,6 +20,7 @@
 #define UINT_MAX 4294967295
 #define Density0 1000.0f
 
+float TimeStep;
 float3 Min;
 float CellLength;
 uint2 XZResolution;

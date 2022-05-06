@@ -804,19 +804,19 @@ MonoBehaviour:
   m_CellLength: 1
   m_SeaLevel: 32
   m_MaxParticleCount: 1000000
-  m_TimeStep: 0
-  VisualParticle: 0
+  m_TimeStep: 0.033
+  VisualParticle: 1
   ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 0
-    m_ShowInfo: 0
+    m_ShowInfo: 4
     MinShowValue: 0
     MinShowColor: {r: 1, g: 1, b: 1, a: 0}
-    MaxShowValue: 1
+    MaxShowValue: 3
     MaxShowColor: {r: 0, g: 0.30699968, b: 1, a: 0}
-    m_GridLevel: 0
+    m_GridLevel: 1
     m_ShowRegularCell: 1
-    m_ShowTallCell: 0
+    m_ShowTallCell: 1
     m_ShowTerrainCell: 0
     m_OnlyShowXZCell: 0
     XZ: {x: 63, y: 38}

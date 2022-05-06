@@ -1,6 +1,7 @@
 #include "Common.hlsl"
 
 #pragma enable_d3d11_debug_symbols
+#pragma kernel advect
 #pragma kernel markParticleByCellType
 #pragma kernel gatherGridToOnlyRegularParticle
 #pragma kernel gatherGridToIntersectCellParticle
@@ -24,7 +25,7 @@ uint TargetParticleType;
 StructuredBuffer<int> ParticleIndirectArgment_R;
 
 StructuredBuffer<float3> ParticlePosition_R;
-
+RWStructuredBuffer<float3> ParticlePosition_RW;
 StructuredBuffer<float3> ParticleVelocity_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
 
@@ -86,6 +87,17 @@ static int3 OffsetVector3D[3 * 3 * 3] =
 };
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
+void advect(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
+    if (i >= ParticleIndirectArgment_R[ParticleCountArgumentOffset])
+        return;
+    
+    float3 CurrVelocity = ParticleVelocity_R[i];
+    ParticlePosition_RW[i] += CurrVelocity * TimeStep;
+}
+
+[numthreads(THREAD_COUNT_1D, 1, 1)]
 void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * THREAD_COUNT_1D;
@@ -93,6 +105,7 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
         return;
     
     float3 CurrPosition = ParticlePosition_R[i];
+    
     float RelativeHeight = CurrPosition.y - Min.y;
     float2 RelativeXZ = CurrPosition.xz - Min.xz;
     
@@ -100,6 +113,12 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
     
     float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
     float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
+    
+    if (any(CurrPosition < Min) || any(CurrPosition >= Min + float3(0.0f, CenterTerrianHeight + CenterTallCellHeight, 0.0f) + float3(XZResolution.x, ConstantCellNum, XZResolution.y) * CellLength))
+    {
+        ParticleFilter_RW[i] = 4;
+        return;
+    }
     
     bool IsInTerrianCell = false;
     bool IsInTallCell = false;
@@ -132,24 +151,26 @@ void markParticleByCellType(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
         }
     }
     
+    uint ParticleFilter = 0;
     if (!IsInTallCell && !IsInTerrianCell)
     {
         if (!IsAnyTallCellHigher)
-            ParticleFilter_RW[i] = 0;
+            ParticleFilter = 0;
         else
-            ParticleFilter_RW[i] = 1;
+            ParticleFilter = 1;
     }
     else if (IsInTallCell && !IsInTerrianCell)
     {
         if (!IsAnyTallCellLower)
-            ParticleFilter_RW[i] = 3;
+            ParticleFilter = 3;
         else
-            ParticleFilter_RW[i] = 1;
+            ParticleFilter = 1;
     }
     else
     {
-        ParticleFilter_RW[i] = 4;
+        ParticleFilter = 4;
     }
+    ParticleFilter_RW[i] = ParticleFilter;
 }
 
 [numthreads(THREAD_COUNT_1D, 1, 1)]
@@ -384,9 +405,6 @@ RWTexture3D<int> XXSum_RW;
 RWTexture3D<int> YSum_RW;
 RWTexture3D<int> XYSum_RW;
 
-groupshared float LocalWeight[THREAD_COUNT_1D];
-groupshared float3 LocalWeightedVelocity[THREAD_COUNT_1D];
-
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 GroupIdx : SV_GroupID)
 {
@@ -429,14 +447,14 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
     
-    if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength || i - Offset >= Count)
-    {
-        int ParticleIncFactor = 0;
-        float X = 0;
-        float XX = X * X;
-        float3 Y = float3(0, 0, 0);
-        float3 XY = X * Y;
-    }
+    //if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength || i - Offset >= Count)
+    //{
+    //    int ParticleIncFactor = 0;
+    //    float X = 0;
+    //    float XX = X * X;
+    //    float3 Y = float3(0, 0, 0);
+    //    float3 XY = X * Y;
+    //}
         
     for (int k = 0; k < ceil(log2(RegionLength)); k++)
     {

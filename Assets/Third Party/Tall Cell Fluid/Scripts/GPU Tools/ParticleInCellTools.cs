@@ -12,6 +12,7 @@ public class ParticleInCellTools
     public ParticleInCellTools(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vRegularCellYCount)
     {
         m_ParticleInCellToolsCS = Resources.Load<ComputeShader>(Common.ParticleInCellToolsCSPath);
+        advect = m_ParticleInCellToolsCS.FindKernel("advect");
         markParticleByCellType = m_ParticleInCellToolsCS.FindKernel("markParticleByCellType");
         gatherGridToOnlyRegularParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToOnlyRegularParticle");
         gatherGridToIntersectCellParticle = m_ParticleInCellToolsCS.FindKernel("gatherGridToIntersectCellParticle");
@@ -23,6 +24,15 @@ public class ParticleInCellTools
         computeH1H2WithParticle_Pass1 = m_ParticleInCellToolsCS.FindKernel("computeH1H2WithParticle_Pass1");
         computeH1H2WithParticle_Pass2 = m_ParticleInCellToolsCS.FindKernel("computeH1H2WithParticle_Pass2");
         UpdateGlobalParma(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
+    }
+
+    public void Advect(DynamicParticle vParticle, float vTimeStep)
+    {
+        m_ParticleInCellToolsCS.SetFloat("TimeStep", vTimeStep);
+        m_ParticleInCellToolsCS.SetBuffer(advect, "ParticleIndirectArgment_R", vParticle.Argument);
+        m_ParticleInCellToolsCS.SetBuffer(advect, "ParticleVelocity_R", vParticle.MainParticle.Velocity);
+        m_ParticleInCellToolsCS.SetBuffer(advect, "ParticlePosition_RW", vParticle.MainParticle.Position);
+        m_ParticleInCellToolsCS.DispatchIndirect(advect, vParticle.Argument);
     }
 
     public void UpdateGlobalParma(Vector3 vMin, Vector2Int vResolutionXZ, float vCellLength, int vRegularCellYCount)
@@ -266,6 +276,7 @@ public class ParticleInCellTools
     }
 
     private ComputeShader m_ParticleInCellToolsCS;
+    private int advect;
     private int markParticleByCellType;
     private int gatherGridToOnlyRegularParticle;
     private int gatherGridToIntersectCellParticle;

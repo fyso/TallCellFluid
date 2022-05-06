@@ -14,7 +14,6 @@ float3 HashGridMin;
 float HashGridCellLength;
 int TargetParticleType;
 
-
 #if HashRegularCell
 Texture2D<float> TerrianHeight_R;
 Texture2D<float> TallCellHeight_R;
