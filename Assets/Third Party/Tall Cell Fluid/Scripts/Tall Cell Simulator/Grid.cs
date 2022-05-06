@@ -234,9 +234,11 @@ public class Grid
             m_VisualGridMaterial.SetVector("MinShowColor", new Vector4(VisualGridInfo.MinShowColor.r, VisualGridInfo.MinShowColor.g, VisualGridInfo.MinShowColor.b, VisualGridInfo.MinShowValue));
             m_VisualGridMaterial.SetVector("MaxShowColor", new Vector4(VisualGridInfo.MaxShowColor.r, VisualGridInfo.MaxShowColor.g, VisualGridInfo.MaxShowColor.b, VisualGridInfo.MaxShowValue));
 
+            m_VisualGridMaterial.DisableKeyword("_SHOW_MASK");
             switch (VisualGridInfo.m_ShowInfo)
             {
                 case ShowInfo.WaterMark:
+                    m_VisualGridMaterial.EnableKeyword("_SHOW_MASK");
                     m_VisualGridMaterial.SetTexture("ShowValue", m_GridData[VisualGridInfo.m_GridLevel].RegularCellMark);
                     break;
                 case ShowInfo.RigidBodyPercentage:

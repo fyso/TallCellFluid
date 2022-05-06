@@ -250,7 +250,9 @@ Shader "Custom/VisualGrid"
             CGPROGRAM
             #pragma vertex VisualGridVert
             #pragma fragment VisualGridFrag
-            #pragma enable_d3d11_debug_symbols 
+            #pragma enable_d3d11_debug_symbols
+            #pragma multi_compile _ _SHOW_MASK
+
             #include "UnityCG.cginc"
                         
             int OnlyShowXZCell;
@@ -265,7 +267,11 @@ Shader "Custom/VisualGrid"
 
             int ShowInfoMode; // 0 is to draw scalar, 1 is to draw direction, 2 is to draw size
             Texture3D<float3> Velocity;
+#ifdef _SHOW_MASK
+            Texture3D<int> ShowValue;
+#else
             Texture3D<float> ShowValue;
+#endif
             float4 MinShowColor;
             float4 MaxShowColor;
 
