@@ -816,8 +816,8 @@ MonoBehaviour:
     MaxShowColor: {r: 0, g: 0.30699968, b: 1, a: 0}
     m_GridLevel: 0
     m_ShowRegularCell: 1
-    m_ShowTallCell: 1
-    m_ShowTerrainCell: 1
+    m_ShowTallCell: 0
+    m_ShowTerrainCell: 0
     m_OnlyShowXZCell: 0
     XZ: {x: 63, y: 38}
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
