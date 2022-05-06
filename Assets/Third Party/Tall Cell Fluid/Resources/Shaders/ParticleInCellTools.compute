@@ -539,6 +539,10 @@ RWTexture3D<int> RegularCellWeight_RW;
 RWTexture3D<int> RegularCellWeightedVelocity_R_RW;
 RWTexture3D<int> RegularCellWeightedVelocity_G_RW;
 RWTexture3D<int> RegularCellWeightedVelocity_B_RW;
+
+RWTexture3D<int> RegularCellMark_RW;
+
+RWStructuredBuffer<uint3> DEBUG;
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
@@ -562,7 +566,8 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
     float CenterTerrianHeight = TerrianHeight_R[CurrGridXZIndex];
     float CenterTallCellHeight = TallCellHeight_R[CurrGridXZIndex];
     
-    uint CurrGridYIndex = (RelativeY - CenterTerrianHeight - CenterTallCellHeight - CellLength) / CellLength;
+    uint CurrGridYIndex = (RelativeY - CenterTerrianHeight - CenterTallCellHeight + CellLength) / CellLength;
+    RegularCellMark_RW[uint3(CurrGridXZIndex.x, CurrGridYIndex - 1, CurrGridXZIndex.y)] = true;
     
     uint CurrRegularCellLinerIndex = computeMorton3D(uint3(CurrGridXZIndex.x, CurrGridYIndex, CurrGridXZIndex.y));
     uint PrevRegularCellLinerIndex = ThreadIdx == 0 ? 0 : WaveReadLaneAt(CurrRegularCellLinerIndex, CurrLaneIndex - 1);

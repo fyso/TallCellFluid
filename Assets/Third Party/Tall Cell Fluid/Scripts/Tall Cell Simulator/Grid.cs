@@ -79,7 +79,7 @@ public class GridPerLevel
             wrapMode = TextureWrapMode.Clamp
         };
 
-        m_RegularCellMark = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.R8)
+        m_RegularCellMark = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,

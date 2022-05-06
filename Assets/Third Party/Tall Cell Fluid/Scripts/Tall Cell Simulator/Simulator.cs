@@ -173,10 +173,10 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("ScatterParticleToRegularGrid");
+        m_Utils.ClearIntTexture3D(m_Grid.FineGrid.RegularCellMark);
         m_ParticleInCellTools.ScatterParticleToRegularGrid(m_DynamicParticle, m_Grid);
         Profiler.EndSample();
 
-        //TODO: update mark for fine level
         Profiler.BeginSample("ComputeH1H2WithParticle");
         m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMaxInterlockedCahce, int.MaxValue);
         m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMinInterlockedCahce, int.MinValue);
