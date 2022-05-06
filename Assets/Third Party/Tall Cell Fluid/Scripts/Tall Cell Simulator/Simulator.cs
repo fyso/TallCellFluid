@@ -69,9 +69,9 @@ public class Simulator
         {
             for (int y = 0; y < Top.height; y++)
             {
-                Color TopVelocity = new Color((float)x / Top.width, 0.0f, (float)y / Top.height, 1.0f);
+                //Color TopVelocity = new Color((float)x / Top.width, 0.0f, (float)y / Top.height, 1.0f);
                 //Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
-                //Color TopVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                Color TopVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
                 //Color TopVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
                 Color BottomVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
@@ -90,9 +90,9 @@ public class Simulator
             {
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
-                    Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, (float)z / FineGrid.ResolutionXZ.y, 1.0f);
+                    //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, (float)z / FineGrid.ResolutionXZ.y, 1.0f);
                     //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, 0.0f, 1.0f);
-                    //Color RegularVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                    Color RegularVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
                     //Color RegularVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
@@ -149,13 +149,14 @@ public class Simulator
         m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
-        //Profiler.BeginSample("Advect");
-        //m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
-        //Profiler.EndSample();
+        Profiler.BeginSample("Advect");
+        m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
+        Profiler.EndSample();
 
         Profiler.BeginSample("ClearCache");
         m_Grid.RestCache();
         Profiler.EndSample();
+
         Profiler.BeginSample("ZSortIntersectCellParticleHashTallCell");
         m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, IntersectCellParticleTypeIndex);
         Profiler.EndSample();

@@ -808,7 +808,7 @@ MonoBehaviour:
   VisualParticle: 1
   ShowGridDebugInfo: 1
   VisualGridInfo:
-    m_ShowMode: 0
+    m_ShowMode: 1
     m_ShowInfo: 4
     MinShowValue: 0
     MinShowColor: {r: 1, g: 1, b: 1, a: 0}
