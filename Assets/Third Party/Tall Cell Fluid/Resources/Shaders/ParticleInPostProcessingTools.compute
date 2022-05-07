@@ -1,0 +1,13 @@
+#include "Common.hlsl"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel computeAnisotropyMatrix
+
+
+[numthreads(THREAD_COUNT_1D, 1, 1)]
+void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    
+    //computeMorton3D
+
+}

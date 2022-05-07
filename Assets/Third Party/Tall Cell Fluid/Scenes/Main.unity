@@ -210,7 +210,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 5c4a3f2a3b1e6314fbec0210d37ee345, type: 2}
+  sdfData: {fileID: 11400000, guid: 21ddd99beb67bc3408b1357031043003, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -218,7 +218,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 0
+  bakerName: 1
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!135 &87215730
@@ -564,7 +564,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 849866c66cd0adc4d9a878e54745a719, type: 2}
+  sdfData: {fileID: 11400000, guid: 0abb0889bf6604848805d1ae7ababdaa, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -572,7 +572,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 0
+  bakerName: 1
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!114 &1035981718
@@ -818,8 +818,11 @@ MonoBehaviour:
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 0
-    m_OnlyShowXZCell: 0
-    XZ: {x: 63, y: 38}
+    m_UseSpecifiedShowRange: 0
+    m_MinX: 0
+    m_MaxX: 0
+    m_MinZ: 0
+    m_MaxZ: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
   m_ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1456825980

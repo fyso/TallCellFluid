@@ -373,6 +373,7 @@ public class Grid
         for (int i = 1; i <= 4; i++)
         {
             if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
+            else m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel].TallCellHeight);
         }
         m_DownsampleCS.Dispatch(downSampleTallCellHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
     }
@@ -393,6 +394,7 @@ public class Grid
         for (int i = 1; i <= 4; i++)
         {
             if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTerrainHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TerrainHeight);
+            else m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel].TallCellHeight);
         }
         m_DownsampleCS.Dispatch(downSampleTerrainHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
     }

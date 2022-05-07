@@ -108,10 +108,6 @@ public class Simulator
         __ParticleInCell(vTimeStep);
         Profiler.EndSample();
 
-        //m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        //m_SimulatorGPUCache.HashCount;
-        //m_SimulatorGPUCache.HashOffset;
-
         Profiler.BeginSample("Remesh");
         m_Grid.Remesh();
         Profiler.EndSample();
@@ -186,6 +182,13 @@ public class Simulator
         m_Utils.ClearIntTexture2D(m_SimulatorGPUCache.WaterSurfaceMinInterlockedCahce, int.MinValue);
         m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, -1);
         m_ParticleInCellTools.ComputeH1H2WithParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
+        Profiler.EndSample();
+
+        Profiler.BeginSample("ParticlePostProcessing");
+        m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
+
+        //m_SimulatorGPUCache.HashCount;
+        //m_SimulatorGPUCache.HashOffset;
         Profiler.EndSample();
     }
 

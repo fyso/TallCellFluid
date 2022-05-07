@@ -36,7 +36,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-        Show(m_SceneDepthRT);
+        Show(m_FluidDepthRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();

@@ -242,7 +242,7 @@ Shader "Custom/VisualGrid"
                 }
                 else
                 {
-                    return float4(lerp(MinShowColor.xyz, MaxShowColor.xyz, i.value), 1);
+                    return float4(lerp(MinShowColor.xyz, MaxShowColor.xyz, i.value / (MaxShowColor.w - MinShowColor.w)), 1);
                 }
             }
 
@@ -378,7 +378,7 @@ Shader "Custom/VisualGrid"
                 }
                 else
                 {
-                    return float4(lerp(MinShowColor.xyz, MaxShowColor.xyz, i.value), 1);
+                    return float4(lerp(MinShowColor.xyz, MaxShowColor.xyz, i.value / (MaxShowColor.w - MinShowColor.w)), 1);
                 }
             }
 
