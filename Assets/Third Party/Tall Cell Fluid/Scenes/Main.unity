@@ -809,7 +809,7 @@ MonoBehaviour:
   ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 1
-    m_ShowInfo: 4
+    m_ShowInfo: 5
     MinShowValue: 0
     MinShowColor: {r: 1, g: 1, b: 1, a: 0}
     MaxShowValue: 3
@@ -820,7 +820,7 @@ MonoBehaviour:
     m_ShowTerrainCell: 1
     m_UseSpecifiedShowRange: 0
     m_MinX: 0
-    m_MaxX: 630
+    m_MaxX: 63
     m_MinZ: 0
     m_MaxZ: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
