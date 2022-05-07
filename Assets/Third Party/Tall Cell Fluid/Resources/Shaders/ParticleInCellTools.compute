@@ -447,14 +447,14 @@ void scatterParticleToTallCellGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint3 G
     float3 Y = CurrVelocity;
     float3 XY = X * Y;
     
-    //if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength || i - Offset >= Count)
-    //{
-    //    int ParticleIncFactor = 0;
-    //    float X = 0;
-    //    float XX = X * X;
-    //    float3 Y = float3(0, 0, 0);
-    //    float3 XY = X * Y;
-    //}
+    if (RelativePosition.y - CenterTerrianHeight > CenterTallCellHeight + CellLength || i - Offset >= Count)
+    {
+        ParticleIncFactor = 0;
+        X = 0;
+        XX = X * X;
+        Y = float3(0, 0, 0);
+        XY = X * Y;
+    }
         
     for (int k = 0; k < ceil(log2(RegionLength)); k++)
     {

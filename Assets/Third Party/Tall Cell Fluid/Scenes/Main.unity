@@ -210,7 +210,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 21ddd99beb67bc3408b1357031043003, type: 2}
+  sdfData: {fileID: 11400000, guid: 5c4a3f2a3b1e6314fbec0210d37ee345, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -218,7 +218,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 1
+  bakerName: 0
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!135 &87215730
@@ -564,7 +564,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 0abb0889bf6604848805d1ae7ababdaa, type: 2}
+  sdfData: {fileID: 11400000, guid: 849866c66cd0adc4d9a878e54745a719, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -572,7 +572,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 1
+  bakerName: 0
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!114 &1035981718
@@ -797,18 +797,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de90f2c2c37e412478ff0bfc6124c041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Terrian: {fileID: 2800000, guid: 7664b6f69431dfb4cbaf3e1ef3122f15, type: 3}
+  m_Terrian: {fileID: 2800000, guid: ea3644e72257c19418dd085163242ae0, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
   m_SeaLevel: 32
-  m_MaxParticleCount: 1000000
+  m_MaxParticleCount: 2000000
   m_TimeStep: 0.033
   VisualParticle: 1
   ShowGridDebugInfo: 1
   VisualGridInfo:
-    m_ShowMode: 0
+    m_ShowMode: 1
     m_ShowInfo: 4
     MinShowValue: 0
     MinShowColor: {r: 1, g: 1, b: 1, a: 0}
@@ -817,10 +817,10 @@ MonoBehaviour:
     m_GridLevel: 1
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
-    m_ShowTerrainCell: 0
+    m_ShowTerrainCell: 1
     m_UseSpecifiedShowRange: 0
     m_MinX: 0
-    m_MaxX: 0
+    m_MaxX: 630
     m_MinZ: 0
     m_MaxZ: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
