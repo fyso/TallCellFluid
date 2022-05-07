@@ -146,7 +146,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(scatterParticleToTallCellGrid_Pass2, "XYSum_R", vTargetGrid.GPUCache.TallCellVectorCahce2);
         m_ParticleInCellToolsCS.SetTexture(scatterParticleToTallCellGrid_Pass2, "TopCellVelocity_RW", vTargetGrid.FineGrid.Velocity.TallCellTopValue);
         m_ParticleInCellToolsCS.SetTexture(scatterParticleToTallCellGrid_Pass2, "BottomCellVelocity_RW", vTargetGrid.FineGrid.Velocity.TallCellBottomValue);
-        m_ParticleInCellToolsCS.Dispatch(scatterParticleToTallCellGrid_Pass2, Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.x / Common.ThreadCount2D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount2D), 1);
+        m_ParticleInCellToolsCS.Dispatch(scatterParticleToTallCellGrid_Pass2, Mathf.CeilToInt(((float)vTargetGrid.FineGrid.ResolutionXZ.x) / Common.ThreadCount2D), Mathf.CeilToInt(((float)vTargetGrid.FineGrid.ResolutionXZ.y) / Common.ThreadCount2D), 1);
         Profiler.EndSample();
     }
 
@@ -188,7 +188,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_G_R", vTargetGrid.GPUCache.RegularCellVectorYCache);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellWeightedVelocity_B_R", vTargetGrid.GPUCache.RegularCellVectorZCache);
         m_ParticleInCellToolsCS.SetTexture(scatterOnlyRegularParticleToGrid_Pass2, "RegularCellVelocity_RW", vTargetGrid.FineGrid.Velocity.RegularCellValue);
-        m_ParticleInCellToolsCS.Dispatch(scatterOnlyRegularParticleToGrid_Pass2, Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.x / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.RegularCellYCount / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount3D));
+        m_ParticleInCellToolsCS.Dispatch(scatterOnlyRegularParticleToGrid_Pass2, Mathf.CeilToInt(((float)vTargetGrid.FineGrid.ResolutionXZ.x) / Common.ThreadCount3D), Mathf.CeilToInt(((float)vTargetGrid.FineGrid.RegularCellYCount) / Common.ThreadCount3D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount3D));
         Profiler.EndSample();
     }
 
@@ -210,7 +210,7 @@ public class ParticleInCellTools
         m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "WaterSurfaceMin_R", vCache.WaterSurfaceMinInterlockedCahce);
         m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "WaterSurfaceMax_R", vCache.WaterSurfaceMaxInterlockedCahce);
         m_ParticleInCellToolsCS.SetTexture(computeH1H2WithParticle_Pass2, "WaterSurfaceH1H2_RW", vTargetGrid.GPUCache.H1H2Cahce);
-        m_ParticleInCellToolsCS.Dispatch(computeH1H2WithParticle_Pass2, Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.x / Common.ThreadCount2D), Mathf.CeilToInt(vTargetGrid.FineGrid.ResolutionXZ.y / Common.ThreadCount2D), 1);
+        m_ParticleInCellToolsCS.Dispatch(computeH1H2WithParticle_Pass2, Mathf.CeilToInt(((float)vTargetGrid.FineGrid.ResolutionXZ.x) / Common.ThreadCount2D), Mathf.CeilToInt(((float)vTargetGrid.FineGrid.ResolutionXZ.y) / Common.ThreadCount2D), 1);
         Profiler.EndSample();
     }
 

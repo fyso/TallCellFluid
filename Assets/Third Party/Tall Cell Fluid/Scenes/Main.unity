@@ -310,7 +310,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 803667927}
   m_LocalRotation: {x: -0, y: -0, z: -0.19311665, w: 0.98117584}
-  m_LocalPosition: {x: 20, y: 40, z: 20}
+  m_LocalPosition: {x: 9.3, y: 37.6, z: 20}
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_Children: []
   m_Father: {fileID: 876869189}
@@ -394,7 +394,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &876869189
 Transform:
   m_ObjectHideFlags: 0
@@ -797,24 +797,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de90f2c2c37e412478ff0bfc6124c041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Terrian: {fileID: 2800000, guid: ea3644e72257c19418dd085163242ae0, type: 3}
+  m_Terrian: {fileID: 2800000, guid: 7fdf947f02f27a84a8a279f022b0dc3f, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
-  m_TimeStep: 0.033
+  m_TimeStep: 0.005
   VisualParticle: 1
-  ShowGridDebugInfo: 1
+  ShowGridDebugInfo: 0
   VisualGridInfo:
-    m_ShowMode: 1
+    m_ShowMode: 0
     m_ShowInfo: 5
     MinShowValue: 0
-    MinShowColor: {r: 1, g: 1, b: 1, a: 0}
-    MaxShowValue: 3
-    MaxShowColor: {r: 0, g: 0.30699968, b: 1, a: 0}
-    m_GridLevel: 1
+    MinShowColor: {r: 0, g: 0, b: 0, a: 0}
+    MaxShowValue: 50
+    MaxShowColor: {r: 1, g: 1, b: 1, a: 0}
+    m_GridLevel: 0
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 1

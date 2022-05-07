@@ -51,7 +51,7 @@ public class GridPerLevel
     public RenderTexture TallCellHeight {  get { return m_TallCellHeight; } set {  m_TallCellHeight = value; } }
     public RenderTexture RegularCellMark { get { return m_RegularCellMark; } }
     public GridValuePerLevel Velocity { get { return m_Velocity; } set { m_Velocity = value; } }
-    public GridValuePerLevel Pressure { get { return m_Pressure; } }
+    public GridValuePerLevel Pressure { get { return m_Pressure; } set { m_Pressure = value; } }
     public GridValuePerLevel RigidBodyPercentage { get { return m_RigidBodyPercentage; } }
     public GridValuePerLevel RigidBodyVelocity { get { return m_RigidBodyVelocity; } }
     public Vector2Int ResolutionXZ { get { return m_ResolutionXZ; } }
@@ -313,7 +313,6 @@ public class Grid
         __SwapFineGridVelocityWithCache();
 
         Profiler.BeginSample("update fine level tallcell grid");
-        //TODO: ComputeH1H2WithParticle
         __ComputeTallCellHeightFromH1H2();
         Profiler.EndSample();
 
@@ -336,16 +335,21 @@ public class Grid
         m_RemeshTools.UpdateSolidInfos(FineGrid.TerrainHeight, FineGrid.TallCellHeight, FineGrid.RigidBodyPercentage, FineGrid.RigidBodyVelocity);
         Profiler.EndSample();
 
-        //TODO: update water mark
-
         Profiler.BeginSample("down sample");
         __DownSampleValue();
         Profiler.EndSample();
     }
 
-    public void SparseMultiGridRedBlackGaussSeidel()
+    public void SparseMultiGridRedBlackGaussSeidel(float vTimeStep, int vIterationCount)
     {
-        //m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
+        m_LinerSolver.ApplyNopressureForce(m_GridData[0], 9.8f, vTimeStep);
+        for (int i = 0; i < vIterationCount; i++)
+        {
+            m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
+            for (int c = 0; c < 400; c++)
+                m_LinerSolver.Smooth(ref m_GridData[0], m_GPUCache, vTimeStep);
+            m_LinerSolver.UpdateVelocity(m_GridData[0], vTimeStep);
+        }
     }
 
     #region DownSample

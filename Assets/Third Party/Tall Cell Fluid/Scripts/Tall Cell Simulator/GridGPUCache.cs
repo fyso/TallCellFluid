@@ -120,6 +120,7 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
         LastFrameVelocityCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
+        SmoothPressureCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
     }
 
     ~GridGPUCache()
@@ -161,6 +162,7 @@ public class GridGPUCache
 
     public RenderTexture LastFrameTallCellHeightCache;
     public GridValuePerLevel LastFrameVelocityCache;
+    public GridValuePerLevel SmoothPressureCache;
 
     public RenderTexture VectorBForFineLevel;
 }
