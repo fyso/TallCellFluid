@@ -190,6 +190,13 @@ public class Simulator
         m_ParticleSortTools.SortParticleHashTallCell(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength, -1);
         m_ParticleInCellTools.ComputeH1H2WithParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
         Profiler.EndSample();
+
+        Profiler.BeginSample("ParticlePostProcessing");
+        m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
+
+        //m_SimulatorGPUCache.HashCount;
+        //m_SimulatorGPUCache.HashOffset;
+        Profiler.EndSample();
     }
 
     private Vector3 m_Min;
