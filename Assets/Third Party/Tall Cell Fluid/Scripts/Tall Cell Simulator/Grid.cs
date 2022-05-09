@@ -343,13 +343,10 @@ public class Grid
     public void SparseMultiGridRedBlackGaussSeidel(float vTimeStep, int vIterationCount)
     {
         m_LinerSolver.ApplyNopressureForce(m_GridData[0], 9.8f, vTimeStep);
-        for (int i = 0; i < vIterationCount; i++)
-        {
-            m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
-            for (int c = 0; c < 400; c++)
-                m_LinerSolver.Smooth(ref m_GridData[0], m_GPUCache, vTimeStep);
-            m_LinerSolver.UpdateVelocity(m_GridData[0], vTimeStep);
-        }
+        m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
+        //for (int i = 0; i < vIterationCount; i++)
+        //    m_LinerSolver.Smooth(ref m_GridData[0], m_GPUCache, vTimeStep);
+        m_LinerSolver.UpdateVelocity(m_GridData[0], vTimeStep);
     }
 
     #region DownSample
