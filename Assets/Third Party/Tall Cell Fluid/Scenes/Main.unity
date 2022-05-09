@@ -210,7 +210,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 5c4a3f2a3b1e6314fbec0210d37ee345, type: 2}
+  sdfData: {fileID: 0}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -564,7 +564,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 849866c66cd0adc4d9a878e54745a719, type: 2}
+  sdfData: {fileID: 0}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -806,9 +806,9 @@ MonoBehaviour:
   m_MaxParticleCount: 2000000
   m_TimeStep: 0.005
   VisualParticle: 1
-  ShowGridDebugInfo: 0
+  ShowGridDebugInfo: 1
   VisualGridInfo:
-    m_ShowMode: 0
+    m_ShowMode: 1
     m_ShowInfo: 5
     MinShowValue: 0
     MinShowColor: {r: 0, g: 0, b: 0, a: 0}

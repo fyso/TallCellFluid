@@ -122,9 +122,9 @@ public class Simulator
         m_Grid.UpdateGridValue();
         Profiler.EndSample();
 
-        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1);
-        Profiler.EndSample();
+        //Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
+        //m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1);
+        //Profiler.EndSample();
     }
 
     private void __ParticleInCell(float vTimeStep)
