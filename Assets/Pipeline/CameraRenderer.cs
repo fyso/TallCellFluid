@@ -43,7 +43,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-                if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
+        if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
             Show(m_GridDebugRT); 
         else Show(m_FluidNormalRT);
 
