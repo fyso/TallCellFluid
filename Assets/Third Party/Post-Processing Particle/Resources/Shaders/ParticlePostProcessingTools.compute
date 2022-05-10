@@ -1,0 +1,152 @@
+#include "Common.hlsl"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel computeAnisotropyMatrix
+
+struct AnisotropyMatrix
+{
+    float4 AniX;
+    float4 AniY;
+    float4 AniZ;
+};
+
+StructuredBuffer<int> IndirectArgmentBuffer;
+StructuredBuffer<float4> ParticlePosBuffer;
+RWStructuredBuffer<AnisotropyMatrix> AnisotropyMatrixBuffer;
+
+[numthreads(THREAD_NUM_1D, 1, 1)]
+void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_NUM_1D;
+    if (i >= IndirectArgmentBuffer[4]) return;
+    
+    float3 currentPos = ParticlePosBuffer[i];
+    uint3 centerCellIndex = convertPos2CellIndex(currentPos);
+    if (centerCellIndex.x < 0) return;
+    
+    float weightSum = 0;
+    float3 centerPos = float3(0, 0, 0);
+    for (uint x = max(centerCellIndex.x - 1, 0); x <= centerCellIndex.x + 1; x++)
+    {
+        for (uint y = max(centerCellIndex.y - 1, 0); y <= centerCellIndex.y + 1; y++)
+        {
+            for (uint z = max(centerCellIndex.z - 1, 0); z <= centerCellIndex.z + 1; z++)
+            {
+                uint mortonIndex = computeMorton3D(uint3(x, y, z));
+                uint count = HashCountBuffer[mortonIndex];
+                uint offset = mortonIndex == 0 ? 0 : HashOffsetBuffer[mortonIndex - 1];
+
+                for (uint k = offset; k < offset + count; k++)
+                {
+                    float3 neighbourPos = ParticlePosBuffer[k];
+                    float distance = length(currentPos - neighbourPos);
+                    float weight = 0;
+                    if (distance < CellLength)
+                    {
+                        float ratio = distance / CellLength;
+                        weight = 1 - ratio * ratio * ratio;
+                        centerPos += weight * neighbourPos;
+                        weightSum += weight;
+                    }
+                }
+            }
+        }
+    }
+    centerPos /= weightSum;
+
+    float3x3 covMatrix;
+    for (uint x = max(centerCellIndex.x - 1, 0); x <= centerCellIndex.x + 1; x++)
+    {
+        for (uint y = max(centerCellIndex.y - 1, 0); y <= centerCellIndex.y + 1; y++)
+        {
+            for (uint z = max(centerCellIndex.z - 1, 0); z <= centerCellIndex.z + 1; z++)
+            {
+                uint mortonIndex = computeMorton3D(uint3(x, y, z));
+                uint count = HashCountBuffer[mortonIndex];
+                uint offset = mortonIndex == 0 ? 0 : HashOffsetBuffer[mortonIndex - 1];
+
+                for (uint k = offset; k < offset + count; k++)
+                {
+                    float3 neighbourPos = ParticlePosBuffer[k];
+                    float distance = length(currentPos - neighbourPos);
+                    if (distance < CellLength)
+                    {
+                        float ratio = distance / CellLength;
+                        float weight = 1 - ratio * ratio * ratio;
+
+                        float1x3 posOffset = neighbourPos - centerPos;
+                        covMatrix += weight * mul(transpose(posOffset), posOffset);
+                    }
+                }
+            }
+        }
+    }
+    covMatrix /= weightSum;
+
+    
+    
+    
+    //float eignvectors[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+    //for (uint iter = 0; iter < 5; ++iter)
+    //{
+    //    uint nRow = 0;
+    //    uint nCol = 0;
+    //    float dbMax = 0;
+    //    //Get max element row and column
+    //    for (uint i = 0; i < 2; ++i)
+    //    {
+    //        for (uint k = i + 1; k < 3; ++k)
+    //        {
+    //            float d = abs(covMatrix[i][k]);
+    //            if (dbMax < d)
+    //            {
+    //                dbMax = d;
+    //                nRow = i;
+    //                nCol = k;
+    //            }
+    //        }
+    //    }
+        
+    //    //Calculate Rotation Angle
+    //    float dbApp = covMatrix[nRow][nRow];
+    //    float dbAqq = covMatrix[nCol][nCol];
+    //    float dbApq = covMatrix[nRow][nCol];
+    //    float dbAngle = 0.5f * atan2(-2 * dbApq, dbAqq - dbApp);
+    //    float dbSin = sin(dbAngle);
+    //    float dbCos = cos(dbAngle);
+    //    float dbSin2 = sin(2 * dbAngle);
+    //    float dbCos2 = cos(2 * dbAngle);
+        
+    //    covMatrix[nRow][nRow] = dbCos * dbCos * dbApp + 2 * dbSin * dbCos * dbApq + dbSin * dbSin * dbAqq;
+    //    covMatrix[nCol][nCol] = dbSin * dbSin * dbApp - 2 * dbSin * dbCos * dbApq + dbCos * dbCos * dbAqq;
+    //    covMatrix[nRow][nCol] = 0.5 * (dbAqq - dbApp) * dbSin2 + dbApq * dbCos2;
+    //    covMatrix[nCol][nRow] = covMatrix[nRow][nCol];
+        
+    //    for (uint j = 0; j < 3; j++)
+    //    {
+    //        if (j != nRow && j != nCol)
+    //        {
+    //            dbMax = covMatrix[nRow][j];
+    //            float dbTemp = covMatrix[j][nCol];
+    //            covMatrix[nRow][j] = dbMax * dbCos + dbTemp * dbSin; //p
+    //            covMatrix[j][nRow] = covMatrix[nRow][j];
+                
+    //            covMatrix[j][nCol] = dbTemp * dbCos - dbMax * dbSin; //q
+    //            covMatrix[nCol][j] = covMatrix[j][nCol];
+    //        }
+    //    }
+        
+    //    //Calculate EignvectorsMatrix
+    //    for (uint n = 0; n < 3; n++)
+    //    {
+    //        dbMax = eignvectors[n][nRow];
+    //        float dbTemp = eignvectors[n][nCol];
+    //        eignvectors[n][nRow] = dbMax * dbCos + dbTemp * dbSin; //p
+    //        eignvectors[n][nCol] = dbTemp * dbCos - dbMax * dbSin; //q
+    //    }
+    //}
+    
+    //AnisotropyMatrixBuffer[i].AniX = float4(eignvectors[0][0], eignvectors[0][1], eignvectors[0][2], covMatrix[0][0]);
+    //AnisotropyMatrixBuffer[i].AniY = float4(eignvectors[1][0], eignvectors[1][1], eignvectors[1][2], covMatrix[1][1]);
+    //AnisotropyMatrixBuffer[i].AniY = float4(eignvectors[2][0], eignvectors[2][1], eignvectors[2][2], covMatrix[2][2]);
+}
