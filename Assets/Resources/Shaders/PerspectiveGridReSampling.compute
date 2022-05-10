@@ -1,0 +1,63 @@
+#pragma kernel clearParticleCountOfGrid
+#pragma kernel insertParticle2PerspectiveGrid
+#pragma kernel clearSurfaceGrid
+#pragma kernel searchSurfaceGrid
+#include "../ShaderLibrary/Common.hlsl"
+
+#define GROUP_THREAD_NUM 256
+int _MaxSurfaceDensity;
+int _Layer;
+
+StructuredBuffer<float3> _ParticlePositionBuffer;
+StructuredBuffer<uint> ParticleIndirectArgment_R;
+
+RWStructuredBuffer<uint> ParticleCountOfGrid;
+RWStructuredBuffer<uint> SurfaceGrid_RW;
+
+[numthreads(GROUP_THREAD_NUM, 1, 1)]
+void clearParticleCountOfGrid(uint3 DTid : SV_DispatchThreadID)
+{
+    ParticleCountOfGrid[DTid.x] = 0;
+}
+
+[numthreads(GROUP_THREAD_NUM, 1, 1)]
+void insertParticle2PerspectiveGrid(uint3 GTid : SV_GroupID, uint GIndex : SV_GroupIndex)
+{
+	uint particleIndex = GIndex + GTid.x * GROUP_THREAD_NUM; 
+    if (particleIndex >= ParticleIndirectArgment_R[4])  //TODO:ParticleCountArgumentOffset
+        return;
+	
+    float3 pos = _ParticlePositionBuffer[particleIndex].xyz;
+
+    //World Space mapping to View Space and 3D Texture Space
+    float3 posVS = mul(unity_MatrixVHistory, float4(pos, 1.0f));
+	uint3 tex3DIndex    = viewPos2Index3D(posVS);
+    uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+    
+    uint originValue;
+    InterlockedAdd(ParticleCountOfGrid[cellLinerIndex], 1, originValue);
+}
+
+[numthreads(GROUP_THREAD_NUM, 1, 1)]
+void clearSurfaceGrid(uint3 DTid : SV_DispatchThreadID)
+{
+    SurfaceGrid_RW[DTid.x] = 0;
+}
+
+[numthreads(8, 8, 1)]
+void searchSurfaceGrid(uint3 DTid : SV_DispatchThreadID)
+{
+    uint count = 1;
+    for (uint z = 0; z < _PerspectiveGridDimZ; z++)
+    {
+        uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
+        if ((ParticleCountOfGrid[cellLinerIndex] >= _MaxSurfaceDensity) && (count <= _Layer)) 
+        {
+            SurfaceGrid_RW[cellLinerIndex] = 1;
+            if (count == _Layer)
+                break;
+                
+            count++;
+        }
+    } 
+}

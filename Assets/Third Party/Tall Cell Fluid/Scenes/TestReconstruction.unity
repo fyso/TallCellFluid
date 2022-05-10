@@ -856,6 +856,7 @@ GameObject:
   - component: {fileID: 1456825980}
   - component: {fileID: 1456825979}
   - component: {fileID: 1456825981}
+  - component: {fileID: 1456825982}
   m_Layer: 0
   m_Name: Simulator
   m_TagString: Simulator
@@ -877,7 +878,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Terrian: {fileID: 2800000, guid: 7664b6f69431dfb4cbaf3e1ef3122f15, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
-  m_ResolutionXZ: {x: 32, y: 32}
+  m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
   m_SeaLevel: 28
@@ -929,3 +930,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7f9d279411323048bde7be674927407, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1456825982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456825978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06c0317e0632e6c47bb855ee99f95544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  renderPipelineAsset: {fileID: 11400000, guid: 46b29c2503bfe714ab6e7d31481896ee, type: 2}

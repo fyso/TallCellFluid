@@ -5,4 +5,5 @@ public class RenderManager : ScriptableObject
 {
     public ParticleData m_ParticleData;
     public FilterSetting m_FilterSetting;
+    public PerspectiveGridSetting m_PerspectiveGridSetting;
 }
