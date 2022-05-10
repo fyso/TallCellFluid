@@ -43,8 +43,8 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-        if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
-            Show(m_GridDebugRT);
+                if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
+            Show(m_GridDebugRT); 
         else Show(m_FluidNormalRT);
 
         DrawUnsupportedShaders();
@@ -192,7 +192,6 @@ public partial class CameraRenderer : MonoBehaviour
             m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
         }
 
-        m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
         m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_RenderManager.m_ParticleData.PositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);

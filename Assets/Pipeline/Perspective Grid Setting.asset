@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 046eb2c772a33d6439d137418d473320, type: 3}
   m_Name: Perspective Grid Setting
   m_EditorClassIdentifier: 
-  m_Layer: 6
-  m_MaxSurfaceDensity: 2
+  m_Layer: 4
+  m_MaxSurfaceDensity: 1
   m_OcclusionCullingDebug: 0

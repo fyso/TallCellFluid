@@ -68,17 +68,24 @@
                 #ifdef _OCCLUSIONCULLDEBUG
                     posVS = mul(unity_MatrixVHistory, float4(_ParticlePositionBuffer[instanceID], 1.0f));
                 #endif
-                uint3 tex3DIndex = viewPos2Index3D(posVS);
-                uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
-                uint  isSurface = SurfaceGrid_RW[cellLinerIndex];
-
+                int3 tex3DIndex = viewPos2Index3D(posVS);
                 #ifdef _OCCLUSIONCULLDEBUG
-                    output.cellOfParticleIndex3D = float3(cellLinerIndex, instanceID, isSurface);
+                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                        output.cellOfParticleIndex3D = float3(1, instanceID, 0);
+                    else
+                    {
+                        uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+                        uint  isSurface = SurfaceGrid_RW[cellLinerIndex];
+                        output.cellOfParticleIndex3D = float3(cellLinerIndex, instanceID, isSurface);
+                    }
                 #else
+                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                        return Clip();
+                    uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+                    uint  isSurface = SurfaceGrid_RW[cellLinerIndex];
                     if (isSurface != 1) return Clip();
                 #endif
                 output.positionCS = TransformWViewToHClip(output.sphereCenterVS + float3(_ParticlesRadius * output.uv, 0.0f));
-
                 return output;
             }
 
@@ -108,9 +115,9 @@
                 output.depth = fluidDepth;
                 #ifdef _OCCLUSIONCULLDEBUG
                     float3 cellIndex3D = input.cellOfParticleIndex3D;
-                    if (cellIndex3D.z == 0) output.gridIndexDebug = float4(1, 0, 0, 1.0);
-                    else output.gridIndexDebug = float4(0, 1, 0, 1.0);
-                    //output.gridIndexDebug = float4(cellIndex3D, 1.0);
+                    //if (cellIndex3D.z == 0) output.gridIndexDebug = float4(1, 0, 0, 1.0);
+                    //else output.gridIndexDebug = float4(0, 1, 0, 1.0);
+                    output.gridIndexDebug = float4(cellIndex3D, 1.0);
                 #endif
                 return output;
             }

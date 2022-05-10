@@ -31,7 +31,10 @@ void insertParticle2PerspectiveGrid(uint3 GTid : SV_GroupID, uint GIndex : SV_Gr
 
     //World Space mapping to View Space and 3D Texture Space
     float3 posVS = mul(unity_MatrixVHistory, float4(pos, 1.0f));
-	uint3 tex3DIndex    = viewPos2Index3D(posVS);
+	int3 tex3DIndex    = viewPos2Index3D(posVS);
+    if (any(tex3DIndex < 0) 
+        || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+        return;
     uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
     
     uint originValue;
