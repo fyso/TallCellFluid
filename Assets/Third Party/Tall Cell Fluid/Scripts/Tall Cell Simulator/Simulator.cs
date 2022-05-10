@@ -72,10 +72,14 @@ public class Simulator
             {
                 //Color TopVelocity = new Color((float)x / Top.width, 0.0f, (float)y / Top.height, 1.0f);
                 //Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
-                Color TopVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                Color TopVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
+                //Color TopVelocity = new Color(-1.0f, 0.0f, 0.0f, 1.0f);
+                //Color TopVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
                 //Color TopVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
-                Color BottomVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                Color BottomVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
+                //Color BottomVelocity = new Color(-1.0f, 0.0f, 0.0f, 1.0f);
+                //Color BottomVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
                 Bottom.SetPixel(x, y, BottomVelocity);
             }
         }
@@ -93,7 +97,9 @@ public class Simulator
                 {
                     //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, (float)z / FineGrid.ResolutionXZ.y, 1.0f);
                     //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, 0.0f, 1.0f);
-                    Color RegularVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                    //Color RegularVelocity = new Color(-1.0f, 0.0f, 0.0f, 1.0f);
+                    //Color RegularVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                    Color RegularVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
                     //Color RegularVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
@@ -118,7 +124,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        m_Grid.SparseMultiGridRedBlackGaussSeidel();
+        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1);
         Profiler.EndSample();
     }
 
@@ -146,12 +152,9 @@ public class Simulator
         m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
-        if (Time.frameCount < 12000)
-        {
-            Profiler.BeginSample("Advect");
-            m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
-            Profiler.EndSample();
-        }
+        Profiler.BeginSample("Advect");
+        m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
+        Profiler.EndSample();
 
         Profiler.BeginSample("ClearCache");
         m_Grid.RestCache();
