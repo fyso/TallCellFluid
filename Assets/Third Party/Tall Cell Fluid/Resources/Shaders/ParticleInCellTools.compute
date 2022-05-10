@@ -639,10 +639,26 @@ void scatterOnlyRegularParticleToGrid_Pass1(uint ThreadIdx : SV_GroupIndex, uint
         {
             int AdjContributePointYIndex = (AdjContributePointHeight - AdjTerrianHeight - AdjTallCellHeight) / CellLength;
             int3 AdjContributePoint3DIndex = int3(AdjContributePointXZIndex.x, AdjContributePointYIndex, AdjContributePointXZIndex.y);
-            InterlockedAdd(RegularCellWeight_RW[AdjContributePoint3DIndex], (int) (Weight * ZIP));
-            InterlockedAdd(RegularCellWeightedVelocity_R_RW[AdjContributePoint3DIndex], (int) (WeightVelocity.x * ZIP));
-            InterlockedAdd(RegularCellWeightedVelocity_G_RW[AdjContributePoint3DIndex], (int) (WeightVelocity.y * ZIP));
-            InterlockedAdd(RegularCellWeightedVelocity_B_RW[AdjContributePoint3DIndex], (int) (WeightVelocity.z * ZIP));
+            
+            int WeightInt = (int) Weight;
+            int WeightFloat = (Weight - WeightInt) * ZIP;
+            InterlockedAdd(RegularCellWeight_RW[AdjContributePoint3DIndex], WeightInt);
+            InterlockedAdd(RegularCellWeight_RW[AdjContributePoint3DIndex + int3(0, ConstantCellNum, 0)], WeightFloat);
+            
+            int WeightVelocityXInt = (int) WeightVelocity.x;
+            int WeightVelocityXFloat = (WeightVelocity.x - WeightVelocityXInt) * ZIP;
+            InterlockedAdd(RegularCellWeightedVelocity_R_RW[AdjContributePoint3DIndex], WeightVelocityXInt);
+            InterlockedAdd(RegularCellWeightedVelocity_R_RW[AdjContributePoint3DIndex + int3(0, ConstantCellNum, 0)], WeightVelocityXFloat);
+            
+            int WeightVelocityYInt = (int) WeightVelocity.y;
+            int WeightVelocityYFloat = (WeightVelocity.y - WeightVelocityYInt) * ZIP;
+            InterlockedAdd(RegularCellWeightedVelocity_G_RW[AdjContributePoint3DIndex], WeightVelocityYInt);
+            InterlockedAdd(RegularCellWeightedVelocity_G_RW[AdjContributePoint3DIndex + int3(0, ConstantCellNum, 0)], WeightVelocityYFloat);
+            
+            int WeightVelocityZInt = (int) WeightVelocity.z;
+            int WeightVelocityZFloat = (WeightVelocity.z - WeightVelocityZInt) * ZIP;
+            InterlockedAdd(RegularCellWeightedVelocity_B_RW[AdjContributePoint3DIndex], WeightVelocityZInt);
+            InterlockedAdd(RegularCellWeightedVelocity_B_RW[AdjContributePoint3DIndex + int3(0, ConstantCellNum, 0)], WeightVelocityZFloat);
         }
     }
 }
@@ -653,11 +669,11 @@ void scatterOnlyRegularParticleToGrid_Pass2(uint3 DispatchThreadID : SV_Dispatch
     if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum)
         return;
     
-    float Weight = RegularCellWeight_R[DispatchThreadID] / (float) ZIP;
+    float Weight = RegularCellWeight_R[DispatchThreadID] + RegularCellWeight_R[DispatchThreadID + int3(0, ConstantCellNum, 0)] / (float) ZIP;
     float3 WeightedVelocity = float3(
-        RegularCellWeightedVelocity_R_R[DispatchThreadID] / (float) ZIP,
-        RegularCellWeightedVelocity_G_R[DispatchThreadID] / (float) ZIP,
-        RegularCellWeightedVelocity_B_R[DispatchThreadID] / (float) ZIP
+        RegularCellWeightedVelocity_R_R[DispatchThreadID] + RegularCellWeightedVelocity_R_R[DispatchThreadID + int3(0, ConstantCellNum, 0)] / (float) ZIP,
+        RegularCellWeightedVelocity_G_R[DispatchThreadID] + RegularCellWeightedVelocity_G_R[DispatchThreadID + int3(0, ConstantCellNum, 0)] / (float) ZIP,
+        RegularCellWeightedVelocity_B_R[DispatchThreadID] + RegularCellWeightedVelocity_B_R[DispatchThreadID + int3(0, ConstantCellNum, 0)] / (float) ZIP
     );
     
     float3 FinalValue = float3(0, 0, 0);

@@ -68,7 +68,7 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellScalarCahce = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
+        RegularCellScalarCahce = new RenderTexture(vResolutionXZ.x, vRegularCellYCount * 2, 0, RenderTextureFormat.RInt)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,
@@ -77,7 +77,7 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVectorXCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
+        RegularCellVectorXCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount * 2, 0, RenderTextureFormat.RInt)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,
@@ -86,7 +86,7 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVectorYCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
+        RegularCellVectorYCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount * 2, 0, RenderTextureFormat.RInt)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,
@@ -95,16 +95,7 @@ public class GridGPUCache
             wrapMode = TextureWrapMode.Clamp
         };
 
-        RegularCellVectorZCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount, 0, RenderTextureFormat.RInt)
-        {
-            dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
-            volumeDepth = vResolutionXZ.y,
-            enableRandomWrite = true,
-            filterMode = FilterMode.Trilinear,
-            wrapMode = TextureWrapMode.Clamp
-        };
-
-        VectorBForFineLevel = new RenderTexture(vResolutionXZ.x, vRegularCellYCount + 2, 0, RenderTextureFormat.RFloat)
+        RegularCellVectorZCache = new RenderTexture(vResolutionXZ.x, vRegularCellYCount * 2, 0, RenderTextureFormat.RInt)
         {
             dimension = UnityEngine.Rendering.TextureDimension.Tex3D,
             volumeDepth = vResolutionXZ.y,
@@ -119,8 +110,10 @@ public class GridGPUCache
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp
         };
+
         LastFrameVelocityCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
         SmoothPressureCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
+        VectorBForFineLevel = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
     }
 
     ~GridGPUCache()
@@ -141,7 +134,6 @@ public class GridGPUCache
         RegularCellVectorZCache.Release();
 
         LastFrameTallCellHeightCache.Release();
-        VectorBForFineLevel.Release();
     }
 
     //Temp cache
@@ -164,5 +156,5 @@ public class GridGPUCache
     public GridValuePerLevel LastFrameVelocityCache;
     public GridValuePerLevel SmoothPressureCache;
 
-    public RenderTexture VectorBForFineLevel;
+    public GridValuePerLevel VectorBForFineLevel;
 }

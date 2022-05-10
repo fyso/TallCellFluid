@@ -13,24 +13,17 @@ public class Simulator
     {
         m_Min = vMin;
         m_CellLength = vCellLength;
-        m_Max = vMin + (new Vector3(vResolutionXZ.x, vRegularCellYCount * 32, vResolutionXZ.y)) * vCellLength;
 
         m_Grid = new Grid(vResolutionXZ, vRegularCellYCount, vCellLength);
-        m_Grid.InitMesh(vTerrian, vSeaLevel);
 
         m_Utils = new Utils();
         m_SimulatorGPUCache = new SimulatorGPUCache(vMaxParticleCount, vResolutionXZ);
         m_ParticleSortTools = new ParticleSortTools();
         m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
         m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
+
+        m_Grid.InitMesh(vTerrian, vSeaLevel);
         m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vSeaLevel, m_DynamicParticle);
-
-        m_Argument = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
-        uint[] InitArgument = new uint[3] {
-            1, 1, 1
-        };
-        m_Argument.SetData(InitArgument);
-
         m_Grid.UpdateGridValue();
     }
 
@@ -64,21 +57,13 @@ public class Simulator
         if (Top.width != Bottom.width || Top.height != Bottom.height)
             Debug.LogError("unmatched top and bottom data!");
 
-        System.Random Rand = new System.Random();
         for(int x = 0; x < Top.width; x++)
         {
             for (int y = 0; y < Top.height; y++)
             {
-                //Color TopVelocity = new Color((float)x / Top.width, 0.0f, (float)y / Top.height, 1.0f);
-                //Color TopVelocity = new Color((float)x / Top.width, 0.0f, 0.0f, 1.0f);
-                Color TopVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
-                //Color TopVelocity = new Color(-1.0f, 0.0f, 0.0f, 1.0f);
-                //Color TopVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
-                //Color TopVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
+                Color TopVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
-                Color BottomVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
-                //Color BottomVelocity = new Color(-1.0f, 0.0f, 0.0f, 1.0f);
-                //Color BottomVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
+                Color BottomVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
                 Bottom.SetPixel(x, y, BottomVelocity);
             }
         }
@@ -94,12 +79,7 @@ public class Simulator
             {
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
-                    //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, (float)z / FineGrid.ResolutionXZ.y, 1.0f);
-                    //Color RegularVelocity = new Color((float)x / FineGrid.ResolutionXZ.x, 0.0f, 0.0f, 1.0f);
-                    //Color RegularVelocity = new Color(-1.0f, 0.0f, 0.0f, 1.0f);
-                    //Color RegularVelocity = new Color(1.0f, 0.0f, 0.0f, 1.0f);
-                    Color RegularVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
-                    //Color RegularVelocity = new Color(Random.Range(0.0f, 1.0f), 0.0f, 0.0f, 1.0f);
+                    Color RegularVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
             }
@@ -122,11 +102,12 @@ public class Simulator
         m_Grid.UpdateGridValue();
         Profiler.EndSample();
 
-        //Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        //m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1);
-        //Profiler.EndSample();
+        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
+        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 32);
+        Profiler.EndSample();
     }
 
+    //Send velocity from grid to particle, advect and then send velocity from particle to grid. During this phase, we will get water mark, air mark of grid
     private void __ParticleInCell(float vTimeStep)
     {
         Profiler.BeginSample("MarkParticleWtihCellType");
@@ -136,8 +117,6 @@ public class Simulator
         Profiler.BeginSample("OrganizeParticle");
         m_DynamicParticle.OrganizeParticle();
         Profiler.EndSample();
-
-        m_Utils.UpdateArgment(m_Argument, m_DynamicParticle.Argument, DynamicParticle.DifferParticleXGridCountArgumentOffset + OnlyTallCellParticleTypeIndex * 3, ScatterOnlyTallCellParticleArgmentOffset);
 
         Profiler.BeginSample("GatherGridToOnlyRegularParticle");
         m_ParticleInCellTools.GatherGridToOnlyRegularParticle(m_DynamicParticle, m_Grid.FineGrid);
@@ -193,14 +172,10 @@ public class Simulator
 
         Profiler.BeginSample("ParticlePostProcessing");
         m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-
-        //m_SimulatorGPUCache.HashCount;
-        //m_SimulatorGPUCache.HashOffset;
         Profiler.EndSample();
     }
 
     private Vector3 m_Min;
-    private Vector3 m_Max;
     private float m_CellLength;
 
     private Grid m_Grid;
@@ -208,8 +183,6 @@ public class Simulator
     private ParticleInCellTools m_ParticleInCellTools;
     private ParticleSortTools m_ParticleSortTools;
     private Utils m_Utils;
-
-    private ComputeBuffer m_Argument;
 
     private SimulatorGPUCache m_SimulatorGPUCache;
 }

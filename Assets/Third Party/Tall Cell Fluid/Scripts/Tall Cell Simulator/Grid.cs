@@ -136,11 +136,12 @@ public class Grid
             float CellLength = vCellLength * Mathf.Pow(2, i);
             m_GridData[i] = new GridPerLevel(LayerResolutionXZ, RegularCellYCount, CellLength, i == 0);
         }
-        m_LinerSolver = new SparseBlackRedGaussSeidelMultigridSolver();
+
         m_GPUCache = new GridGPUCache(vResolutionXZ, vCellLength, vRegularCellYCount);
         m_Utils = new Utils();
         __InitDownSampleTools();
         __InitRemeshTools(vResolutionXZ, vCellLength, vRegularCellYCount);
+        __InitSparseBlackRedGaussSeidelMultigridSolver();
     }
 
     public GridPerLevel FineGrid { get { return m_GridData[0]; } }
@@ -215,7 +216,9 @@ public class Grid
                     m_VisualGridMaterial.SetTexture("BottomVelocity", m_GridData[VisualGridInfo.m_GridLevel].Velocity.TallCellBottomValue);
                     break;
                 case ShowInfo.Pressure:
-                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", -1);
+                    m_VisualGridMaterial.SetInt("TallCellShowInfoMode", 0);
+                    m_VisualGridMaterial.SetTexture("TopShowValue", m_GridData[VisualGridInfo.m_GridLevel].Pressure.TallCellTopValue);
+                    m_VisualGridMaterial.SetTexture("BottomShowValue", m_GridData[VisualGridInfo.m_GridLevel].Pressure.TallCellBottomValue);
                     break;
             }
             Graphics.DrawProceduralNow(VisualGridInfo.m_ShowMode == ShowMode.Entity ? MeshTopology.Triangles : MeshTopology.Lines, 36, ResolutionXZ.x * ResolutionXZ.y);
@@ -298,51 +301,37 @@ public class Grid
         __ComputeTerrianHeight(vTerrian, 20.0f);
         __DownSampleTerrainHeight();
 
-        Profiler.BeginSample("init fine level tallcell grid");
         __ComputeH1H2WithSeaLevel(vSeaLevel);
         __ComputeTallCellHeightFromH1H2();
-        Profiler.EndSample();
-
-        Profiler.BeginSample("down sample height");
         __DownSampleTallCellHeight();
-        Profiler.EndSample();
+    }
+
+    public void ExtrapolationVelocity()
+    {
+
     }
 
     public void Remesh()
     {
         __SwapFineGridVelocityWithCache();
-
-        Profiler.BeginSample("update fine level tallcell grid");
         __ComputeTallCellHeightFromH1H2();
-        Profiler.EndSample();
-
-        Profiler.BeginSample("down sample height");
         __DownSampleTallCellHeight();
-        Profiler.EndSample();
     }
 
     public void UpdateGridValue()
     {
-        Profiler.BeginSample("update fine grid velocity");
         __UpdateFineGridVelocity();
-        Profiler.EndSample();
-
-        Profiler.BeginSample("update rigidbody");
         __UpdateSolidInfos();
-        Profiler.EndSample();
-
-        Profiler.BeginSample("down sample");
         __DownSampleValue();
-        Profiler.EndSample();
     }
 
     public void SparseMultiGridRedBlackGaussSeidel(float vTimeStep, int vIterationCount)
     {
-        m_LinerSolver.ApplyNopressureForce(m_GridData[0], 9.8f, vTimeStep);
-        m_LinerSolver.ComputeVectorB(m_GridData[0], m_GPUCache);
-        //for (int i = 0; i < vIterationCount; i++)
-        //    m_LinerSolver.Smooth(ref m_GridData[0], m_GPUCache, vTimeStep);
-        m_LinerSolver.UpdateVelocity(m_GridData[0], vTimeStep);
+        __ApplyNopressureForce(9.8f, vTimeStep);
+        __ComputeVectorB(vTimeStep);
+        for(int i = 0; i < vIterationCount; i++)
+            _SmoothRBGS(vTimeStep);
+        __UpdateVelocity(vTimeStep);
     }
 
     #region DownSample
@@ -614,6 +603,183 @@ public class Grid
 
     #endregion
 
+    #region LinerSolver
+
+    private ComputeShader m_SparseBlackRedGaussSeidelMultigridSolverCS;
+    private int computeVectorB_Regular;
+    private int computeVectorB_Top;
+    private int computeVectorB_Bottom;
+    private int applyNopressureForce;
+    private int smooth_RBGS_Regular;
+    private int smooth_RBGS_Top;
+    private int smooth_RBGS_Bottom;
+    private int updateVelocity_Regular;
+    private int updateVelocity_Top;
+    private int updateVelocity_Bottom;
+    private void __InitSparseBlackRedGaussSeidelMultigridSolver()
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS = Resources.Load<ComputeShader>(Common.SparseBlackRedGaussSeidelMultigridSolverCSPath);
+        computeVectorB_Regular = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("computeVectorB_Regular");
+        computeVectorB_Top = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("computeVectorB_Top");
+        computeVectorB_Bottom = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("computeVectorB_Bottom");
+
+        applyNopressureForce = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("applyNopressureForce");
+
+        smooth_RBGS_Regular = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("smooth_RBGS_Regular");
+        smooth_RBGS_Top = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("smooth_RBGS_Top");
+        smooth_RBGS_Bottom = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("smooth_RBGS_Bottom");
+
+        updateVelocity_Regular = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("updateVelocity_Regular");
+        updateVelocity_Top = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("updateVelocity_Top");
+        updateVelocity_Bottom = m_SparseBlackRedGaussSeidelMultigridSolverCS.FindKernel("updateVelocity_Bottom");
+    }
+
+    private void __SetVelocitySampleResource(int Kernel)
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellMark_R", m_GridData[0].RegularCellMark);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TerrianHeight_R", m_GridData[0].TerrainHeight);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TallCellHeight_R", m_GridData[0].TallCellHeight);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellVelocity_R", m_GridData[0].Velocity.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TopCellVelocity_R", m_GridData[0].Velocity.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "BottomCellVelocity_R", m_GridData[0].Velocity.TallCellBottomValue);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TopCellRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "BottomRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.TallCellBottomValue);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellRigidBodyVelocity_R", m_GridData[0].RigidBodyVelocity.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TopCellRigidBodyVelocity_R", m_GridData[0].RigidBodyVelocity.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "BottomRigidBodyVelocity_R", m_GridData[0].RigidBodyVelocity.TallCellBottomValue);
+    }
+
+    private void __SetPrressureSampleResource(int Kernel)
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellMark_R", m_GridData[0].RegularCellMark);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TerrianHeight_R", m_GridData[0].TerrainHeight);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TallCellHeight_R", m_GridData[0].TallCellHeight);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TopCellRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "BottomRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.TallCellBottomValue);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "RegularCellPressure_R", m_GridData[0].Pressure.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "TopCellPressure_R", m_GridData[0].Pressure.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(Kernel, "BottomCellPressure_R", m_GridData[0].Pressure.TallCellBottomValue);
+    }
+
+    private void __ComputeVectorB(float vTimeStep)
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInts("XZResolution", m_GridData[0].ResolutionXZ.x, m_GridData[0].ResolutionXZ.y);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("CellLength", m_GridData[0].CellLength);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInt("ConstantCellNum", m_GridData[0].RegularCellYCount);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("TimeStep", vTimeStep);
+
+        __SetVelocitySampleResource(computeVectorB_Regular);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB_Regular, "VectorB_Regular_RW", m_GPUCache.VectorBForFineLevel.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(computeVectorB_Regular,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].RegularCellYCount / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D));
+
+        __SetVelocitySampleResource(computeVectorB_Top);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB_Top, "VectorB_Top_RW", m_GPUCache.VectorBForFineLevel.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(computeVectorB_Top,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D), 1);
+
+        __SetVelocitySampleResource(computeVectorB_Bottom);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(computeVectorB_Bottom, "VectorB_Bottom_RW", m_GPUCache.VectorBForFineLevel.TallCellBottomValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(computeVectorB_Bottom,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D), 1);
+    }
+
+    private void __ApplyNopressureForce(float vGravity, float vTimeStep)
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("Gravity", vGravity);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("TimeStep", vTimeStep);
+        
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "RegularCellMark_R", m_GridData[0].RegularCellMark);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "RegularCellRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "TopCellRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "BottomRigidBodyPercentage_R", m_GridData[0].RigidBodyPercentage.TallCellBottomValue);
+
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "RegularCellVelocity_RW", m_GridData[0].Velocity.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "TopCellVelocity_RW", m_GridData[0].Velocity.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(applyNopressureForce, "BottomCellVelocity_RW", m_GridData[0].Velocity.TallCellBottomValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(applyNopressureForce,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)(m_GridData[0].RegularCellYCount + 2) / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D));
+    }
+
+    private void _SmoothRBGS(float vTimeStep)
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInts("XZResolution", m_GridData[0].ResolutionXZ.x, m_GridData[0].ResolutionXZ.y);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("CellLength", m_GridData[0].CellLength);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInt("ConstantCellNum", m_GridData[0].RegularCellYCount);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("TimeStep", vTimeStep);
+        for (int RedBlackTrigger = 0; RedBlackTrigger < 2; RedBlackTrigger++)
+        {
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInt("RedBlackTrigger", RedBlackTrigger);
+
+            __SetPrressureSampleResource(smooth_RBGS_Regular);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(smooth_RBGS_Regular, "VectorB_Regular_R", m_GPUCache.VectorBForFineLevel.RegularCellValue);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(smooth_RBGS_Regular, "RegularCellPressure_Cache_RW", m_GPUCache.SmoothPressureCache.RegularCellValue);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(smooth_RBGS_Regular,
+                Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+                Mathf.CeilToInt((float)m_GridData[0].RegularCellYCount / Common.ThreadCount3D),
+                Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D));
+
+            __SetPrressureSampleResource(smooth_RBGS_Top);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(smooth_RBGS_Top, "VectorB_Top_R", m_GPUCache.VectorBForFineLevel.TallCellTopValue);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(smooth_RBGS_Top, "TopCellPressure_Cache_RW", m_GPUCache.SmoothPressureCache.TallCellTopValue);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(smooth_RBGS_Top,
+                Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+                Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D), 1);
+
+            __SetPrressureSampleResource(smooth_RBGS_Bottom);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(smooth_RBGS_Bottom, "VectorB_Bottom_R", m_GPUCache.VectorBForFineLevel.TallCellBottomValue);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(smooth_RBGS_Bottom, "BottomCellPressure_Cache_RW", m_GPUCache.SmoothPressureCache.TallCellBottomValue);
+            m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(smooth_RBGS_Bottom,
+                Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+                Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D), 1);
+        }
+        GridValuePerLevel Temp = m_GridData[0].Pressure;
+        m_GridData[0].Pressure = m_GPUCache.SmoothPressureCache;
+        m_GPUCache.SmoothPressureCache = Temp;
+    }
+
+    private void __UpdateVelocity(float vTimeStep)
+    {
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInts("XZResolution", m_GridData[0].ResolutionXZ.x, m_GridData[0].ResolutionXZ.y);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("CellLength", m_GridData[0].CellLength);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetInt("ConstantCellNum", m_GridData[0].RegularCellYCount);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetFloat("TimeStep", vTimeStep);
+
+        __SetPrressureSampleResource(updateVelocity_Regular);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(updateVelocity_Regular, "RegularCellVelocity_RW", m_GridData[0].Velocity.RegularCellValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(updateVelocity_Regular,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].RegularCellYCount / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D));
+
+        __SetPrressureSampleResource(updateVelocity_Top);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(updateVelocity_Top, "TopCellVelocity_RW", m_GridData[0].Velocity.TallCellTopValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(updateVelocity_Top,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D), 1);
+
+        __SetPrressureSampleResource(updateVelocity_Bottom);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.SetTexture(updateVelocity_Bottom, "BottomCellVelocity_RW", m_GridData[0].Velocity.TallCellBottomValue);
+        m_SparseBlackRedGaussSeidelMultigridSolverCS.Dispatch(updateVelocity_Bottom,
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.x / Common.ThreadCount3D),
+            Mathf.CeilToInt((float)m_GridData[0].ResolutionXZ.y / Common.ThreadCount3D), 1);
+    }
+    #endregion
+
     private void __SwapFineGridVelocityWithCache()
     {
         RenderTexture LastFrameTallCellHeightCache = m_GPUCache.LastFrameTallCellHeightCache;
@@ -632,7 +798,6 @@ public class Grid
     private float m_BlurSigma = 1.5f;  
     private float m_BlurRadius = 3.0f;
     private GridPerLevel[] m_GridData;
-    private SparseBlackRedGaussSeidelMultigridSolver m_LinerSolver;
     private Utils m_Utils;
 
     private GridGPUCache m_GPUCache;

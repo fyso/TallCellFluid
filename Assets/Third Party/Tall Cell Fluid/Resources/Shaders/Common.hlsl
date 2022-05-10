@@ -9,13 +9,11 @@
 
 #define SDF_RESOLUTION 32
 
-#define PI 3.1415926535f
-#define E 2.7182818284f
-
 #define MIN_WARP_COUNT 32
 
+#define PI 3.1415926535f
+#define E 2.7182818284f
 #define EPSILON 1e-7f
-#define PI 3.14159274F
 #define FLT_MAX 3.402823466e+38F
 #define UINT_MAX 4294967295
 #define Density0 1000.0f

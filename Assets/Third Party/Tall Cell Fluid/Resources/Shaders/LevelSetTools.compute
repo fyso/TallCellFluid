@@ -1,0 +1,16 @@
+#include "Common.hlsl"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel extrapolationVelocity
+
+RWTexture3D<float3> RegularCellVelocity;
+RWTexture3D<int> RegularCellMark;
+RWTexture3D<float> RegularCellSolidPercentage;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void extrapolationVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if(RegularCellMark[DispatchThreadID] == 0)
+    {
+        
+    }
+}
