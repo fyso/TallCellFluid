@@ -230,7 +230,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
         m_CommandBuffer.SetGlobalTexture("_SmoothFluidDepthRT", m_SmoothFluidDepthRT);
 
-        m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_ToolsMaterial, 0, MeshTopology.Triangles, 3);
+        m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_GenerateNoramalMaterial, 0, MeshTopology.Triangles, 3);
 
         _ExecuteCommandBuffer();
     }
