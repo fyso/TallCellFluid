@@ -19,7 +19,7 @@ namespace GPUDPP
             ScanCache4 = new ComputeBuffer(Common.ThreadCount1D, sizeof(uint));
         }
 
-        ~GPUScanHillisPlan()
+        public void Release()
         {
             ScanCache1.Release();
             ScanCache2.Release();

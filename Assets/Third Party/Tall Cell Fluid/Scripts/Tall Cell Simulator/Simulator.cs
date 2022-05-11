@@ -28,6 +28,13 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
+    public void Release()
+    {
+        m_Grid.Release();
+        m_SimulatorGPUCache.Release();
+        m_DynamicParticle.Release();
+    }
+
     public void SetupParticleDataForReconstruction(ParticleData vParticleData)
     {
         vParticleData.PositionBuffer = m_DynamicParticle.MainParticle.Position;
@@ -108,7 +115,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 32);
+        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 2, 2, 32);
         Profiler.EndSample();
     }
 

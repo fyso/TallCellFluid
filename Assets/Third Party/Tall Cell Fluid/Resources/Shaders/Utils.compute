@@ -4,6 +4,8 @@
 #pragma kernel clearIntTexture2D
 #pragma kernel clearIntTexture3D
 #pragma kernel clearFloat3Texture2D
+#pragma kernel clearFloatTexture3D
+#pragma kernel clearFloatTexture2D
 
 Texture2D<float4> Source;
 RWTexture2D<float4> Destination;
@@ -42,4 +44,20 @@ float3 ClearFloat3Value;
 void clearFloat3Texture2D(uint3 id : SV_DispatchThreadID)
 {
     ClearFloat3Target3D_RW[id.xy] = ClearFloat3Value;
+}
+
+RWTexture3D<float> clearFloatTexture3D_RW;
+float clearFloatTexture3DValue;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void clearFloatTexture3D(uint3 id : SV_DispatchThreadID)
+{
+    clearFloatTexture3D_RW[id] = clearFloatTexture3DValue;
+}
+
+RWTexture2D<float> ClearFloatTarget2D_RW;
+float clearFloatTexture2DValue;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void clearFloatTexture2D(uint3 id : SV_DispatchThreadID)
+{
+    ClearFloatTarget2D_RW[id.xy] = clearFloatTexture2DValue;
 }

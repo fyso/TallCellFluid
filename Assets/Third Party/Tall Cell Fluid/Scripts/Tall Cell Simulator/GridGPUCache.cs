@@ -112,12 +112,9 @@ public class GridGPUCache
         };
 
         LastFrameVelocityCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
-        SmoothPressureCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
-        VectorBForFineLevel = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
-        ResidualForFineLevel = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
     }
 
-    ~GridGPUCache()
+    public void Release()
     {
         H1H2Cahce.Release();
         MaxMinCahce.Release();
@@ -135,6 +132,7 @@ public class GridGPUCache
         RegularCellVectorZCache.Release();
 
         LastFrameTallCellHeightCache.Release();
+        LastFrameVelocityCache.Release();
     }
 
     //Temp cache
@@ -155,8 +153,4 @@ public class GridGPUCache
 
     public RenderTexture LastFrameTallCellHeightCache;
     public GridValuePerLevel LastFrameVelocityCache;
-    public GridValuePerLevel SmoothPressureCache;
-
-    public GridValuePerLevel VectorBForFineLevel;
-    public GridValuePerLevel ResidualForFineLevel;
 }

@@ -90,4 +90,9 @@ public class Invoker : MonoBehaviour
             m_Simulator.VisualGrid(VisualGridInfo);
         }
     }
+
+    private void OnDestroy()
+    {
+        m_Simulator.Release();
+    }
 }

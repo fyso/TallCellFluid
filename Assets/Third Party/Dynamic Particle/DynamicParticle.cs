@@ -18,7 +18,7 @@ namespace DParticle
             m_Filter = new ComputeBuffer(vMaxCount, sizeof(uint));
         }
 
-        ~Particle()
+        public void Release()
         {
             m_Position.Release();
             m_Velocity.Release();
@@ -67,8 +67,6 @@ namespace DParticle
             m_MultiSplit = new GPUMultiSplit();
             m_MultiSplitPlan = new GPUMultiSplitPlan(vMaxCount, 32, 32);
 
-            m_SPHVisualMaterial = Resources.Load<Material>("DrawSPHParticle");
-
             GPUDynamicParticleToolCS = Resources.Load<ComputeShader>("GPUDynamicParticleTool");
             AddParticleBlockKernel = GPUDynamicParticleToolCS.FindKernel("addParticleBlock");
             UpdateParticleCountArgmentKernel = GPUDynamicParticleToolCS.FindKernel("updateParticleCountArgment");
@@ -77,9 +75,12 @@ namespace DParticle
             RearrangeParticleKernel = GPUDynamicParticleToolCS.FindKernel("rearrangeParticle");
         }
 
-        ~DynamicParticle()
+        public void Release()
         {
             m_Argument.Release();
+            m_MainParticle.Release();
+            m_ParticleCache.Release();
+            m_MultiSplitPlan.Release();
         }
 
         public void SetData(List<Vector3> vPosition, List<Vector3> vVelocity, List<int> vFilter, int vSize)
@@ -178,8 +179,6 @@ namespace DParticle
 
         private GPUMultiSplit m_MultiSplit;
         private GPUMultiSplitPlan m_MultiSplitPlan;
-
-        private Material m_SPHVisualMaterial;
 
         private ComputeShader GPUDynamicParticleToolCS;
         private int AddParticleBlockKernel;

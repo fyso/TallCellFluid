@@ -12,6 +12,8 @@ public class Utils
         clearIntTexture2D = UtilsCS.FindKernel("clearIntTexture2D");
         clearIntTexture3D = UtilsCS.FindKernel("clearIntTexture3D");
         clearFloat3Texture2D = UtilsCS.FindKernel("clearFloat3Texture2D");
+        clearFloatTexture3D = UtilsCS.FindKernel("clearFloatTexture3D");
+        clearFloatTexture2D = UtilsCS.FindKernel("clearFloatTexture2D");
     }
 
     public void CopyFloat4Texture2DToAnother(Texture2D vSource, RenderTexture vDestination)
@@ -68,10 +70,34 @@ public class Utils
         UtilsCS.Dispatch(clearFloat3Texture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
     }
 
+    public void ClearFloatTexture3D(RenderTexture vClearTarget, float vClearValue = 0.0f)
+    {
+        if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex3D)
+            Debug.LogError("need 3d texture but given a non 3d texture!");
+
+        UtilsCS.SetFloat("clearFloatTexture3DValue", vClearValue);
+
+        UtilsCS.SetTexture(clearFloatTexture3D, "clearFloatTexture3D_RW", vClearTarget);
+        UtilsCS.Dispatch(clearFloatTexture3D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vClearTarget.volumeDepth / Common.ThreadCount3D));
+    }
+
+    public void ClearFloatTexture2D(RenderTexture vClearTarget, float vClearValue = 0.0f)
+    {
+        if (vClearTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
+            Debug.LogError("need 2d texture but given a non 2d texture!");
+
+        UtilsCS.SetFloat("clearFloatTexture2DValue", vClearValue);
+
+        UtilsCS.SetTexture(clearFloatTexture2D, "ClearFloatTarget2D_RW", vClearTarget);
+        UtilsCS.Dispatch(clearFloatTexture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
+    }
+
     private ComputeShader UtilsCS;
     private int copyFloat4Texture2DToAnother;
     private int copyFloat4Texture3DToAnother;
     private int clearIntTexture2D;
     private int clearIntTexture3D;
     private int clearFloat3Texture2D;
+    private int clearFloatTexture3D;
+    private int clearFloatTexture2D;
 }

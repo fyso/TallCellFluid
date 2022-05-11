@@ -33,7 +33,7 @@ namespace GPUDPP
             m_DEBUG = new ComputeBuffer(vMaxElementCount * 2, sizeof(uint) * 3);
         }
 
-        ~GPUMultiSplitPlan()
+        public void Release()
         {
             m_WarpLevelHistogram.Release();
             m_WarpLevelHistogramOffset.Release();
@@ -41,6 +41,8 @@ namespace GPUDPP
             m_BackKey.Release();
             m_BackValue.Release();
             m_DEBUG.Release();
+
+            m_ScanCache.Release();
         }
 
         public void SwapBackAndFront(ref ComputeBuffer vioFrontKey, ref ComputeBuffer vioFrontValue)

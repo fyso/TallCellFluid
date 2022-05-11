@@ -42,12 +42,17 @@ public class SimulatorGPUCache
         };
     }
 
-    ~SimulatorGPUCache()
+    public void Release()
     {
+        m_GPUScanHillisCache.Release();
         m_HashCount.Release();
         m_HashOffset.Release();
         m_CellIndexCache.Release();
         m_InnerSortIndexCache.Release();
+        m_ParticleCache.Release();
+
+        m_WaterSurfaceMinInterlockedCahce.Release();
+        m_WaterSurfaceMaxInterlockedCahce.Release();
     }
 
     private GPUScanHillis m_GPUScan;
