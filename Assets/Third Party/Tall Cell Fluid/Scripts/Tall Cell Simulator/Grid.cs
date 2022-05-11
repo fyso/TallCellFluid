@@ -252,7 +252,7 @@ public class GridPerLevel
 
     public void Restrict(GridPerLevel vHigherLevelGrid)
     {
-        //TODO: Downsample residual
+        //TODO: Downsample residual to VectorB
     }
 
     public void ClearPressure()
@@ -264,7 +264,7 @@ public class GridPerLevel
 
     public void Prolong(GridPerLevel vLowerLevelGrid)
     {
-
+        //TODO: Upsample pressure
     }
 
     public void UpdateVelocity(float vTimeStep)
@@ -577,14 +577,14 @@ public class Grid
 
         m_GridData[0].ClearPressure();
 
-        //for (int c = 0; c < vFullCycleIterationCount; c++)
-        //    __FullCycle(vTimeStep, 0, vSmoothIterationCount);
+        for (int c = 0; c < vFullCycleIterationCount; c++)
+            __FullCycle(vTimeStep, 0, vSmoothIterationCount);
 
-        //for (int c = 0; c < vVCycleIterationCount; c++)
-        //    __VCycle(vTimeStep, 0, vSmoothIterationCount);
+        for (int c = 0; c < vVCycleIterationCount; c++)
+            __VCycle(vTimeStep, 0, vSmoothIterationCount);
 
-        for (int c = 0; c < vSmoothIterationCount; c++)
-            m_GridData[0].SmoothRBGS(vTimeStep);
+        //for (int c = 0; c < vSmoothIterationCount; c++)
+        //    m_GridData[0].SmoothRBGS(vTimeStep);
 
         m_GridData[0].UpdateVelocity(vTimeStep);
     }

@@ -115,7 +115,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 2, 2, 32);
+        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1, 2, 2);
         Profiler.EndSample();
     }
 
