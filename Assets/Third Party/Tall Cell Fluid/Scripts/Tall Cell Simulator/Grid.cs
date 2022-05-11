@@ -624,6 +624,7 @@ public class Grid
     private int updateVelocity_Regular;
     private int updateVelocity_Top;
     private int updateVelocity_Bottom;
+
     private void __InitSparseBlackRedGaussSeidelMultigridSolver()
     {
         m_SparseBlackRedGaussSeidelMultigridSolverCS = Resources.Load<ComputeShader>(Common.SparseBlackRedGaussSeidelMultigridSolverCSPath);
