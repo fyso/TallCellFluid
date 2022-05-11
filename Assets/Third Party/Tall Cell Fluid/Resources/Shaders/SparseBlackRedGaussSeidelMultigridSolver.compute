@@ -119,7 +119,7 @@ float computeVelocityDivergence(float3 CenterCellPosition, float3 CenterVelocity
         float AdjTallCellHeight = TallCellHeight_R[XZ];
         if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || Position.y < 0)
         {
-            AdjCellVelocity[c] = float3(0, 0, 0);
+            AdjCellVelocity[c] = CenterVelocity;
             continue;
         }
         else if (Position.y < AdjTerrianHeight)
@@ -250,7 +250,7 @@ float doMatrixFreePressureProject(float3 CenterCellPosition, float CenterPressur
     
         if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || Position.y < 0)
         {
-            AdjPressureSum += 0.0f;
+            AdjPressureSum += CenterPressure;
             CurrPressureFactor++;
         }
         else if (Position.y >= AdjTerrianHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight)
@@ -371,7 +371,7 @@ float computeResidual(float3 CenterCellPosition, float CenterPressure, float B)
     
         if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || Position.y < 0)
         {
-            AdjPressureSum += 0.0f;
+            AdjPressureSum += CenterPressure;
             CurrPressureFactor++;
         }
         else if (Position.y >= AdjTerrianHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight)
@@ -480,7 +480,7 @@ float samplePressure(float3 CenterCellPosition, float CenterPressure, float3 Off
     float AdjTallCellHeight = TallCellHeight_R[XZ];
     if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || Position.y < 0)
     {
-        ResultPressure = 0.0f;
+        ResultPressure = CenterPressure;
     }
     else if (Position.y < AdjTerrianHeight)
     {
