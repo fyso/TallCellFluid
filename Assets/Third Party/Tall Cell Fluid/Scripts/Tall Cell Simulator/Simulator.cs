@@ -39,6 +39,7 @@ public class Simulator
     {
         vParticleData.PositionBuffer = m_DynamicParticle.MainParticle.Position;
         vParticleData.ArgumentBuffer = m_DynamicParticle.Argument;
+        vParticleData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
     }
 
     public void VisualParticle(Material vMaterial)

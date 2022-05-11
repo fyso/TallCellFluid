@@ -5,7 +5,10 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Third Party/Tall Cell Fluid/Scenes/Main.unity
     guid: 05f135f1479641a48988d759825c593c
+  - enabled: 1
+    path: Assets/Third Party/Tall Cell Fluid/Scenes/TestReconstruction.unity
+    guid: c9cafa0a535ea3e49ba09aa592af44d8
   m_configObjects: {}

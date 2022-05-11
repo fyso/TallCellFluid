@@ -36,7 +36,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-        Show(m_FluidNormalRT);
+        Show(m_SceneColorRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
@@ -112,12 +112,13 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.name = "DrawParticles";
         m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
+        m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_RenderManager.m_ParticleData.AnisotropyBuffer);
         m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_RenderManager.m_ParticleData.PositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_RenderManager.m_FilterSetting.m_ParticlesRadius);
         m_CommandBuffer.DrawProceduralIndirect(
             Matrix4x4.identity,
-            m_DrawFluidParticlesMaterial, 0,
+            m_DrawFluidParticlesMaterial, 1,
             MeshTopology.Triangles, m_RenderManager.m_ParticleData.ArgumentBuffer, 12);
 
         _ExecuteCommandBuffer();

@@ -12,7 +12,7 @@ public class PostProcessingParticle
         m_ParticlePostProcessingToolsCS.SetFloats("Min", vMin.x, vMin.y, vMin.z);
         m_ParticlePostProcessingToolsCS.SetFloat("CellLength", vCellLength);
 
-        m_AnisotropyMatrixBuffer = new ComputeBuffer(vMaxParticleCount, sizeof(float) * 12);
+        m_AnisotropyBuffer = new ComputeBuffer(vMaxParticleCount, sizeof(float) * 12);
     }
 
     public void computeAnisotropyMatrix(ComputeBuffer vParticlePos)
@@ -21,13 +21,13 @@ public class PostProcessingParticle
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "HashCountBuffer", m_HashCountBuffer);
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "HashOffsetBuffer", m_HashOffsetBuffer);
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "ParticlePosBuffer", vParticlePos);
-        m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "AnisotropyMatrixBuffer", m_AnisotropyMatrixBuffer);
+        m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "AnisotropyBuffer", m_AnisotropyBuffer);
         m_ParticlePostProcessingToolsCS.DispatchIndirect(m_ComputeAnisotropyMatrixKernelIndex, m_ArgumentBuffer);
     }
 
     ~PostProcessingParticle()
     {
-        m_AnisotropyMatrixBuffer.Release();
+        m_AnisotropyBuffer.Release();
     }
 
     private ComputeShader m_ParticlePostProcessingToolsCS;
@@ -36,5 +36,5 @@ public class PostProcessingParticle
     private ComputeBuffer m_HashCountBuffer;
     private ComputeBuffer m_HashOffsetBuffer;
 
-    private ComputeBuffer m_AnisotropyMatrixBuffer;
+    public ComputeBuffer m_AnisotropyBuffer;
 }
