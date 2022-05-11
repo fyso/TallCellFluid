@@ -6,6 +6,10 @@
 #pragma kernel clearFloat3Texture2D
 #pragma kernel clearFloatTexture3D
 #pragma kernel clearFloatTexture2D
+#pragma kernel copyFloatTexture3D
+#pragma kernel copyFloatTexture2D
+#pragma kernel addFloatTexture3D
+#pragma kernel addFloatTexture2D
 
 Texture2D<float4> Source;
 RWTexture2D<float4> Destination;
@@ -60,4 +64,36 @@ float clearFloatTexture2DValue;
 void clearFloatTexture2D(uint3 id : SV_DispatchThreadID)
 {
     ClearFloatTarget2D_RW[id.xy] = clearFloatTexture2DValue;
+}
+
+Texture3D<float> copyFloatTexture3DSource_R;
+RWTexture3D<float> copyFloatTexture3DTarget_RW;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void copyFloatTexture3D(uint3 id : SV_DispatchThreadID)
+{
+    copyFloatTexture3DTarget_RW[id] = copyFloatTexture3DSource_R[id];
+}
+
+Texture2D<float> copyFloatTexture2DSource_R;
+RWTexture2D<float> copyFloatTexture2DTarget_RW;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void copyFloatTexture2D(uint3 id : SV_DispatchThreadID)
+{
+    copyFloatTexture2DTarget_RW[id.xy] = copyFloatTexture2DSource_R[id.xy];
+}
+
+Texture3D<float> addFloatTexture3DSource_R;
+RWTexture3D<float> addFloatTexture3DTarget_RW;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void addFloatTexture3D(uint3 id : SV_DispatchThreadID)
+{
+    copyFloatTexture3DTarget_RW[id] += copyFloatTexture3DSource_R[id];
+}
+
+Texture2D<float> addFloatTexture2DSource_R;
+RWTexture2D<float> addFloatTexture2DTarget_RW;
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void addFloatTexture2D(uint3 id : SV_DispatchThreadID)
+{
+    addFloatTexture2DTarget_RW[id.xy] += copyFloatTexture2DSource_R[id.xy];
 }

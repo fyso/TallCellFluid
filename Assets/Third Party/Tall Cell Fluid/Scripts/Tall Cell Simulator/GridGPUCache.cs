@@ -112,6 +112,8 @@ public class GridGPUCache
         };
 
         LastFrameVelocityCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
+
+        FullCyclePressureCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
     }
 
     public void Release()
@@ -133,6 +135,8 @@ public class GridGPUCache
 
         LastFrameTallCellHeightCache.Release();
         LastFrameVelocityCache.Release();
+
+        FullCyclePressureCache.Release();
     }
 
     //Temp cache
@@ -153,4 +157,5 @@ public class GridGPUCache
 
     public RenderTexture LastFrameTallCellHeightCache;
     public GridValuePerLevel LastFrameVelocityCache;
+    public GridValuePerLevel FullCyclePressureCache;
 }

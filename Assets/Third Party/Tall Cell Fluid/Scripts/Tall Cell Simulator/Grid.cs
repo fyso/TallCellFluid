@@ -252,7 +252,7 @@ public class GridPerLevel
 
     public void Restrict(GridPerLevel vHigherLevelGrid)
     {
-
+        //TODO: Downsample residual
     }
 
     public void ClearPressure()
@@ -576,6 +576,10 @@ public class Grid
         m_GridData[0].ComputeVectorB(vTimeStep);
 
         m_GridData[0].ClearPressure();
+
+        //for (int c = 0; c < vFullCycleIterationCount; c++)
+        //    __FullCycle(vTimeStep, 0, vSmoothIterationCount);
+
         //for (int c = 0; c < vVCycleIterationCount; c++)
         //    __VCycle(vTimeStep, 0, vSmoothIterationCount);
 
@@ -885,9 +889,28 @@ public class Grid
         }
     }
 
-    private void __FullCycle()
+    private void __FullCycle(float vTimeStep, int vCurrLevel, int vIterationCount)
     {
+        m_Utils.CopyFloatTexture3D(m_GridData[0].Pressure.RegularCellValue, m_GPUCache.FullCyclePressureCache.RegularCellValue);
+        m_Utils.CopyFloatTexture2D(m_GridData[0].Pressure.TallCellTopValue, m_GPUCache.FullCyclePressureCache.TallCellTopValue);
+        m_Utils.CopyFloatTexture2D(m_GridData[0].Pressure.TallCellBottomValue, m_GPUCache.FullCyclePressureCache.TallCellBottomValue);
 
+        m_GridData[0].Residual(vTimeStep);
+
+        for(int i = 1; i < m_HierarchicalLevel;i++)
+            m_GridData[i].Restrict(m_GridData[i - 1]);
+
+        m_GridData[m_HierarchicalLevel - 1].SmoothRBGS(vTimeStep);
+
+        for(int i = m_HierarchicalLevel - 2; i >= 0; i--)
+        {
+            m_GridData[i].Prolong(m_GridData[i + 1]);
+            __VCycle(vTimeStep, i, vIterationCount);
+        }
+
+        m_Utils.AddFloatTexture3D(m_GridData[0].Pressure.RegularCellValue, m_GPUCache.FullCyclePressureCache.RegularCellValue);
+        m_Utils.AddFloatTexture2D(m_GridData[0].Pressure.TallCellTopValue, m_GPUCache.FullCyclePressureCache.TallCellTopValue);
+        m_Utils.AddFloatTexture2D(m_GridData[0].Pressure.TallCellBottomValue, m_GPUCache.FullCyclePressureCache.TallCellBottomValue);
     }
 
     #endregion

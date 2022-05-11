@@ -14,6 +14,10 @@ public class Utils
         clearFloat3Texture2D = UtilsCS.FindKernel("clearFloat3Texture2D");
         clearFloatTexture3D = UtilsCS.FindKernel("clearFloatTexture3D");
         clearFloatTexture2D = UtilsCS.FindKernel("clearFloatTexture2D");
+        copyFloatTexture3D = UtilsCS.FindKernel("copyFloatTexture3D");
+        copyFloatTexture2D = UtilsCS.FindKernel("copyFloatTexture2D");
+        addFloatTexture3D = UtilsCS.FindKernel("addFloatTexture3D");
+        addFloatTexture2D = UtilsCS.FindKernel("addFloatTexture2D");
     }
 
     public void CopyFloat4Texture2DToAnother(Texture2D vSource, RenderTexture vDestination)
@@ -92,6 +96,58 @@ public class Utils
         UtilsCS.Dispatch(clearFloatTexture2D, Mathf.CeilToInt((float)vClearTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vClearTarget.height / Common.ThreadCount2D), 1);
     }
 
+    public void CopyFloatTexture3D(RenderTexture vSource, RenderTexture vTarget)
+    {
+        if (vSource.dimension != UnityEngine.Rendering.TextureDimension.Tex3D || vTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex3D)
+            Debug.LogError("need 3d texture but given a non 3d texture!");
+
+        if (vSource.width != vTarget.width || vSource.height != vTarget.height || vSource.volumeDepth != vTarget.volumeDepth)
+            Debug.LogError("input texture do not have the same size");
+
+        UtilsCS.SetTexture(copyFloatTexture3D, "copyFloatTexture3DSource_R", vSource);
+        UtilsCS.SetTexture(copyFloatTexture3D, "copyFloatTexture3DTarget_RW", vTarget);
+        UtilsCS.Dispatch(copyFloatTexture3D, Mathf.CeilToInt((float)vSource.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vSource.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vSource.volumeDepth / Common.ThreadCount3D));
+    }
+
+    public void CopyFloatTexture2D(RenderTexture vSource, RenderTexture vTarget)
+    {
+        if (vSource.dimension != UnityEngine.Rendering.TextureDimension.Tex2D || vTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
+            Debug.LogError("need 2d texture but given a non 2d texture!");
+
+        if (vSource.width != vTarget.width || vSource.height != vTarget.height)
+            Debug.LogError("input texture do not have the same size");
+
+        UtilsCS.SetTexture(copyFloatTexture2D, "copyFloatTexture2DSource_R", vSource);
+        UtilsCS.SetTexture(copyFloatTexture2D, "copyFloatTexture2DTarget_RW", vTarget);
+        UtilsCS.Dispatch(copyFloatTexture2D, Mathf.CeilToInt((float)vTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vTarget.height / Common.ThreadCount2D), 1);
+    }
+
+    public void AddFloatTexture3D(RenderTexture vSource, RenderTexture vTarget)
+    {
+        if (vSource.dimension != UnityEngine.Rendering.TextureDimension.Tex3D || vTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex3D)
+            Debug.LogError("need 3d texture but given a non 3d texture!");
+
+        if (vSource.width != vTarget.width || vSource.height != vTarget.height || vSource.volumeDepth != vTarget.volumeDepth)
+            Debug.LogError("input texture do not have the same size");
+
+        UtilsCS.SetTexture(addFloatTexture3D, "addFloatTexture3DSource_R", vSource);
+        UtilsCS.SetTexture(addFloatTexture3D, "addFloatTexture3DTarget_RW", vTarget);
+        UtilsCS.Dispatch(addFloatTexture3D, Mathf.CeilToInt((float)vSource.width / Common.ThreadCount3D), Mathf.CeilToInt((float)vSource.height / Common.ThreadCount3D), Mathf.CeilToInt((float)vSource.volumeDepth / Common.ThreadCount3D));
+    }
+
+    public void AddFloatTexture2D(RenderTexture vSource, RenderTexture vTarget)
+    {
+        if (vSource.dimension != UnityEngine.Rendering.TextureDimension.Tex2D || vTarget.dimension != UnityEngine.Rendering.TextureDimension.Tex2D)
+            Debug.LogError("need 2d texture but given a non 2d texture!");
+
+        if (vSource.width != vTarget.width || vSource.height != vTarget.height)
+            Debug.LogError("input texture do not have the same size");
+
+        UtilsCS.SetTexture(addFloatTexture2D, "addFloatTexture2DSource_R", vSource);
+        UtilsCS.SetTexture(addFloatTexture2D, "addFloatTexture2DTarget_RW", vTarget);
+        UtilsCS.Dispatch(addFloatTexture2D, Mathf.CeilToInt((float)vTarget.width / Common.ThreadCount2D), Mathf.CeilToInt((float)vTarget.height / Common.ThreadCount2D), 1);
+    }
+
     private ComputeShader UtilsCS;
     private int copyFloat4Texture2DToAnother;
     private int copyFloat4Texture3DToAnother;
@@ -100,4 +156,8 @@ public class Utils
     private int clearFloat3Texture2D;
     private int clearFloatTexture3D;
     private int clearFloatTexture2D;
+    private int copyFloatTexture3D;
+    private int copyFloatTexture2D;
+    private int addFloatTexture3D;
+    private int addFloatTexture2D;
 }
