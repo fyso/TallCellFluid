@@ -1,16 +1,45 @@
 #include "Common.hlsl"
 
 #pragma enable_d3d11_debug_symbols
-#pragma kernel extrapolationVelocity
+#pragma kernel extrapolationVelocityEnforce
+#pragma kernel reinitialization
+#pragma kernel advect
+#pragma kernel computeH1H2WithLevelSet
 
+RWTexture3D<float3> WaterSurface;
 RWTexture3D<float3> RegularCellVelocity;
 RWTexture3D<int> RegularCellMark;
 RWTexture3D<float> RegularCellSolidPercentage;
+
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
-void extrapolationVelocity(uint3 DispatchThreadID : SV_DispatchThreadID)
+void extrapolationVelocityEnforce(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     if(RegularCellMark[DispatchThreadID] == 0)
     {
         
     }
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void extrapolationVelocityHierarchy(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void reinitialization(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void advect(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void computeH1H2WithLevelSet(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    
 }

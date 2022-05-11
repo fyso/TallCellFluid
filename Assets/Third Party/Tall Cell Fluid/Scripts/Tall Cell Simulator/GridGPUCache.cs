@@ -114,6 +114,7 @@ public class GridGPUCache
         LastFrameVelocityCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.ARGBFloat);
         SmoothPressureCache = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
         VectorBForFineLevel = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
+        ResidualForFineLevel = new GridValuePerLevel(vResolutionXZ, vRegularCellYCount, RenderTextureFormat.RFloat);
     }
 
     ~GridGPUCache()
@@ -157,4 +158,5 @@ public class GridGPUCache
     public GridValuePerLevel SmoothPressureCache;
 
     public GridValuePerLevel VectorBForFineLevel;
+    public GridValuePerLevel ResidualForFineLevel;
 }
