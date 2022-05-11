@@ -19,6 +19,7 @@ public partial class CameraRenderer : MonoBehaviour
     Material m_DrawFluidParticlesMaterial = Resources.Load<Material>("Materials/DrawFluidParticles");
     Material m_FilterMaterial = Resources.Load<Material>("Materials/Filter");
     Material m_GenerateNoramalMaterial = Resources.Load<Material>("Materials/GenerateNoramal");
+    Material m_ToolsMaterial = Resources.Load<Material>("Materials/Tools");
 
     Matrix4x4 m_ViewMatrixHistory = Matrix4x4.identity;
     ComputeBuffer m_SurfaceGridBuffer;
@@ -44,8 +45,8 @@ public partial class CameraRenderer : MonoBehaviour
             GenerateFluidNoramal();
         }
         if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
-            Show(m_GridDebugRT); 
-        else Show(m_SceneColorRT);
+            Show(m_GridDebugRT);
+        else Show(m_SceneColorRT, m_SceneDepthRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
@@ -175,6 +176,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.DispatchCompute(m_PerspectiveGridReSamplingCS, surfaceGridKernel, Mathf.CeilToInt((float)clusterDimX / surfaceGridGroupX), Mathf.CeilToInt((float)clusterDimY / surfaceGridGroupY), 1);
         _ExecuteCommandBuffer();
     }
+
     void DrawParticles()
     {
         m_FluidDepthRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 32, RenderTextureFormat.Depth);
@@ -228,15 +230,22 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
         m_CommandBuffer.SetGlobalTexture("_SmoothFluidDepthRT", m_SmoothFluidDepthRT);
 
-        m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_GenerateNoramalMaterial, 0, MeshTopology.Triangles, 3);
+        m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_ToolsMaterial, 0, MeshTopology.Triangles, 3);
 
         _ExecuteCommandBuffer();
     }
 
-    void Show(RenderTexture outputRT)
+    void Show(RenderTexture outputRT, RenderTexture depthRT = null)
     {
         m_CommandBuffer.Blit(outputRT, m_Camera.targetTexture, Vector2.one, Vector2.zero);
-        m_Context.ExecuteCommandBuffer(m_CommandBuffer);
+
+        if (depthRT)
+        {
+            m_CommandBuffer.SetGlobalTexture("_SrcDepth", depthRT);
+            m_CommandBuffer.SetRenderTarget(0, m_Camera.targetTexture);
+            m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_ToolsMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        _ExecuteCommandBuffer();
     }
 
     void Clear()

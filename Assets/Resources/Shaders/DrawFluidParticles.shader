@@ -259,25 +259,6 @@
                 output.invQ2 = invq._m02_m12_m22_m32;
                 output.invQ3 = invq._m03_m13_m23_m33;
 
-                //switch (vertexID)
-                //{
-                //case 0:
-                //    output.positionCS = float4(xmin, ymin, 0.5, 1.0);
-                //    break;
-
-                //case 1:
-                //    output.positionCS = float4(xmin, ymax, 0.5, 1.0);
-                //    break;
-
-                //case 2:
-                //    output.positionCS = float4(xmax, ymax, 0.5, 1.0);
-                //    break;
-
-                //case 3:
-                //    output.positionCS = float4(xmax, ymin, 0.5, 1.0);
-                //    break;
-                //}
-
                 switch (vertexID % 6)
                 {
                 case 0:

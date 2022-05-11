@@ -210,7 +210,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 5c4a3f2a3b1e6314fbec0210d37ee345, type: 2}
+  sdfData: {fileID: 11400000, guid: 21ddd99beb67bc3408b1357031043003, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -394,7 +394,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &876869189
 Transform:
   m_ObjectHideFlags: 0
@@ -564,7 +564,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 849866c66cd0adc4d9a878e54745a719, type: 2}
+  sdfData: {fileID: 11400000, guid: 0abb0889bf6604848805d1ae7ababdaa, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75

@@ -34,7 +34,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
             {
                 uint mortonIndex = computeMorton3D(uint3(x, y, z));
                 uint count = HashCountBuffer[mortonIndex];
-                uint offset = mortonIndex == 0 ? 0 : HashOffsetBuffer[mortonIndex - 1];
+                uint offset = HashOffsetBuffer[mortonIndex];
 
                 for (uint k = offset; k < offset + count; k++)
                 {
@@ -63,7 +63,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
             {
                 uint mortonIndex = computeMorton3D(uint3(xx, yy, zz));
                 uint count = HashCountBuffer[mortonIndex];
-                uint offset = mortonIndex == 0 ? 0 : HashOffsetBuffer[mortonIndex - 1];
+                uint offset = HashOffsetBuffer[mortonIndex];
 
                 for (uint k = offset; k < offset + count; k++)
                 {
