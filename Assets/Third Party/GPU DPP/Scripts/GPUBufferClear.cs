@@ -12,7 +12,7 @@ namespace GPUDPP
             ClearUIntBufferWithZeroKernel = GPUBufferClearCS.FindKernel("clearUIntBufferWithZero");
         }
 
-        public void ClraeUIntBufferWithZero(ComputeBuffer voTarget)
+        public void ClearUIntBufferWithZero(ComputeBuffer voTarget)
         {
             GPUBufferClearCS.SetInt("BufferSize", voTarget.count);
             GPUBufferClearCS.SetBuffer(ClearUIntBufferWithZeroKernel, "TargetUIntBuffer_RW", voTarget);
