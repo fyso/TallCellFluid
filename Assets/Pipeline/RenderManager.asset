@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
   m_FilterSetting: {fileID: 11400000, guid: 2a12ad91724788646a94004ed9ec78ba, type: 2}
+  m_PerspectiveGridSetting: {fileID: 11400000, guid: e0aa751be2f640445935e4ae31c3f8c9, type: 2}

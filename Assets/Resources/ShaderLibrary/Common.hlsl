@@ -8,6 +8,36 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
+uint _PerspectiveGridDimX;
+uint _PerspectiveGridDimY;
+uint _PerspectiveGridDimZ;
+float _SampleRadioInv;
+float _NearPlane;
+
+int3 viewPos2Index3D(float3 viewPos)
+{
+    float parm1 = 0.5f * glstate_matrix_projection[1][1] / viewPos.z;
+    float aspectInv = _ScreenParams.y / _ScreenParams.x;
+    float ndcX = viewPos.x * parm1 * aspectInv + 0.5;
+    int   index_X = floor(ndcX * _PerspectiveGridDimX);
+    if (index_X < 0 && index_X > -3)
+        index_X = 0;
+    float ndcY = viewPos.y * parm1 + 0.5;
+    int   index_Y = floor(ndcY * _PerspectiveGridDimY);
+    if (index_Y < 0 && index_Y > -3)
+        index_Y = 0;
+    
+    float nearPlane = _NearPlane;
+    int   index_Z = floor(log(-viewPos.z / nearPlane) * _SampleRadioInv);
+
+    return int3(index_X, index_Y, index_Z);
+}
+
+uint tex3DIndex2Liner(uint3 tex3DIndex)
+{
+    return (tex3DIndex.z * _PerspectiveGridDimY + tex3DIndex.y) * _PerspectiveGridDimX + tex3DIndex.x;
+}
+
 //------———————-----深度转换为位置————————————————
 float3 GetPositionVSFromDepth(float2 texCoord, float depth, bool isDiscard = false)
 {

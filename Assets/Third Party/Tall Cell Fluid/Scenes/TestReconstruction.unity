@@ -328,7 +328,7 @@ MonoBehaviour:
   m_SeaLevel: 28
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
-  VisualParticle: 0
+  VisualParticle: 1
   ShowGridDebugInfo: 0
   VisualGridInfo:
     m_ShowMode: 0
