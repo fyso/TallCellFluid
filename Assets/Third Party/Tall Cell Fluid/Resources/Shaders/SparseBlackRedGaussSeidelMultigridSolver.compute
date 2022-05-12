@@ -281,7 +281,10 @@ float doMatrixFreePressureProject(float3 CenterCellPosition, float CenterPressur
     float AdjPressureSum = 0.0f;
     int CurrPressureFactor = 0;
     computeDataSum(CenterCellPosition, CenterPressure, AdjPressureSum, CurrPressureFactor);
-    return (B * pow(CellLength, 2.0f) * Density0 / TimeStep + AdjPressureSum) / (float) CurrPressureFactor;
+    if(CurrPressureFactor != 0)
+        return (B * pow(CellLength, 2.0f) * Density0 / TimeStep + AdjPressureSum) / (float) CurrPressureFactor;
+    else
+        return 0.0f;
 }
 
 float computeResidual(float3 CenterCellPosition, float CenterPressure, float B)

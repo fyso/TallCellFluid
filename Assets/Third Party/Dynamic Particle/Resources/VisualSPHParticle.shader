@@ -4,7 +4,7 @@ Shader "Custom/VisualParticle"
     {
         _ParticleRadius ("Radius", float) = 0.25
         _ParticleColor ("Color", Color) = (.25, .5, .5, 1)
-        [KeywordEnum(VELOCITY, PARTICLETYPE)] _visualDataType("Visual DataType", float) = 0
+        [KeywordEnum(VELOCITY, PARTICLETYPE, VELOCITYX,VELOCITYY, VELOCITYZ)] _visualDataType("Visual DataType", float) = 0
     }
 
     SubShader
@@ -20,7 +20,7 @@ Shader "Custom/VisualParticle"
             #pragma fragment SpriteGenerateDepthPassFrag
             #pragma enable_d3d11_debug_symbols
 
-            #pragma multi_compile_local __ _VISUALDATATYPE_VELOCITY _VISUALDATATYPE_PARTICLETYPE
+            #pragma multi_compile_local __ _VISUALDATATYPE_VELOCITY _VISUALDATATYPE_PARTICLETYPE _VISUALDATATYPE_VELOCITYX _VISUALDATATYPE_VELOCITYY _VISUALDATATYPE_VELOCITYZ
 
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
@@ -101,7 +101,18 @@ Shader "Custom/VisualParticle"
                 float3 Velocity = _particleVelocityBuffer[instanceID];
                 float ClampVel = clamp(length(Velocity), 0.0f, 20.0f) / 20.0f;
                 result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
-                //result.col = float4(Velocity, 1.0f);
+#elif _VISUALDATATYPE_VELOCITYX
+                float3 Velocity = _particleVelocityBuffer[instanceID];
+                float ClampVel = clamp(Velocity.x, 0.0f, 20.0f) / 20.0f;
+                result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
+#elif _VISUALDATATYPE_VELOCITYY
+                float3 Velocity = _particleVelocityBuffer[instanceID];
+                float ClampVel = clamp(Velocity.y, 0.0f, 20.0f) / 20.0f;
+                result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
+#elif _VISUALDATATYPE_VELOCITYZ
+                float3 Velocity = _particleVelocityBuffer[instanceID];
+                float ClampVel = clamp(Velocity.z, 0.0f, 20.0f) / 20.0f;
+                result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_PARTICLETYPE
                 uint filter = _particleFilterBuffer[instanceID];
                 if(filter == 0)
