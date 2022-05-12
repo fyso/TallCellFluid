@@ -10,7 +10,7 @@ struct Anisotropy
     float4 AniZ;
 };
 
-StructuredBuffer<int> IndirectArgmentBuffer;
+StructuredBuffer<uint> IndirectArgmentBuffer;
 StructuredBuffer<float3> ParticlePosBuffer;
 RWStructuredBuffer<Anisotropy> AnisotropyBuffer;
 
@@ -21,6 +21,20 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     if (i >= IndirectArgmentBuffer[4]) return;
     
     float3 currentPos = ParticlePosBuffer[i];
+    if (int(currentPos.y) % 2 < 1)
+    {
+        AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.5);
+        AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.5);
+        AnisotropyBuffer[i].AniZ = float4(0, 0, 1, 0.5);
+        return;
+    }
+    else
+    {
+        AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.25);
+        AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.25);
+        AnisotropyBuffer[i].AniZ = float4(0, 0, 1, 0.25);
+        return;
+    }
     
     int3 centerCellIndex = convertPos2CellIndex(currentPos);
     if (centerCellIndex.x < 0)
@@ -44,11 +58,12 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
                 for (uint k = offset; k < offset + count; k++)
                 {
                     neighbourPos = ParticlePosBuffer[k];
-                    float distance = length(currentPos - neighbourPos);
-                    //float3 distance = currentPos - neighbourPos;
+                    //float distance = length(currentPos - neighbourPos);
+                    float3 distance = currentPos - neighbourPos;
                     
                     float weight = 0;
-                    if (distance < CellLength)
+                    //if (distance < CellLength)
+                    if (currentPos.x * 100 % 100 < 50)
                     {
                         //float ratio = distance / CellLength;
                         //weight = 1 - ratio * ratio * ratio;
@@ -78,7 +93,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     //}
     
     //if (neighbourPos.x * 100 % 100 < 50)
-    if (neighbourNum < 10)
+    if (neighbourNum < 5)
     {
         AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.5);
         AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.5);

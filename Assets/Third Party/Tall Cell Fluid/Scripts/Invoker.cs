@@ -57,6 +57,7 @@ public class Invoker : MonoBehaviour
 
     private Simulator m_Simulator;
     public ParticleData m_ParticleData;
+    public Bounding m_Bounding;
 
     void Start()
     {
@@ -69,6 +70,7 @@ public class Invoker : MonoBehaviour
             m_SeaLevel, 
             m_MaxParticleCount
         );
+        m_Simulator.SetupBounding(m_Bounding);
         m_Simulator.GenerateRandomVelicty();
         m_Simulator.SetupParticleDataForReconstruction(m_ParticleData);
     }

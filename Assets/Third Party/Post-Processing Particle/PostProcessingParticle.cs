@@ -23,6 +23,9 @@ public class PostProcessingParticle
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "ParticlePosBuffer", vParticlePos);
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "AnisotropyBuffer", m_AnisotropyBuffer);
         m_ParticlePostProcessingToolsCS.DispatchIndirect(m_ComputeAnisotropyMatrixKernelIndex, m_ArgumentBuffer);
+
+        float[] data = new float[101289];
+        vParticlePos.GetData(data);
     }
 
     ~PostProcessingParticle()
