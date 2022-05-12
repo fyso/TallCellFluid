@@ -46,7 +46,7 @@ public partial class CameraRenderer : MonoBehaviour
         }
         if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
             Show(m_GridDebugRT);
-        else Show(m_SceneColorRT, m_SceneDepthRT);
+        else Show(m_FluidNormalRT, m_SceneDepthRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
