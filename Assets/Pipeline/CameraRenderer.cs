@@ -164,7 +164,7 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_CommandBuffer.DispatchCompute(m_PerspectiveGridReSamplingCS, clearParticleCountOfGridKernel, Mathf.CeilToInt((float)gridCount / clearParticleCountOfGridGroupX), 1, 1);
 
-        m_CommandBuffer.SetComputeBufferParam(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, "_ParticlePositionBuffer", m_RenderManager.m_ParticleData.PositionBuffer);
+        m_CommandBuffer.SetComputeBufferParam(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, "_ParticlePositionBuffer", m_RenderManager.m_ParticleData.NarrowPositionBuffer);
         m_CommandBuffer.SetComputeBufferParam(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, "ParticleIndirectArgment_R", m_RenderManager.m_ParticleData.ArgumentBuffer);
         m_CommandBuffer.DispatchCompute(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, m_RenderManager.m_ParticleData.ArgumentBuffer, 0);
 
@@ -195,15 +195,13 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
         m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_RenderManager.m_ParticleData.AnisotropyBuffer);
-        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_RenderManager.m_ParticleData.PositionBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_RenderManager.m_ParticleData.NarrowPositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_RenderManager.m_FilterSetting.m_ParticlesRadius);
         m_CommandBuffer.DrawProceduralIndirect(
             Matrix4x4.identity,
             m_DrawFluidParticlesMaterial, 1,
             MeshTopology.Triangles, m_RenderManager.m_ParticleData.ArgumentBuffer, 12);
-        float[] data = new float[101289];
-        m_RenderManager.m_ParticleData.PositionBuffer.GetData(data);
         _ExecuteCommandBuffer();
     }
 

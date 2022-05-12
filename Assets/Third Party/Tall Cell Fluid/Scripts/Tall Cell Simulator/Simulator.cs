@@ -43,8 +43,8 @@ public class Simulator
 
     public void SetupParticleDataForReconstruction(ParticleData vParticleData)
     {
-        vParticleData.PositionBuffer = m_DynamicParticle.MainParticle.Position;
         vParticleData.ArgumentBuffer = m_DynamicParticle.Argument;
+        vParticleData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
         vParticleData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
     }
 

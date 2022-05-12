@@ -206,12 +206,10 @@
                 nointerpolation float4 invQ1 : TEXCOORD2;
                 nointerpolation float4 invQ2 : TEXCOORD3;
                 nointerpolation float4 invQ3 : TEXCOORD4;
-                nointerpolation uint particleID : VAR_PARTICLE_ID;
             };
             Varyings GenerateDepthPassVertex(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
                 Varyings output;
-                output.particleID = instanceID;
                 Anisotropy particleAnisotropy = _AnisotropyBuffer[instanceID];
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
 
@@ -294,7 +292,6 @@
 
             float SpriteGenerateDepthPassFrag(Varyings input) : SV_Depth
             {
-                uint id = input.particleID;
                 // transform from view space to parameter space
                 //column_major
                 float4x4 invQuadric;
@@ -330,7 +327,7 @@
                 float sceneDepth = _SceneDepth.Sample(_point_clamp_sampler, GetUVFromCS(ndcPos)).x;
                 if (ndcPos.z < sceneDepth) discard;
 
-                return ndcPos.z + id - id;
+                return ndcPos.z;
             }
 
             ENDHLSL
