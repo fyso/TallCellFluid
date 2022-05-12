@@ -29,6 +29,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     float weightSum = 0;
     float3 centerPos = float3(0, 0, 0);
     uint neighbourNum = 0;
+
     for (uint x = max(centerCellIndex.x - 1, 0); x <= centerCellIndex.x + 1; x++)
     {
         for (uint y = max(centerCellIndex.y - 1, 0); y <= centerCellIndex.y + 1; y++)
@@ -38,45 +39,45 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
                 uint mortonIndex = computeMorton3D(uint3(x, y, z));
                 uint count = HashCountBuffer[mortonIndex];
                 uint offset = HashOffsetBuffer[mortonIndex];
-                
+                float dis = 0;
                 for (uint k = offset; k < offset + count; k++)
                 {
                     float3 neighbourPos = ParticlePosBuffer[k];
+                    dis += length(currentPos - neighbourPos);
                     
-                    //if ((neighbourPos.x * 100) % 100 < 50)
-                    //{
-                    //    AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.5);
-                    //    AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.5);
-                    //    AnisotropyBuffer[i].AniZ = float4(0, 0, 1, 0.5);
-                    //    return;
-                    //}
-                    //else
-                    //{
-                    //    AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.25);
-                    //    AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.25);
-                    //    AnisotropyBuffer[i].AniZ = float4(0, 0, 1, 0.25);
-                    //    return;
-                    //}
+
                     
-                    
-                    float dis = length(currentPos - neighbourPos);
                     //float weight = 0;
-                    if (dis < CellLength)
-                    {
+                    //if (dis < CellLength)
+                    //{
                     //    float ratio = distance / CellLength;
                     //    weight = 1 - ratio * ratio * ratio;
                     //    centerPos += weight * neighbourPos;
                     //    weightSum += weight;
-                        neighbourNum++;
-                    }
+                        //neighbourNum++;
+                    //}
                 }
                 
+                if (dis < CellLength * 5)
+                {
+                    AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.5);
+                    AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.5);
+                    AnisotropyBuffer[i].AniZ = float4(0, 0, 1, 0.5);
+                    return;
+                }
+                else
+                {
+                    AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.25);
+                    AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.25);
+                    AnisotropyBuffer[i].AniZ = float4(0, 0, 1, 0.25);
+                    return;
+                }
 
             }
         }
     }
     
-    if (neighbourNum < 20)
+    if (neighbourNum < 10)
     {
         AnisotropyBuffer[i].AniX = float4(1, 0, 0, 0.5);
         AnisotropyBuffer[i].AniY = float4(0, 1, 0, 0.5);
