@@ -62,10 +62,10 @@ uint computeMorton2D(uint2 vCellIndex3D)
     return ((expandBits3D(vCellIndex3D.y) << 1) + expandBits3D(vCellIndex3D.x)) % 218357;
 }
 
-float3 sampleTallCellValue(Texture2D<float3> vTopCellVelocity, Texture2D<float3> vBottomCellVelocity, float vCenterTerrianHeight, float vCenterTallCellHeight, int2 vXZ, float vY)
+float3 sampleTallCellValue(Texture2D<float3> vTopCell, Texture2D<float3> vBottomCell, float vCenterTerrianHeight, float vCenterTallCellHeight, int2 vXZ, float vY)
 {
-    float3 TopValue = vTopCellVelocity[vXZ];
-    float3 BottomValue = vBottomCellVelocity[vXZ];
+    float3 TopValue = vTopCell[vXZ];
+    float3 BottomValue = vBottomCell[vXZ];
         
     float3 a = (TopValue - BottomValue) / vCenterTallCellHeight;
     float3 b = BottomValue - a * (vCenterTerrianHeight + 0.5 * CellLength);
@@ -73,10 +73,10 @@ float3 sampleTallCellValue(Texture2D<float3> vTopCellVelocity, Texture2D<float3>
     return a * vY + b;
 }
 
-float sampleTallCellValue(Texture2D<float> vTopCellVelocity, Texture2D<float> vBottomCellVelocity, float vCenterTerrianHeight, float vCenterTallCellHeight, int2 vXZ, float vY)
+float sampleTallCellValue(Texture2D<float> vTopCell, Texture2D<float> vBottomCell, float vCenterTerrianHeight, float vCenterTallCellHeight, int2 vXZ, float vY)
 {
-    float TopValue = vTopCellVelocity[vXZ];
-    float BottomValue = vBottomCellVelocity[vXZ];
+    float TopValue = vTopCell[vXZ];
+    float BottomValue = vBottomCell[vXZ];
         
     float a = (TopValue - BottomValue) / vCenterTallCellHeight;
     float b = BottomValue - a * (vCenterTerrianHeight + 0.5 * CellLength);

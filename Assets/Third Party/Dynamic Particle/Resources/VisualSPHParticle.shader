@@ -103,15 +103,15 @@ Shader "Custom/VisualParticle"
                 result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_VELOCITYX
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(Velocity.x, 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(abs(Velocity.x), 0.0f, 20.0f) / 20.0f;
                 result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_VELOCITYY
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(Velocity.y, 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(abs(Velocity.y), 0.0f, 20.0f) / 20.0f;
                 result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_VELOCITYZ
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(Velocity.z, 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(abs(Velocity.z), 0.0f, 20.0f) / 20.0f;
                 result.col = ClampVel * float4(1.0f, 1.0f, 1.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_PARTICLETYPE
                 uint filter = _particleFilterBuffer[instanceID];

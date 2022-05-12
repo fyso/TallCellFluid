@@ -649,7 +649,7 @@ public class Grid
 
     public void InitMesh(Texture vTerrian, float vSeaLevel)
     {
-        __ComputeTerrianHeight(vTerrian, 80.0f);
+        __ComputeTerrianHeight(vTerrian, 40.0f);
         __ComputeH1H2WithSeaLevel(vSeaLevel);
         __ComputeTallCellHeightFromH1H2();
         __DownSampleHeight();

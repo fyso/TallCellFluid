@@ -70,8 +70,8 @@ public class Simulator
         {
             for (int y = 0; y < Top.height; y++)
             {
-                Color TopVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
-                Color BottomVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+                Color TopVelocity = new Color(0.0f, -4.0f, 1.0f);
+                Color BottomVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
                 //Color TopVelocity = new Color(x / (float)Top.width * 10.0f, 0.0f, 0.0f, 1.0f);
                 //Color BottomVelocity = new Color(x / (float)Top.width * 10.0f, 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
@@ -90,7 +90,7 @@ public class Simulator
             {
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
-                    Color RegularVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+                    Color RegularVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
                     //Color RegularVelocity = new Color(x / (float)Top.width * 10.0f, 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
@@ -115,7 +115,8 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1, 2, 2);
+        for(int i = 0; i < 3; i++)
+            m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1, 2, 1);
         Profiler.EndSample();
     }
 
@@ -142,9 +143,9 @@ public class Simulator
         m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
-        //Profiler.BeginSample("Advect");
-        //m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
-        //Profiler.EndSample();
+        Profiler.BeginSample("Advect");
+        m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
+        Profiler.EndSample();
 
         Profiler.BeginSample("MarkParticleWtihCellType");
         m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_Grid.FineGrid);
