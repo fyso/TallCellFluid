@@ -76,11 +76,23 @@ Shader "Custom/VisualParticle"
                         break;
 
                     case 1:
-                        result.uv = float2(-1, 3);
+                        result.uv = float2(-1, 1);
                         break;
 
                     case 2:
-                        result.uv = float2(3, -1);
+                        result.uv = float2(1, -1);
+                        break;
+
+                    case 3:
+                        result.uv = float2(1, -1);
+                        break;
+
+                    case 4:
+                        result.uv = float2(-1, 1);
+                        break;
+
+                    case 5:
+                        result.uv = float2(1, 1);
                         break;
                     }
                 result.positionCS = TransformWViewToHClip(sphereCenter + float3(_ParticleRadius * result.uv, 0.0f));

@@ -52,7 +52,7 @@ namespace DParticle
             m_Argument = new ComputeBuffer(29, sizeof(uint), ComputeBufferType.IndirectArguments);
             uint[] InitArgument = new uint[29] {
                 1, 1, 1, //total particle dispatch indirect arguments
-                3, 0, 0, 0, //total particle draw indirect arguments
+                6, 0, 0, 0, //total particle draw indirect arguments
                 0, 0, 0, 0,  //different filter type particle split point ( max type count: 4 )
                 0, //delete particle split point
                 0, 0, 0, 0,  //different filter type particle count ( max type count: 4 )
@@ -89,7 +89,7 @@ namespace DParticle
             m_MainParticle.Filter.SetData(vFilter.ToArray(), 0, 0, vSize);
             uint[] InitArgument = new uint[29] { 
                 (uint)Mathf.CeilToInt(vSize / Common.ThreadCount1D), 1, 1,  //total particle dispatch indirect arguments
-                3, (uint)vSize, 0, 0, //total particle draw indirect arguments
+                6, (uint)vSize, 0, 0, //total particle draw indirect arguments
                 0, 0, 0, 0,  //different filter type particle split point ( max type count: 4 )
                 0, //delete particle split point
                 0, 0, 0, 0,  //different filter type particle count ( max type count: 4 )

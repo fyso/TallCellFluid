@@ -5,4 +5,5 @@ public class ParticleData : ScriptableObject
 {
     public ComputeBuffer ArgumentBuffer;
     public ComputeBuffer PositionBuffer;
+    public ComputeBuffer AnisotropyBuffer;
 }

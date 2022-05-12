@@ -15,7 +15,7 @@ public class ParticleSortTools
 
     public void SortParticleHashFull(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength)
     {
-        m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);
+        m_GPUBufferClear.ClearUIntBufferWithZero(vCache.HashCount);
         GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
         GPUCountingSortHashCS.SetFloat("HashGridCellLength", vCellLength);
         GPUCountingSortHashCS.SetInt("TargetParticleType", -1);
@@ -38,7 +38,7 @@ public class ParticleSortTools
 
     public void SortParticleHashTallCell(DynamicParticle voTarget, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength, int vTargetParticleType)
     {
-        m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);
+        m_GPUBufferClear.ClearUIntBufferWithZero(vCache.HashCount);
         GPUCountingSortHashCS.EnableKeyword("HashTallCell");
 
         GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
@@ -68,7 +68,7 @@ public class ParticleSortTools
 
     public void SortParticleHashRegular(DynamicParticle voTarget, Grid vGrid, SimulatorGPUCache vCache, Vector3 vMin, float vCellLength, int vTargetParticleType)
     {
-        m_GPUBufferClear.ClraeUIntBufferWithZero(vCache.HashCount);
+        m_GPUBufferClear.ClearUIntBufferWithZero(vCache.HashCount);
         GPUCountingSortHashCS.EnableKeyword("HashRegularCell");
 
         GPUCountingSortHashCS.SetFloats("HashGridMin", vMin.x, vMin.y, vMin.z);
