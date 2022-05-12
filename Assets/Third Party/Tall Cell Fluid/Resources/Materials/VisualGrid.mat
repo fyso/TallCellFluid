@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: VisualGrid
   m_Shader: {fileID: 4800000, guid: a49e6d1f38e01ba40bbc3ac68ab8bd32, type: 3}
-  m_ShaderKeywords: _TYPE__DRAW_REGULAR
+  m_ShaderKeywords: _SHOW_MASK _TYPE__DRAW_REGULAR
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
