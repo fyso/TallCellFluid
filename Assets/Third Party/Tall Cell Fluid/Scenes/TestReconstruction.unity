@@ -341,7 +341,7 @@ MonoBehaviour:
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 1
-    m_UseSpecifiedShowRange: 1
+    m_UseSpecifiedShowRange: 0
     m_MinX: 0
     m_MaxX: 100
     m_MinZ: 0

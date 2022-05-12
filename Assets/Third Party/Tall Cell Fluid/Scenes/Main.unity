@@ -152,13 +152,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 87215725}
-  m_LocalRotation: {x: -0.082296796, y: -0.06930596, z: -0.8763977, w: -0.4694157}
-  m_LocalPosition: {x: 28.3, y: 45.3, z: 17.708687}
+  m_LocalRotation: {x: 0.008802043, y: 0.008649743, z: 0.008649744, w: 0.99988645}
+  m_LocalPosition: {x: 21, y: 46.2, z: 11.4}
   m_LocalScale: {x: 20, y: 20, z: 20}
   m_Children: []
-  m_Father: {fileID: 1649837247}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 876869189}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 1, y: 1, z: 1}
 --- !u!54 &87215727
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -201,8 +201,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: -0.010026932, y: -0.011894226, z: 0.012937546}
-    m_Extent: {x: 10.641449, y: 10.636544, z: 10.615635}
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 10.663474, y: 10.663418, z: 10.663418}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers:
@@ -210,7 +210,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 360540cc73a4e224fa403a6828a81091, type: 2}
+  sdfData: {fileID: 11400000, guid: 21ddd99beb67bc3408b1357031043003, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -218,7 +218,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 0
+  bakerName: 1
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!135 &87215730
@@ -314,7 +314,7 @@ Transform:
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_Children: []
   m_Father: {fileID: 876869189}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: -22.269}
 --- !u!64 &803667929
 MeshCollider:
@@ -389,7 +389,7 @@ GameObject:
   m_Component:
   - component: {fileID: 876869189}
   m_Layer: 0
-  m_Name: Scene
+  m_Name: GameObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -407,8 +407,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 2133507893}
+  - {fileID: 87215726}
   - {fileID: 803667928}
-  - {fileID: 1649837247}
+  - {fileID: 1035981716}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -538,8 +539,8 @@ Transform:
   m_LocalPosition: {x: 33.5, y: 48.3, z: 31.225868}
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_Children: []
-  m_Father: {fileID: 1649837247}
-  m_RootOrder: 1
+  m_Father: {fileID: 876869189}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1035981717
 MonoBehaviour:
@@ -559,11 +560,12 @@ MonoBehaviour:
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers:
-  - {fileID: 1035981721}
+  - {fileID: 87215731}
+  - {fileID: 803667930}
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 876c57bffa9b86648a0e711ae48cac25, type: 2}
+  sdfData: {fileID: 11400000, guid: 0abb0889bf6604848805d1ae7ababdaa, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -571,7 +573,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 0
+  bakerName: 1
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!114 &1035981718
@@ -623,7 +625,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1035981715}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -796,15 +798,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de90f2c2c37e412478ff0bfc6124c041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Terrian: {fileID: 2800000, guid: eba385daf04210745b47ff0510b6fe6d, type: 3}
-  m_Min: {x: 0, y: 0, z: 0.14}
+  m_Terrian: {fileID: 2800000, guid: 7fdf947f02f27a84a8a279f022b0dc3f, type: 3}
+  m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
-  m_SeaLevel: 54
+  m_SeaLevel: 32
   m_MaxParticleCount: 2000000
-  m_TimeStep: 0.033
-  VisualParticle: 1
+  m_TimeStep: 0.005
+  VisualParticle: 0
   ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 0
@@ -814,8 +816,8 @@ MonoBehaviour:
     MaxShowValue: 50
     MaxShowColor: {r: 1, g: 1, b: 1, a: 0}
     m_GridLevel: 0
-    m_ShowRegularCell: 0
-    m_ShowTallCell: 0
+    m_ShowRegularCell: 1
+    m_ShowTallCell: 1
     m_ShowTerrainCell: 1
     m_UseSpecifiedShowRange: 0
     m_MinX: 0
@@ -850,38 +852,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7f9d279411323048bde7be674927407, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1649837246
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1649837247}
-  m_Layer: 0
-  m_Name: Collider
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &1649837247
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1649837246}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children:
-  - {fileID: 87215726}
-  - {fileID: 1035981716}
-  m_Father: {fileID: 876869189}
-  m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2133507892
 GameObject:
   m_ObjectHideFlags: 0

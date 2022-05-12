@@ -740,7 +740,7 @@ public class Grid
     {
         for (int i = 0; i < m_HierarchicalLevel - 1; i++)
         {
-            if (i < 4) m_DownsampleCS.SetInt("SaveMoreAir", 1);
+            if (i < 2) m_DownsampleCS.SetInt("SaveMoreAir", 1);
             else m_DownsampleCS.SetInt("SaveMoreAir", 0);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTerrainHeight", m_GridData[i + 1].TerrainHeight);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCellHeight", m_GridData[i + 1].TallCellHeight);
