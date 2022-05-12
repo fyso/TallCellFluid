@@ -42,50 +42,6 @@ RWTexture2D<float3> BottomCellVelocity_RW;
 StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 
-static int2 OffsetVector2D[3 * 3] =
-{
-    { -1, 0 },
-    { 1, 0 },
-    { 0, -1 },
-    { 0, 1 },
-    { 1, 1 },
-    { -1, -1 },
-    { -1, 1 },
-    { 1, -1 },
-    { 0, 0 }
-};
-
-static int3 OffsetVector3D[3 * 3 * 3] =
-{
-    { -1, 0, 0 },
-    { 1, 0, 0 },
-    { 0, -1, 0 },
-    { 0, 1, 0 },
-    { 1, 1, 0 },
-    { -1, -1, 0 },
-    { -1, 1, 0 },
-    { 1, -1, 0 },
-    { 0, 0, 0 },
-    { -1, 0, 1 },
-    { 1, 0, 1 },
-    { 0, -1, 1 },
-    { 0, 1, 1 },
-    { 1, 1, 1 },
-    { -1, -1, 1 },
-    { -1, 1, 1 },
-    { 1, -1, 1 },
-    { 0, 0, 1 },
-    { -1, 0, -1 },
-    { 1, 0, -1 },
-    { 0, -1, -1 },
-    { 0, 1, -1 },
-    { 1, 1, -1 },
-    { -1, -1, -1 },
-    { -1, 1, -1 },
-    { 1, -1, -1 },
-    { 0, 0, -1 }
-};
-
 [numthreads(THREAD_COUNT_1D, 1, 1)]
 void advect(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {

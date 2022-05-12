@@ -11,8 +11,12 @@
 #pragma kernel residual_Regular
 #pragma kernel residual_Top
 #pragma kernel residual_Bottom
-#pragma kernel restrict
-#pragma kernel prolong
+#pragma kernel restrict_Regular
+#pragma kernel restrict_Top
+#pragma kernel restrict_Bottom
+#pragma kernel prolong_Regular
+#pragma kernel prolong_Top
+#pragma kernel prolong_Bottom
 #pragma kernel updateVelocity_Regular
 #pragma kernel updateVelocity_Top
 #pragma kernel updateVelocity_Bottom
@@ -457,16 +461,186 @@ void residual_Bottom(uint3 DispatchThreadID : SV_DispatchThreadID)
     Residual_Bottom_RW[DispatchThreadID.xy] = computeResidual(CenterCellPosition, CenterPressure, CurrB);
 }
 
-[numthreads(THREAD_COUNT_1D, 1, 1)]
-void restrict(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+Texture3D<float> Higher_Residual_Regular_R;
+Texture2D<float> Higher_Residual_Top_R;
+Texture2D<float> Higher_Residual_Bottom_R;
+
+Texture2D<float> Higher_TerrianHeight_R;
+Texture2D<float> Higher_TallCellHeight_R;
+
+float Higher_CellLength;
+uint2 Higher_XZResolution;
+uint Higher_ConstantCellNum;
+
+float sampleHigherResidual(float3 vCenterPosition)
 {
+    float WeightSum = 0.0f;
+    float WeightResidualSum = 0.0f;
+    for (int i = 0; i < 27; i++)
+    {
+        float3 AdjPointPosition = vCenterPosition + OffsetVector3D[i] * Higher_CellLength;
+        float Weight = CubicKernel(length(AdjPointPosition - vCenterPosition) / Higher_CellLength);
+        int2 AdjXZ = AdjPointPosition.xz / Higher_CellLength;
+        if (any(AdjXZ < 0) || any(AdjXZ >= Higher_XZResolution))
+            continue;
+        
+        float AdjTerrianHeight = Higher_TerrianHeight_R[AdjXZ];
+        float AdjTallCellHeight = Higher_TallCellHeight_R[AdjXZ];
+        if (AdjPointPosition.y >= AdjTerrianHeight + AdjTallCellHeight && AdjPointPosition.y < AdjTerrianHeight + AdjTallCellHeight + Higher_ConstantCellNum * Higher_CellLength)
+        {
+            uint YIndex = (AdjPointPosition.y - AdjTerrianHeight - AdjTallCellHeight) / Higher_CellLength;
+            WeightResidualSum += Weight * Higher_Residual_Regular_R[uint3(AdjXZ.x, YIndex, AdjXZ.y)];
+            WeightSum += Weight;
+        }
+        else if (AdjPointPosition.y >= AdjTerrianHeight && AdjPointPosition.y < AdjTerrianHeight + AdjTallCellHeight)
+        {
+            if (abs(AdjPointPosition.y - (AdjTerrianHeight + 0.5f * Higher_CellLength)) < EPSILON)
+            {
+                WeightResidualSum += Weight * Higher_Residual_Bottom_R[AdjXZ];
+                WeightSum += Weight;
+            }
+            else if (abs(AdjPointPosition.y - (AdjTallCellHeight - 0.5f * Higher_CellLength)) < EPSILON)
+            {
+                WeightResidualSum += Weight * Higher_Residual_Top_R[AdjXZ];
+                WeightSum += Weight;
+            }
+        }
+    }
     
+    if (abs(WeightSum - 0.0f) < EPSILON)
+        return 0.0f;
+    return WeightResidualSum / (WeightSum + EPSILON);
 }
 
-[numthreads(THREAD_COUNT_1D, 1, 1)]
-void prolong(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void restrict_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum || RegularCellMark_R[DispatchThreadID] != 1)
+        return;
     
+    if (RegularCellRigidBodyPercentage_R[DispatchThreadID] > 0.9f)
+        return;
+    float3 CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID);
+    VectorB_Regular_RW[DispatchThreadID] = sampleHigherResidual(CenterCellPosition);
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void restrict_Top(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy >= XZResolution))
+        return;
+    
+    if (TopCellRigidBodyPercentage_R[DispatchThreadID.xy] > 0.9f)
+        return;
+    
+    float3 CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
+    VectorB_Top_RW[DispatchThreadID.xy] = sampleHigherResidual(CenterCellPosition);
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void restrict_Bottom(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy >= XZResolution))
+        return;
+    
+    if (BottomRigidBodyPercentage_R[DispatchThreadID.xy] > 0.9f)
+        return;
+    
+    float3 CenterCellPosition = getBottomCellCenterPosition(DispatchThreadID);
+    VectorB_Bottom_RW[DispatchThreadID.xy] = sampleHigherResidual(CenterCellPosition);
+}
+
+Texture3D<float> Lower_Pressure_Regular_R;
+Texture2D<float> Lower_Pressure_Top_R;
+Texture2D<float> Lower_Pressure_Bottom_R;
+
+Texture2D<float> Lower_TerrianHeight_R;
+Texture2D<float> Lower_TallCellHeight_R;
+
+float Lower_CellLength;
+uint2 Lower_XZResolution;
+uint Lower_ConstantCellNum;
+
+float sampleLowerPressure(float3 vCenterPosition)
+{
+    float WeightSum = 0.0f;
+    float WeightPressureSum = 0.0f;
+    for (int i = 0; i < 27; i++)
+    {
+        float3 AdjPointPosition = vCenterPosition + OffsetVector3D[i] * Lower_CellLength;
+        float Weight = CubicKernel(length(AdjPointPosition - vCenterPosition) / Lower_CellLength);
+        int2 AdjXZ = AdjPointPosition.xz / Lower_CellLength;
+        if (any(AdjXZ < 0) || any(AdjXZ >= Lower_XZResolution))
+            continue;
+        
+        float AdjTerrianHeight = Lower_TerrianHeight_R[AdjXZ];
+        float AdjTallCellHeight = Lower_TallCellHeight_R[AdjXZ];
+        if (AdjPointPosition.y >= AdjTerrianHeight + AdjTallCellHeight && AdjPointPosition.y < AdjTerrianHeight + AdjTallCellHeight + Lower_ConstantCellNum * Lower_CellLength)
+        {
+            uint YIndex = (AdjPointPosition.y - AdjTerrianHeight - AdjTallCellHeight) / Lower_CellLength;
+            WeightPressureSum += Weight * Lower_Pressure_Regular_R[uint3(AdjXZ.x, YIndex, AdjXZ.y)];
+            WeightSum += Weight;
+        }
+        else if (AdjPointPosition.y >= AdjTerrianHeight && AdjPointPosition.y < AdjTerrianHeight + AdjTallCellHeight)
+        {
+            float Pressure = sampleTallCellValue(Lower_Pressure_Top_R, Lower_Pressure_Bottom_R, AdjTerrianHeight, AdjTallCellHeight, AdjXZ, AdjPointPosition.y);
+            WeightPressureSum += Weight * Pressure;
+            WeightSum += Weight;
+        }
+    }
+    
+    if (abs(WeightSum - 0.0f) < EPSILON)
+        return 0.0f;
+    return WeightPressureSum / (WeightSum + EPSILON);
+}
+
+bool ShouldOverWrite;
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void prolong_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum || RegularCellMark_R[DispatchThreadID] != 1)
+        return;
+    
+    if (RegularCellRigidBodyPercentage_R[DispatchThreadID] > 0.9f)
+        return;
+    
+    float3 CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID);
+    if (ShouldOverWrite)
+        RegularCellPressure_RW[DispatchThreadID] = sampleLowerPressure(CenterCellPosition);
+    else
+        RegularCellPressure_RW[DispatchThreadID] += sampleLowerPressure(CenterCellPosition);
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void prolong_Top(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy >= XZResolution))
+        return;
+    
+    if (TopCellRigidBodyPercentage_R[DispatchThreadID.xy] > 0.9f)
+        return;
+    
+    float3 CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
+    if (ShouldOverWrite)
+        TopCellPressure_RW[DispatchThreadID.xy] = sampleLowerPressure(CenterCellPosition);
+    else
+        TopCellPressure_RW[DispatchThreadID.xy] += sampleLowerPressure(CenterCellPosition);
+}
+
+[numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
+void prolong_Bottom(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xy >= XZResolution))
+        return;
+    
+    if (BottomRigidBodyPercentage_R[DispatchThreadID.xy] > 0.9f)
+        return;
+    
+    float3 CenterCellPosition = getBottomCellCenterPosition(DispatchThreadID);
+    if (ShouldOverWrite)
+        BottomCellPressure_RW[DispatchThreadID.xy] = sampleLowerPressure(CenterCellPosition);
+    else
+        BottomCellPressure_RW[DispatchThreadID.xy] += sampleLowerPressure(CenterCellPosition);
 }
 
 float samplePressure(float3 CenterCellPosition, float CenterPressure, float3 Offset)

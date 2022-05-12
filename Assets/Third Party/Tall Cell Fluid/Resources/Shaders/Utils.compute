@@ -87,7 +87,7 @@ RWTexture3D<float> addFloatTexture3DTarget_RW;
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void addFloatTexture3D(uint3 id : SV_DispatchThreadID)
 {
-    copyFloatTexture3DTarget_RW[id] += copyFloatTexture3DSource_R[id];
+    addFloatTexture3DTarget_RW[id] += addFloatTexture3DSource_R[id];
 }
 
 Texture2D<float> addFloatTexture2DSource_R;
@@ -95,5 +95,5 @@ RWTexture2D<float> addFloatTexture2DTarget_RW;
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
 void addFloatTexture2D(uint3 id : SV_DispatchThreadID)
 {
-    addFloatTexture2DTarget_RW[id.xy] += copyFloatTexture2DSource_R[id.xy];
+    addFloatTexture2DTarget_RW[id.xy] += addFloatTexture2DSource_R[id.xy];
 }
