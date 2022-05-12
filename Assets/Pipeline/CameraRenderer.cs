@@ -200,7 +200,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_RenderManager.m_FilterSetting.m_ParticlesRadius);
         m_CommandBuffer.DrawProceduralIndirect(
             Matrix4x4.identity,
-            m_DrawFluidParticlesMaterial, 1,
+            m_DrawFluidParticlesMaterial, 0,
             MeshTopology.Triangles, m_RenderManager.m_ParticleData.ArgumentBuffer, 12);
 
         _ExecuteCommandBuffer();
@@ -283,12 +283,12 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.name = "Show";
         m_CommandBuffer.Blit(outputRT, m_Camera.targetTexture, Vector2.one, Vector2.zero);
 
-        if (depthRT)
-        {
-            m_CommandBuffer.SetGlobalTexture("_SrcDepth", depthRT);
-            m_CommandBuffer.SetRenderTarget(0, m_Camera.targetTexture);
-            m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_ToolsMaterial, 0, MeshTopology.Triangles, 3);
-        }
+        //if (depthRT)
+        //{
+        //    m_CommandBuffer.SetGlobalTexture("_SrcDepth", depthRT);
+        //    m_CommandBuffer.SetRenderTarget(0, m_Camera.targetTexture);
+        //    m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_ToolsMaterial, 0, MeshTopology.Triangles, 3);
+        //}
         _ExecuteCommandBuffer();
     }
 
