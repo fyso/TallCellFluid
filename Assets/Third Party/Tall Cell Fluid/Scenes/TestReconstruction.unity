@@ -620,7 +620,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 5
-  far clip plane: 100
+  far clip plane: 150
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -646,13 +646,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1038799706}
-  m_LocalRotation: {x: 0.07600365, y: 0.6155094, z: -0.059808973, w: 0.782173}
-  m_LocalPosition: {x: 3.4, y: 53.7, z: 26.4}
+  m_LocalRotation: {x: 0.22643082, y: 0.71247977, z: -0.20414513, w: 0.632002}
+  m_LocalPosition: {x: -31.9, y: 47.8, z: 40.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 11.1, y: 76.4, z: 0}
+  m_LocalEulerAnglesHint: {x: 35.247, y: 98.293, z: 4.538}
 --- !u!1 &1066607789
 GameObject:
   m_ObjectHideFlags: 0
@@ -904,6 +904,7 @@ MonoBehaviour:
     m_MaxZ: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
   m_ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
+  m_Bounding: {fileID: 11400000, guid: 2afa0af94cf364a43abc0453611bb3b0, type: 2}
 --- !u!4 &1456825980
 Transform:
   m_ObjectHideFlags: 0

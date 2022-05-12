@@ -34,6 +34,12 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
+    public void SetupBounding(Bounding vBounding)
+    {
+        vBounding.MinPos = new Vector3(0.1f, 0.1f, 0.1f);
+        vBounding.MaxPos = new Vector3(64, 32, 64);  //TODO:
+    }
+
     public void SetupParticleDataForReconstruction(ParticleData vParticleData)
     {
         vParticleData.PositionBuffer = m_DynamicParticle.MainParticle.Position;

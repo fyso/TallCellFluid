@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -20,9 +21,10 @@ public partial class CameraRenderer : MonoBehaviour
     Material m_FilterMaterial = Resources.Load<Material>("Materials/Filter");
     Material m_GenerateNoramalMaterial = Resources.Load<Material>("Materials/GenerateNoramal");
 
-    Matrix4x4 m_ViewMatrixHistory = Matrix4x4.identity;
+    uint m_FrameIndex = 0;
     ComputeBuffer m_SurfaceGridBuffer;
     ComputeBuffer m_ParticleCountOfGridBuffer;
+    Matrix4x4 m_ViewMatrixHistory = Matrix4x4.identity;
     ComputeShader m_PerspectiveGridReSamplingCS = Resources.Load("Shaders/PerspectiveGridReSampling") as ComputeShader;
 
     public void Render(ScriptableRenderContext context, Camera camera, RenderManager renderManager)
@@ -43,7 +45,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-                if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
+        if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
             Show(m_GridDebugRT); 
         else Show(m_FluidNormalRT);
 
@@ -52,6 +54,7 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_Context.Submit();
         Clear();
+        m_FrameIndex++;
     }
 
     bool Cull()
@@ -81,7 +84,7 @@ public partial class CameraRenderer : MonoBehaviour
     public void UpdateCameraData()
     {
         m_CommandBuffer.SetViewProjectionMatrices(m_Camera.worldToCameraMatrix, m_Camera.projectionMatrix);
-        if (!m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
+        if (!m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug || (m_FrameIndex == 0))
             m_ViewMatrixHistory = m_Camera.worldToCameraMatrix;
 
         var projMatrix = GL.GetGPUProjectionMatrix(m_Camera.projectionMatrix, false);
@@ -119,18 +122,13 @@ public partial class CameraRenderer : MonoBehaviour
 
     void PerspectiveGridReSampling()
     {
-        //Vector3 minpos = m_RenderManager.m_Bounding.MinPos;
-        //Vector3 maxpos = m_RenderManager.m_Bounding.MaxPos;
-
-        float zNear = m_Camera.nearClipPlane;
-        float zFar = m_Camera.farClipPlane;
-
-        int clusterDimX = 64;
-        int clusterDimY = 64;
+        float zNear, zFar;
+        int clusterDimX = 128;
+        int clusterDimY = 128;
+        AdaptiveFliudPlane(out zNear, out zFar);
         float fieldOfView = m_Camera.fieldOfView * Mathf.Deg2Rad * 0.5f;
         float logFarAndNear = Mathf.Log(zFar / zNear);
         float sampleRadioInv = clusterDimY / (2.0f * Mathf.Tan(fieldOfView));
-        //TODO:自适应Grid 分辨率
         //float scaleFactorZ   = Mathf.Pow((float)(0.5 * clusterDimX / sampleRadioInv), 2) + Mathf.Pow((float)0.5 * clusterDimY / sampleRadioInv, 2) + 1;
         //scaleFactorZ = Mathf.Sqrt(scaleFactorZ);
         float scaleFactorZ = 1.0f;
@@ -180,6 +178,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_FluidDepthRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 32, RenderTextureFormat.Depth);
 
         m_CommandBuffer.name = "DrawParticles";
+
         if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
         {
             m_GridDebugRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 0, RenderTextureFormat.ARGBFloat);
@@ -232,6 +231,50 @@ public partial class CameraRenderer : MonoBehaviour
         _ExecuteCommandBuffer();
     }
 
+    void AdaptiveFliudPlane(out float vNear, out float vFar)
+    {
+        Vector3 minPos = m_RenderManager.m_Bounding.MinPos;
+        Vector3 maxPos = m_RenderManager.m_Bounding.MaxPos;
+        Vector4 p0 = new Vector4(minPos.x, minPos.y, minPos.z, 1.0f);
+        Vector4 p6 = new Vector4(maxPos.x, maxPos.y, maxPos.z, 1.0f);
+        Vector4 p1 = new Vector4(p6.x, p0.y, p0.z, 1.0f);
+        Vector4 p2 = new Vector4(p6.x, p6.y, p0.z, 1.0f);
+        Vector4 p3 = new Vector4(p0.x, p6.y, p0.z, 1.0f);
+        Vector4 p4 = new Vector4(p0.x, p0.y, p6.z, 1.0f);
+        Vector4 p5 = new Vector4(p6.x, p0.y, p6.z, 1.0f);
+        Vector4 p7 = new Vector4(p0.x, p6.y, p6.z, 1.0f);
+
+        p0 = m_ViewMatrixHistory * p0;
+        p1 = m_ViewMatrixHistory * p1;
+        p2 = m_ViewMatrixHistory * p2;
+        p3 = m_ViewMatrixHistory * p3;
+        p4 = m_ViewMatrixHistory * p4;
+        p5 = m_ViewMatrixHistory * p5;
+        p6 = m_ViewMatrixHistory * p6;
+        p7 = m_ViewMatrixHistory * p7;
+
+        vNear = -1000;
+        vNear = Math.Max(p0.z, vNear);
+        vNear = Math.Max(p1.z, vNear);
+        vNear = Math.Max(p2.z, vNear);
+        vNear = Math.Max(p3.z, vNear);
+        vNear = Math.Max(p4.z, vNear);
+        vNear = Math.Max(p5.z, vNear);
+        vNear = Math.Max(p6.z, vNear);
+        vNear = Math.Max(p7.z, vNear);
+        vNear = Math.Max(m_Camera.nearClipPlane, -vNear);
+
+        vFar = 0;
+        vFar = Math.Min(p0.z, vFar);
+        vFar = Math.Min(p1.z, vFar);
+        vFar = Math.Min(p2.z, vFar);
+        vFar = Math.Min(p3.z, vFar);
+        vFar = Math.Min(p4.z, vFar);
+        vFar = Math.Min(p5.z, vFar);
+        vFar = Math.Min(p6.z, vFar);
+        vFar = Math.Min(p7.z, vFar);
+        vFar = Math.Min(m_Camera.farClipPlane, -vFar);
+    }
     void Show(RenderTexture outputRT)
     {
         m_CommandBuffer.Blit(outputRT, m_Camera.targetTexture, Vector2.one, Vector2.zero);
