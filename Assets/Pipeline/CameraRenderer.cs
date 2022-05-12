@@ -237,6 +237,7 @@ public partial class CameraRenderer : MonoBehaviour
 
     void Show(RenderTexture outputRT, RenderTexture depthRT = null)
     {
+        m_CommandBuffer.name = "Show";
         m_CommandBuffer.Blit(outputRT, m_Camera.targetTexture, Vector2.one, Vector2.zero);
 
         if (depthRT)

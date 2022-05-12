@@ -329,9 +329,9 @@ MonoBehaviour:
   m_MaxParticleCount: 2000000
   m_TimeStep: 0
   VisualParticle: 0
-  ShowGridDebugInfo: 0
+  ShowGridDebugInfo: 1
   VisualGridInfo:
-    m_ShowMode: 0
+    m_ShowMode: 1
     m_ShowInfo: 1
     MinShowValue: 0
     MinShowColor: {r: 0, g: 0, b: 0, a: 0}
@@ -341,9 +341,9 @@ MonoBehaviour:
     m_ShowRegularCell: 1
     m_ShowTallCell: 1
     m_ShowTerrainCell: 1
-    m_UseSpecifiedShowRange: 0
+    m_UseSpecifiedShowRange: 1
     m_MinX: 0
-    m_MaxX: 0
+    m_MaxX: 100
     m_MinZ: 0
     m_MaxZ: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}

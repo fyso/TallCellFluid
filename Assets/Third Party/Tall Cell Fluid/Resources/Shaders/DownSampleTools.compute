@@ -1,21 +1,11 @@
-#pragma kernel downSampleTerrainHeight
-#pragma kernel downSampleTallCellHeight
+#pragma kernel downSampleHeight
 #pragma kernel downSampleRegularCell
 #pragma kernel downSampleTallCell
 #pragma enable_d3d11_debug_symbols
 
-groupshared float gs_Result[64];
-uint NumMipLevels;
-
-Texture2D<float> SrcTex;
-RWTexture2D<float> OutMip1;
-RWTexture2D<float> OutMip2;
-RWTexture2D<float> OutMip3;
-RWTexture2D<float> OutMip4;
-
 float min4To1(float x1, float x2, float x3, float x4)
 {
-    return min(x1, min(x2, min(x3, x4))); 
+    return min(x1, min(x2, min(x3, x4)));
 }
 
 float max4To1(float x1, float x2, float x3, float x4)
@@ -23,53 +13,25 @@ float max4To1(float x1, float x2, float x3, float x4)
     return max(x1, max(x2, max(x3, x4)));
 }
 
-[numthreads(8, 8, 1)]
-void downSampleTerrainHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
-{    
-    float Src1 = min4To1(SrcTex[DispatchThreadID.xy * 2], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)], SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)], SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)]);
-    OutMip1[DispatchThreadID.xy] = Src1;
-    if (NumMipLevels > 1)
-    {
-        gs_Result[GroupIndex] = Src1;
-    }
-    else return;
-    GroupMemoryBarrierWithGroupSync();
-    
-    if ((GroupIndex & 0x9) == 0)
-    {
-        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
-        OutMip2[DispatchThreadID.xy >> 1] = Src1;
-    }
-    if (NumMipLevels > 2)
-    {
-        gs_Result[GroupIndex] = Src1;
-    }
-    else return;
-    GroupMemoryBarrierWithGroupSync();
-    
-    if ((GroupIndex & 0x1B) == 0)
-    {
-        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
-        OutMip3[DispatchThreadID.xy >> 2] = Src1;
-    }
-    if (NumMipLevels > 3)
-    {
-        gs_Result[GroupIndex] = Src1;
-    }
-    else return;
-    GroupMemoryBarrierWithGroupSync();
-    
-    if (GroupIndex == 0)
-    {
-        Src1 = min4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
-        OutMip4[DispatchThreadID.xy >> 3] = Src1;
-    }
-}
+uint NumMipLevels;
+Texture2D<float> SrcTall;
+Texture2D<float> SrcTerrain;
 
 groupshared float gs_Terrain[64];
-Texture2D<float> SrcTerrain;
+groupshared float gs_Tall[64];
+
+RWTexture2D<float> OutTerrainMip1;
+RWTexture2D<float> OutTerrainMip2;
+RWTexture2D<float> OutTerrainMip3;
+RWTexture2D<float> OutTerrainMip4;
+RWTexture2D<float> OutTallMip1;
+RWTexture2D<float> OutTallMip2;
+RWTexture2D<float> OutTallMip3;
+RWTexture2D<float> OutTallMip4;
+
+float SrcCellLength;
 [numthreads(8, 8, 1)]
-void downSampleTallCellHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
+void downSampleHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     float Terrain1, Terrain2, Terrain3, Terrain4;
     Terrain1 = SrcTerrain[DispatchThreadID.xy * 2];
@@ -77,53 +39,76 @@ void downSampleTallCellHeight(uint GroupIndex : SV_GroupIndex, uint3 DispatchThr
     Terrain3 = SrcTerrain[DispatchThreadID.xy * 2 + uint2(0, 1)];
     Terrain4 = SrcTerrain[DispatchThreadID.xy * 2 + uint2(1, 1)];
     float Src1 = max4To1(
-        SrcTex[DispatchThreadID.xy * 2] + Terrain1,
-        SrcTex[DispatchThreadID.xy * 2 + uint2(1, 0)] + Terrain2,
-        SrcTex[DispatchThreadID.xy * 2 + uint2(0, 1)] + Terrain3,
-        SrcTex[DispatchThreadID.xy * 2 + uint2(1, 1)] + Terrain4);
+        SrcTall[DispatchThreadID.xy * 2] + Terrain1,
+        SrcTall[DispatchThreadID.xy * 2 + uint2(1, 0)] + Terrain2,
+        SrcTall[DispatchThreadID.xy * 2 + uint2(0, 1)] + Terrain3,
+        SrcTall[DispatchThreadID.xy * 2 + uint2(1, 1)] + Terrain4);
     float NextLevelTerrain = min4To1(Terrain1, Terrain2, Terrain3, Terrain4);
-    OutMip1[DispatchThreadID.xy] = Src1 - NextLevelTerrain;
+    float NextCellLength = SrcCellLength * 2;
+    NextLevelTerrain = floor(NextLevelTerrain / NextCellLength) * NextCellLength;
+    OutTerrainMip1[DispatchThreadID.xy] = NextLevelTerrain;
+    
+    float NextTallCellHeight = max(ceil((Src1 - NextLevelTerrain) / NextCellLength), 2) * NextCellLength;
+    OutTallMip1[DispatchThreadID.xy] = NextTallCellHeight;
     if (NumMipLevels > 1)
     {
-        gs_Result[GroupIndex] = Src1;
+        Src1 = NextTallCellHeight + NextLevelTerrain;
         gs_Terrain[GroupIndex] = NextLevelTerrain;        
+        gs_Tall[GroupIndex] = Src1;
     }
     else return;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x9) == 0)
     {
-        Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x01], gs_Result[GroupIndex + 0x08], gs_Result[GroupIndex + 0x09]);
+        Src1 = max4To1(Src1, gs_Tall[GroupIndex + 0x01], gs_Tall[GroupIndex + 0x08], gs_Tall[GroupIndex + 0x09]);
         NextLevelTerrain = min4To1(NextLevelTerrain, gs_Terrain[GroupIndex + 0x01], gs_Terrain[GroupIndex + 0x08], gs_Terrain[GroupIndex + 0x09]);
-        OutMip2[DispatchThreadID.xy >> 1] = Src1 - NextLevelTerrain;
+        NextCellLength *= 2;
+        NextLevelTerrain = floor(NextLevelTerrain / NextCellLength) * NextCellLength;
+        OutTerrainMip2[DispatchThreadID.xy >> 1] = NextLevelTerrain;
+
+        NextTallCellHeight = max(ceil((Src1 - NextLevelTerrain) / NextCellLength), 2) * NextCellLength;
+        OutTallMip2[DispatchThreadID.xy >> 1] = NextTallCellHeight;
     }
     if (NumMipLevels > 2)
     {
-        gs_Result[GroupIndex] = Src1;
+        Src1 = NextTallCellHeight + NextLevelTerrain;
         gs_Terrain[GroupIndex] = NextLevelTerrain;
+        gs_Tall[GroupIndex] = Src1;
     }
     else return;
     GroupMemoryBarrierWithGroupSync();
     
     if ((GroupIndex & 0x1B) == 0)
     {
-        Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x02], gs_Result[GroupIndex + 0x10], gs_Result[GroupIndex + 0x12]);
+        Src1 = max4To1(Src1, gs_Tall[GroupIndex + 0x02], gs_Tall[GroupIndex + 0x10], gs_Tall[GroupIndex + 0x12]);
         NextLevelTerrain = min4To1(NextLevelTerrain, gs_Terrain[GroupIndex + 0x02], gs_Terrain[GroupIndex + 0x10], gs_Terrain[GroupIndex + 0x12]);
-        OutMip3[DispatchThreadID.xy >> 2] = Src1 - NextLevelTerrain;
+        NextCellLength *= 2;
+        NextLevelTerrain = floor(NextLevelTerrain / NextCellLength) * NextCellLength;
+        OutTerrainMip3[DispatchThreadID.xy >> 2] = NextLevelTerrain;
+
+        NextTallCellHeight = max(ceil((Src1 - NextLevelTerrain) / NextCellLength), 2) * NextCellLength;
+        OutTallMip3[DispatchThreadID.xy >> 2] = NextTallCellHeight;
     }
     if (NumMipLevels > 3)
     {
-        gs_Result[GroupIndex] = Src1;
+        Src1 = NextTallCellHeight + NextLevelTerrain;
         gs_Terrain[GroupIndex] = NextLevelTerrain;        
+        gs_Tall[GroupIndex] = Src1;
     }
     else return;
     GroupMemoryBarrierWithGroupSync();
     
     if (GroupIndex == 0)
     {
-        Src1 = max4To1(Src1, gs_Result[GroupIndex + 0x04], gs_Result[GroupIndex + 0x20], gs_Result[GroupIndex + 0x24]);
+        Src1 = max4To1(Src1, gs_Tall[GroupIndex + 0x04], gs_Tall[GroupIndex + 0x20], gs_Tall[GroupIndex + 0x24]);
         NextLevelTerrain = min4To1(NextLevelTerrain, gs_Terrain[GroupIndex + 0x04], gs_Terrain[GroupIndex + 0x20], gs_Terrain[GroupIndex + 0x24]);
-        OutMip4[DispatchThreadID.xy >> 3] = Src1 - NextLevelTerrain;
+        NextCellLength *= 2;
+        NextLevelTerrain = floor(NextLevelTerrain / NextCellLength) * NextCellLength;
+        OutTerrainMip4[DispatchThreadID.xy >> 3] = NextLevelTerrain;
+
+        NextTallCellHeight = max(ceil((Src1 - NextLevelTerrain) / NextCellLength), 2) * NextCellLength;
+        OutTallMip4[DispatchThreadID.xy >> 3] = NextTallCellHeight;
     }
 }
 
