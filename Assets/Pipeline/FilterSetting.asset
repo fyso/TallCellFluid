@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d3f50f70bba1746b0dc74a55152d3e, type: 3}
   m_Name: FilterSetting
   m_EditorClassIdentifier: 
-  m_ParticlesRadius: 0.696
+  m_ParticlesRadius: 0.25
   m_FilterRadiusWS: 0
-  m_ClampRatio: 1.59
+  m_ClampRatio: 1.93
   m_ThresholdRatio: 0

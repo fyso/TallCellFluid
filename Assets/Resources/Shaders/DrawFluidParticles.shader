@@ -48,18 +48,30 @@
             {
                 Varyings output;
 
-                switch (vertexID)//TODO: use equilateral triangle
+                switch (vertexID)
                 {
                 case 0:
                     output.uv = float2(-1, -1);
                     break;
 
                 case 1:
-                    output.uv = float2(-1, 3);
+                    output.uv = float2(-1, 1);
                     break;
 
                 case 2:
-                    output.uv = float2(3, -1);
+                    output.uv = float2(1, -1);
+                    break;
+
+                case 3:
+                    output.uv = float2(1, -1);
+                    break;
+
+                case 4:
+                    output.uv = float2(-1, 1);
+                    break;
+
+                case 5:
+                    output.uv = float2(1, 1);
                     break;
                 }
 
@@ -206,10 +218,12 @@
                 nointerpolation float4 invQ1 : TEXCOORD2;
                 nointerpolation float4 invQ2 : TEXCOORD3;
                 nointerpolation float4 invQ3 : TEXCOORD4;
+                nointerpolation uint id : ID;
             };
             Varyings GenerateDepthPassVertex(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
                 Varyings output;
+                output.id = instanceID;
                 Anisotropy particleAnisotropy = _AnisotropyBuffer[instanceID];
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
 
@@ -292,6 +306,7 @@
 
             float SpriteGenerateDepthPassFrag(Varyings input) : SV_Depth
             {
+                float id = input.id;
                 // transform from view space to parameter space
                 //column_major
                 float4x4 invQuadric;
@@ -327,7 +342,7 @@
                 float sceneDepth = _SceneDepth.Sample(_point_clamp_sampler, GetUVFromCS(ndcPos)).x;
                 if (ndcPos.z < sceneDepth) discard;
 
-                return ndcPos.z;
+                return ndcPos.z + id - id;
             }
 
             ENDHLSL
