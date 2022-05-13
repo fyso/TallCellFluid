@@ -41,7 +41,7 @@ public partial class CameraRenderer : MonoBehaviour
         RenderScene();
         if(Application.isPlaying)
         {
-            PerspectiveGridReSampling();
+            //PerspectiveGridReSampling();
             DrawParticles();
             SmoothFluidDepth();
             GenerateFluidNoramal();

@@ -163,6 +163,8 @@
             };
             StructuredBuffer<Anisotropy> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
+            StructuredBuffer<uint> SurfaceGrid_RW;
+
             Texture2D _SceneDepth;
             SamplerState _point_clamp_sampler;
             float _ParticlesRadius;
