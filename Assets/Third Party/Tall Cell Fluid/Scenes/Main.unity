@@ -798,17 +798,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de90f2c2c37e412478ff0bfc6124c041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Terrian: {fileID: 2800000, guid: 2f62fa13d6ab21845b72a927d53f6d61, type: 3}
+  m_Terrian: {fileID: 2800000, guid: 7fdf947f02f27a84a8a279f022b0dc3f, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
-  m_ResolutionXZ: {x: 64, y: 64}
-  m_RegularCellYCount: 16
+  m_ResolutionXZ: {x: 4, y: 4}
+  m_RegularCellYCount: 4
   m_CellLength: 1
-  m_SeaLevel: 0
+  m_SeaLevel: 64
   m_MaxParticleCount: 2000000
-  m_TimeStep: 0.03333333
-  m_IterationCount: 6
+  m_TimeStep: 0.033
+  m_IterationCount: 8
   VisualParticle: 1
-  ShowGridDebugInfo: 0
+  ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 1
     m_ShowInfo: 5
@@ -817,7 +817,7 @@ MonoBehaviour:
     MaxShowValue: 50
     MaxShowColor: {r: 1, g: 1, b: 1, a: 0}
     m_GridLevel: 0
-    m_ShowRegularCell: 1
+    m_ShowRegularCell: 0
     m_ShowTallCell: 1
     m_ShowTerrainCell: 1
     m_UseSpecifiedShowRange: 0

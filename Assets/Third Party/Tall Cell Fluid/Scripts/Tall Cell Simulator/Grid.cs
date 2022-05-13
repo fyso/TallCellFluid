@@ -674,24 +674,24 @@ public class Grid
 
     public void SparseMultiGridRedBlackGaussSeidel(float vTimeStep, int vFullCycleIterationCount, int vVCycleIterationCount, int vSmoothIterationCount)
     {
-        m_GridData[0].ApplyNopressureForce(9.8f, vTimeStep);
+        //m_GridData[0].ApplyNopressureForce(9.8f, vTimeStep);
         m_GridData[0].ComputeVectorB(vTimeStep);
 
         m_GridData[0].ClearPressure();
 
-        //for (int c = 0; c < vFullCycleIterationCount; c++)
-        //    __FullCycle(vTimeStep, vSmoothIterationCount);
+        for (int c = 0; c < vFullCycleIterationCount; c++)
+            __FullCycle(vTimeStep, vSmoothIterationCount);
 
-        //for (int c = 0; c < vVCycleIterationCount; c++)
-        //    __VCycle(vTimeStep, 0, vSmoothIterationCount);
+        for (int c = 0; c < vVCycleIterationCount; c++)
+            __VCycle(vTimeStep, 0, vSmoothIterationCount);
 
-        //m_GridData[0].ComputeResidual(vTimeStep);
-        //m_GridData[0].UpdateVelocity(vTimeStep);
-
-        for (int c = 0; c < vSmoothIterationCount; c++)
-            m_GridData[0].SmoothRBGS(vTimeStep);
         m_GridData[0].ComputeResidual(vTimeStep);
         m_GridData[0].UpdateVelocity(vTimeStep);
+
+        //for (int c = 0; c < vSmoothIterationCount; c++)
+        //    m_GridData[0].SmoothRBGS(vTimeStep);
+        //m_GridData[0].ComputeResidual(vTimeStep);
+        //m_GridData[0].UpdateVelocity(vTimeStep);
 
     }
 
