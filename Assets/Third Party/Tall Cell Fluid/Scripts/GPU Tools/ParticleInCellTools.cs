@@ -266,8 +266,8 @@ public class ParticleInCellTools
                     if (SubCellMin.y > vTop)
                         continue;
 
-                    Vector3 Position = SubCellMin + new Vector3(Step * UnityEngine.Random.Range(0.0f, 1.0f), Step * UnityEngine.Random.Range(0.0f, 1.0f), UnityEngine.Random.Range(0.0f, 1.0f));
-                    //Vector3 Position = SubCellMin + new Vector3(Step * 0.5f, Step * 0.5f, 0.5f);
+                    //Vector3 Position = SubCellMin + new Vector3(Step * UnityEngine.Random.Range(0.0f, 1.0f), Step * UnityEngine.Random.Range(0.0f, 1.0f), UnityEngine.Random.Range(0.0f, 1.0f));
+                    Vector3 Position = SubCellMin + new Vector3(Step * 0.5f, Step * 0.5f, 0.5f);
                     voPosition.Add(Position);
                     voVelocity.Add(new Vector3(0, 0, 0));
                     voFilter.Add(0);

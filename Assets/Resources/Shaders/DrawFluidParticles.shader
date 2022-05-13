@@ -157,13 +157,11 @@
 
             struct Anisotropy
             {
-                float4 AniX;
-                float4 AniY;
-                float4 AniZ;
+                float4 Quaterion;
+                float3 Scale;
             };
             StructuredBuffer<Anisotropy> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
-            StructuredBuffer<uint> SurfaceGrid_RW;
 
             Texture2D _SceneDepth;
             SamplerState _point_clamp_sampler;
@@ -226,13 +224,31 @@
             {
                 Varyings output;
                 output.id = instanceID;
-                Anisotropy particleAnisotropy = _AnisotropyBuffer[instanceID];
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
-
+                Anisotropy ani = _AnisotropyBuffer[instanceID];
+                float3 scale = ani.Scale * _ParticlesRadius;
+                float3x3 r =
+                {
+                    {
+                        1.0 - 2.0 * ani.Quaterion.y * ani.Quaterion.y - 2.0 * ani.Quaterion.z * ani.Quaterion.z,
+                        2.0 * ani.Quaterion.x * ani.Quaterion.y - 2.0 * ani.Quaterion.z * ani.Quaterion.w,
+                        2.0 * ani.Quaterion.x * ani.Quaterion.z + 2.0 * ani.Quaterion.y * ani.Quaterion.w
+                    },
+                    {
+                        2.0 * ani.Quaterion.x * ani.Quaterion.y + 2.0 * ani.Quaterion.z * ani.Quaterion.w,
+                        1.0 - 2.0 * ani.Quaterion.x * ani.Quaterion.x - 2.0 * ani.Quaterion.z * ani.Quaterion.z,
+                        2.0 * ani.Quaterion.y * ani.Quaterion.z - 2.0 * ani.Quaterion.x * ani.Quaterion.w
+                    },
+                    {
+                        2.0 * ani.Quaterion.x * ani.Quaterion.z - 2.0 * ani.Quaterion.y * ani.Quaterion.w,
+                        2.0 * ani.Quaterion.y * ani.Quaterion.z + 2.0 * ani.Quaterion.x * ani.Quaterion.w,
+                        1.0 - 2.0 * ani.Quaterion.x * ani.Quaterion.x - 2.0 * ani.Quaterion.y * ani.Quaterion.y
+                    }
+                };
                 float4x4 q;
-                q._m00_m10_m20_m30 = float4(particleAnisotropy.AniX.xyz * particleAnisotropy.AniX.w * _ParticlesRadius, 0.0);
-                q._m01_m11_m21_m31 = float4(particleAnisotropy.AniY.xyz * particleAnisotropy.AniY.w * _ParticlesRadius, 0.0);
-                q._m02_m12_m22_m32 = float4(particleAnisotropy.AniZ.xyz * particleAnisotropy.AniZ.w * _ParticlesRadius, 0.0);
+                q._m00_m10_m20_m30 = float4(r._m00_m10_m20 * scale.x, 0.0);
+                q._m01_m11_m21_m31 = float4(r._m01_m11_m21 * scale.y, 0.0);
+                q._m02_m12_m22_m32 = float4(r._m02_m12_m22 * scale.z, 0.0);
                 q._m03_m13_m23_m33 = float4(particlePosition, 1.0);
 
                 // transforms a normal to parameter space (inverse transpose of (q*modelview)^-T)
@@ -258,9 +274,9 @@
 
                 // construct inverse quadric matrix (used for ray-casting in parameter space)
                 float4x4 invq;
-                invq._m00_m10_m20_m30 = float4(particleAnisotropy.AniX.xyz / particleAnisotropy.AniX.w / _ParticlesRadius, 0.0);
-                invq._m01_m11_m21_m31 = float4(particleAnisotropy.AniY.xyz / particleAnisotropy.AniY.w / _ParticlesRadius, 0.0);
-                invq._m02_m12_m22_m32 = float4(particleAnisotropy.AniZ.xyz / particleAnisotropy.AniZ.w / _ParticlesRadius, 0.0);
+                invq._m00_m10_m20_m30 = float4(r._m00_m10_m20 / scale.x, 0.0);
+                invq._m01_m11_m21_m31 = float4(r._m01_m11_m21 / scale.y, 0.0);
+                invq._m02_m12_m22_m32 = float4(r._m02_m12_m22 / scale.z, 0.0);
                 invq._m03_m13_m23_m33 = float4(0.0, 0.0, 0.0, 1.0);
 
                 invq = transpose(invq);

@@ -5,9 +5,8 @@
 
 struct Anisotropy
 {
-    float4 AniX;
-    float4 AniY;
-    float4 AniZ;
+    float4 Quaterion;
+    float3 Scale;
 };
 
 int IterNum;
@@ -23,7 +22,6 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     if (i >= IndirectArgmentBuffer[4]) return;
     
     float3 currentPos = ParticlePosBuffer[i];
-    NarrowPositionBuffer[i] = currentPos;
 
     int3 centerCellIndex = convertPos2CellIndex(currentPos);
     if (centerCellIndex.x < 0)
@@ -62,6 +60,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
         }
     }
     centerPos /= weightSum;
+    NarrowPositionBuffer[i] = centerPos;
 
         
     float3x3 covMatrix =
@@ -172,7 +171,13 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     }
     
     float maxSigma = max(max(eignvalue[0][0], eignvalue[1][1]), eignvalue[2][2]);
-    AnisotropyBuffer[i].AniX = float4(eignvectors[0][0], eignvectors[1][0], eignvectors[2][0], max(maxSigma / 4, eignvalue[0][0]));
-    AnisotropyBuffer[i].AniY = float4(eignvectors[0][1], eignvectors[1][1], eignvectors[2][1], max(maxSigma / 4, eignvalue[1][1]));
-    AnisotropyBuffer[i].AniZ = float4(eignvectors[0][2], eignvectors[1][2], eignvectors[2][2], max(maxSigma / 4, eignvalue[2][2]));
+    AnisotropyBuffer[i].Scale = float3(max(maxSigma / 4, eignvalue[0][0]), max(maxSigma / 4, eignvalue[1][1]), max(maxSigma / 4, eignvalue[2][2]));
+    
+    
+    float u = eignvectors[0][0] + eignvectors[1][1] + eignvectors[2][2];
+    float w = 0.5 * sqrt(u + 1);
+    AnisotropyBuffer[i].Quaterion.x = (eignvectors[2][1] - eignvectors[1][2]) / w / 4;
+    AnisotropyBuffer[i].Quaterion.y = (eignvectors[0][2] - eignvectors[2][0]) / w / 4;
+    AnisotropyBuffer[i].Quaterion.z = (eignvectors[1][0] - eignvectors[0][1]) / w / 4;
+    AnisotropyBuffer[i].Quaterion.w = w;
 }
