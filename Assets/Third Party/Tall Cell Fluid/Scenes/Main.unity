@@ -310,7 +310,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 803667927}
   m_LocalRotation: {x: -0, y: -0, z: -0.19311665, w: 0.98117584}
-  m_LocalPosition: {x: 9.3, y: 37.6, z: 20}
+  m_LocalPosition: {x: 9.3, y: 68.3, z: 20}
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_Children: []
   m_Father: {fileID: 876869189}
@@ -798,26 +798,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de90f2c2c37e412478ff0bfc6124c041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Terrian: {fileID: 2800000, guid: 7664b6f69431dfb4cbaf3e1ef3122f15, type: 3}
+  m_Terrian: {fileID: 2800000, guid: 2f62fa13d6ab21845b72a927d53f6d61, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
   m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
-  m_SeaLevel: 54
+  m_SeaLevel: 48
   m_MaxParticleCount: 2000000
-  m_TimeStep: 0.0166667
+  m_TimeStep: 0.016666668
   VisualParticle: 1
-  ShowGridDebugInfo: 1
+  ShowGridDebugInfo: 0
   VisualGridInfo:
-    m_ShowMode: 0
-    m_ShowInfo: 1
+    m_ShowMode: 1
+    m_ShowInfo: 5
     MinShowValue: 0
     MinShowColor: {r: 0, g: 0, b: 0, a: 0}
     MaxShowValue: 50
     MaxShowColor: {r: 1, g: 1, b: 1, a: 0}
     m_GridLevel: 0
-    m_ShowRegularCell: 0
-    m_ShowTallCell: 0
+    m_ShowRegularCell: 1
+    m_ShowTallCell: 1
     m_ShowTerrainCell: 1
     m_UseSpecifiedShowRange: 0
     m_MinX: 0

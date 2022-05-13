@@ -468,6 +468,9 @@ public class Grid
     {
         m_VisualGridMaterial = Resources.Load<Material>("Materials/VisualGrid");
 
+        m_GridAbove = vRegularCellYCount / 2;
+        m_GridLow = vRegularCellYCount / 2;
+
         m_HierarchicalLevel = (int)Mathf.Min(
             Mathf.Log(vResolutionXZ.x, 2),
             Mathf.Min(Mathf.Log(vResolutionXZ.y, 2), Mathf.Log(vRegularCellYCount, 2))) + 1;
@@ -676,14 +679,20 @@ public class Grid
 
         m_GridData[0].ClearPressure();
 
-        for (int c = 0; c < vFullCycleIterationCount; c++)
-            __FullCycle(vTimeStep, vSmoothIterationCount);
+        //for (int c = 0; c < vFullCycleIterationCount; c++)
+        //    __FullCycle(vTimeStep, vSmoothIterationCount);
 
-        for (int c = 0; c < vVCycleIterationCount; c++)
-            __VCycle(vTimeStep, 0, vSmoothIterationCount);
+        //for (int c = 0; c < vVCycleIterationCount; c++)
+        //    __VCycle(vTimeStep, 0, vSmoothIterationCount);
 
+        //m_GridData[0].ComputeResidual(vTimeStep);
+        //m_GridData[0].UpdateVelocity(vTimeStep);
+
+        for (int c = 0; c < vSmoothIterationCount; c++)
+            m_GridData[0].SmoothRBGS(vTimeStep);
         m_GridData[0].ComputeResidual(vTimeStep);
         m_GridData[0].UpdateVelocity(vTimeStep);
+
     }
 
     #region LevelSet

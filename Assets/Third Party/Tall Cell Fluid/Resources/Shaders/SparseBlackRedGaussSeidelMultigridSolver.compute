@@ -127,7 +127,7 @@ float computeVelocityDivergence(float3 CenterCellPosition, float3 CenterVelocity
         }
         else if (Position.y < AdjTerrianHeight)
         {
-            AdjCellVelocity[c] = float3(0, 0, 0);
+            AdjCellVelocity[c] = CenterVelocity;
         }
         else if (Position.y >= AdjTerrianHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight)
         {
@@ -152,7 +152,7 @@ float computeVelocityDivergence(float3 CenterCellPosition, float3 CenterVelocity
         }
     }
     
-    return ((AdjCellVelocity[1].x - AdjCellVelocity[0].x) + (AdjCellVelocity[3].y - AdjCellVelocity[2].y) + (AdjCellVelocity[5].z - AdjCellVelocity[4].z)) / CellLength;
+    return ((AdjCellVelocity[1].x - AdjCellVelocity[0].x) + (AdjCellVelocity[3].y - AdjCellVelocity[2].y) + (AdjCellVelocity[5].z - AdjCellVelocity[4].z)) * 0.5f / CellLength;
 }
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
@@ -173,7 +173,7 @@ void computeVectorB_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
     float3 CenterVelocity = RegularCellVelocity_R[DispatchThreadID];
     float3 CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID);
     
-    VectorB_Regular_RW[DispatchThreadID] = -computeVelocityDivergence(CenterCellPosition, CenterVelocity);
+    VectorB_Regular_RW[DispatchThreadID] = computeVelocityDivergence(CenterCellPosition, CenterVelocity) * Density0 / TimeStep;
 }
 
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
@@ -194,7 +194,7 @@ void computeVectorB_Top(uint3 DispatchThreadID : SV_DispatchThreadID)
     float3 CenterVelocity = TopCellVelocity_R[DispatchThreadID.xy];
     float3 CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
     
-    VectorB_Top_RW[DispatchThreadID.xy] = -computeVelocityDivergence(CenterCellPosition, CenterVelocity);
+    VectorB_Top_RW[DispatchThreadID.xy] = computeVelocityDivergence(CenterCellPosition, CenterVelocity) * Density0 / TimeStep;
 }
 
 [numthreads(THREAD_COUNT_2D, THREAD_COUNT_2D, 1)]
@@ -215,7 +215,7 @@ void computeVectorB_Bottom(uint3 DispatchThreadID : SV_DispatchThreadID)
     float3 CenterVelocity = BottomCellVelocity_R[DispatchThreadID.xy];
     float3 CenterCellPosition = getBottomCellCenterPosition(DispatchThreadID);
     
-    VectorB_Bottom_RW[DispatchThreadID.xy] = -computeVelocityDivergence(CenterCellPosition, CenterVelocity);
+    VectorB_Bottom_RW[DispatchThreadID.xy] = computeVelocityDivergence(CenterCellPosition, CenterVelocity) * Density0 / TimeStep;
 }
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
@@ -281,11 +281,11 @@ void computeDataSum(float3 CenterCellPosition, float CenterPressure, out float A
                 CurrPressureFactor++;
             }
         }
-        else if (Position.y < AdjTerrianHeight)
-        {
-            AdjPressureSum += CenterPressure;
-            CurrPressureFactor++;
-        }
+        //else if (Position.y < AdjTerrianHeight)
+        //{
+        //    AdjPressureSum += CenterPressure;
+        //    CurrPressureFactor++;
+        //}
     }
 }
 
@@ -295,7 +295,7 @@ float doMatrixFreePressureProject(float3 CenterCellPosition, float CenterPressur
     int CurrPressureFactor = 0;
     computeDataSum(CenterCellPosition, CenterPressure, AdjPressureSum, CurrPressureFactor);
     if(CurrPressureFactor != 0)
-        return (B * pow(CellLength, 2.0f) * Density0 / TimeStep + AdjPressureSum) / (float) CurrPressureFactor;
+        return (AdjPressureSum - B * pow(CellLength, 2.0f)) / (float) CurrPressureFactor;
     else
         return 0.0f;
 }
@@ -305,7 +305,7 @@ float computeResidual(float3 CenterCellPosition, float CenterPressure, float B)
     float AdjPressureSum = 0.0f;
     int CurrPressureFactor = 0;
     computeDataSum(CenterCellPosition, CenterPressure, AdjPressureSum, CurrPressureFactor);
-    return B - (CurrPressureFactor * CenterPressure - AdjPressureSum) * TimeStep / Density0 / pow(CellLength, 2.0f);
+    return B - (AdjPressureSum - CurrPressureFactor * CenterPressure) / pow(CellLength, 2.0f);
 }
 
 int RedBlackTrigger;
@@ -616,6 +616,7 @@ void prolong_Bottom(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 float samplePressure(float3 CenterCellPosition, float CenterPressure, float3 Offset, out bool vNearTallCell)
 {
+    vNearTallCell = false;
     float3 Position = CenterCellPosition + Offset;
     int2 XZ = floor(Position.xz / CellLength);
     
@@ -664,16 +665,16 @@ float3 computePressureDivergence(float3 CenterCellPosition, float CenterPressure
     float Back = samplePressure(CenterCellPosition, CenterPressure, float3(0.0f, 0.0f, -1.0f) * CellLength, NearTallCell[4]);
     float Front = samplePressure(CenterCellPosition, CenterPressure, float3(0.0f, 0.0f, 1.0f) * CellLength, NearTallCell[5]);
     
-    float3 Divergence = float3(Right - Left, Up - Down, Front - Back) / CellLength;
+    float3 Divergence = float3(Right - Left, Up - Down, Front - Back) * 0.5f / CellLength;
     
-    //if (NearTallCell[0] || NearTallCell[1])
-    //    Divergence.x = CenterVelocity.x * Density0 / TimeStep;
+    if (NearTallCell[0] || NearTallCell[1])
+        Divergence.x = CenterVelocity.x * Density0 / TimeStep;
     
-    //if (NearTallCell[2] || NearTallCell[3])
-    //    Divergence.y = CenterVelocity.y * Density0 / TimeStep;
+    if (NearTallCell[2] || NearTallCell[3])
+        Divergence.y = CenterVelocity.y * Density0 / TimeStep;
     
-    //if (NearTallCell[4] || NearTallCell[5])
-    //    Divergence.z = CenterVelocity.z * Density0 / TimeStep;
+    if (NearTallCell[4] || NearTallCell[5])
+        Divergence.z = CenterVelocity.z * Density0 / TimeStep;
     
     return Divergence;
 }
