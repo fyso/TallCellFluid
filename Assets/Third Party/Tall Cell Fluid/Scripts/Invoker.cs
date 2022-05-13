@@ -49,6 +49,7 @@ public class Invoker : MonoBehaviour
     public float m_SeaLevel;
     public int m_MaxParticleCount;
     public float m_TimeStep;
+    public int m_IterationCount;
 
     public bool VisualParticle = false;
     public bool ShowGridDebugInfo = false;
@@ -75,7 +76,7 @@ public class Invoker : MonoBehaviour
 
     void Update()
     {
-        m_Simulator.Step(m_TimeStep);
+        m_Simulator.Step(m_TimeStep, m_IterationCount);
     }
 
     private void OnRenderObject()

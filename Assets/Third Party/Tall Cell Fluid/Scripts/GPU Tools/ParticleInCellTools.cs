@@ -235,7 +235,8 @@ public class ParticleInCellTools
                 Vector3 TallCellSliceMin = new Vector3(x * vFineLayer.CellLength, CurrTerrianHeight, z * vFineLayer.CellLength);
                 for (int c = 0; c < TallCellSlice; c++)
                 {
-                    addParticleInCell(TallCellSliceMin, vFineLayer.CellLength, ParticleInCellRes, CurrTerrianHeight + CurrTallCellHeight, ref Position, ref Velocity, ref Filter);
+                    //if (!(TallCellSliceMin.y > CurrTerrianHeight + vFineLayer.CellLength * 3 && TallCellSliceMin.y < CurrTerrianHeight + CurrTallCellHeight - vFineLayer.CellLength * 3))
+                        addParticleInCell(TallCellSliceMin, vFineLayer.CellLength, ParticleInCellRes, CurrTerrianHeight + CurrTallCellHeight, ref Position, ref Velocity, ref Filter);
                     TallCellSliceMin.y += vFineLayer.CellLength;
                 }
 

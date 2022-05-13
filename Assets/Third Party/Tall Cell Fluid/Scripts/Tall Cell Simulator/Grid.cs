@@ -469,7 +469,7 @@ public class Grid
         m_VisualGridMaterial = Resources.Load<Material>("Materials/VisualGrid");
 
         m_GridAbove = vRegularCellYCount / 2;
-        m_GridLow = vRegularCellYCount / 2;
+        m_GridLow = vRegularCellYCount / 4;
 
         m_HierarchicalLevel = (int)Mathf.Min(
             Mathf.Log(vResolutionXZ.x, 2),

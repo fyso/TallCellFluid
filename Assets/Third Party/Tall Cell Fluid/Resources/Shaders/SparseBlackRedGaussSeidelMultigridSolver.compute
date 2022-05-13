@@ -152,7 +152,7 @@ float computeVelocityDivergence(float3 CenterCellPosition, float3 CenterVelocity
         }
     }
     
-    return ((AdjCellVelocity[1].x - AdjCellVelocity[0].x) + (AdjCellVelocity[3].y - AdjCellVelocity[2].y) + (AdjCellVelocity[5].z - AdjCellVelocity[4].z)) * 0.5f / CellLength;
+    return ((AdjCellVelocity[1].x - AdjCellVelocity[0].x) + (AdjCellVelocity[3].y - AdjCellVelocity[2].y) + (AdjCellVelocity[5].z - AdjCellVelocity[4].z)) / CellLength;
 }
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
@@ -649,7 +649,7 @@ float samplePressure(float3 CenterCellPosition, float CenterPressure, float3 Off
     else if (Position.y < AdjTerrianHeight)
     {
         vNearTallCell = true;
-        ResultPressure = CenterPressure;
+        ResultPressure = 0.0f;
     }
     
     return ResultPressure;
@@ -665,7 +665,7 @@ float3 computePressureDivergence(float3 CenterCellPosition, float CenterPressure
     float Back = samplePressure(CenterCellPosition, CenterPressure, float3(0.0f, 0.0f, -1.0f) * CellLength, NearTallCell[4]);
     float Front = samplePressure(CenterCellPosition, CenterPressure, float3(0.0f, 0.0f, 1.0f) * CellLength, NearTallCell[5]);
     
-    float3 Divergence = float3(Right - Left, Up - Down, Front - Back) * 0.5f / CellLength;
+    float3 Divergence = float3(Right - Left, Up - Down, Front - Back) / CellLength;
     
     if (NearTallCell[0] || NearTallCell[1])
         Divergence.x = CenterVelocity.x * Density0 / TimeStep;

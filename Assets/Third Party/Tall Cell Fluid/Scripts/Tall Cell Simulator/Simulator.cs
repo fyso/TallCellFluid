@@ -103,7 +103,7 @@ public class Simulator
         m_Utils.CopyFloat4Texture3DToAnother(Regular, FineGrid.Velocity.RegularCellValue);
     }
 
-    public void Step(float vTimeStep)
+    public void Step(float vTimeStep, int vIterationCount)
     {
         Profiler.BeginSample("ParticleInCell");
         __ParticleInCell(vTimeStep);
@@ -118,7 +118,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
-        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1, 2, 32);
+        m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1, 2, vIterationCount);
         Profiler.EndSample();
     }
 
