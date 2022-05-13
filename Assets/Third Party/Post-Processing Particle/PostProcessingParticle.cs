@@ -16,8 +16,9 @@ public class PostProcessingParticle
         m_AnisotropyBuffer = new ComputeBuffer(vMaxParticleCount, sizeof(float) * 12);
     }
 
-    public void computeAnisotropyMatrix(ComputeBuffer vParticlePos)
+    public void computeAnisotropyMatrix(ComputeBuffer vParticlePos, int vIterNum)
     {
+        m_ParticlePostProcessingToolsCS.SetInt("IterNum", vIterNum);
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "IndirectArgmentBuffer", m_ArgumentBuffer);
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "HashCountBuffer", m_HashCountBuffer);
         m_ParticlePostProcessingToolsCS.SetBuffer(m_ComputeAnisotropyMatrixKernelIndex, "HashOffsetBuffer", m_HashOffsetBuffer);

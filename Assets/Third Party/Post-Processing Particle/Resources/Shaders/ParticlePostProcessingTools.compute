@@ -10,6 +10,7 @@ struct Anisotropy
     float4 AniZ;
 };
 
+int IterNum;
 StructuredBuffer<uint> IndirectArgmentBuffer;
 StructuredBuffer<float3> ParticlePosBuffer;
 RWStructuredBuffer<float3> NarrowPositionBuffer;
@@ -108,7 +109,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
         { covMatrix[2][0], covMatrix[2][1], covMatrix[2][2] }
     };
 
-    for (uint iter = 0; iter < 10; ++iter)
+    for (uint iter = 0; iter < IterNum; ++iter)
     {
         uint nRow = 0;
         uint nCol = 1;
@@ -128,7 +129,6 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
             }
         }
 
-        
         //Calculate Rotation Angle
         float dbApp = eignvalue[nRow][nRow];
         float dbAqq = eignvalue[nCol][nCol];
@@ -172,7 +172,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     }
     
     float maxSigma = max(max(eignvalue[0][0], eignvalue[1][1]), eignvalue[2][2]);
-    AnisotropyBuffer[i].AniX = float4(eignvectors[0][0], eignvectors[1][0], eignvectors[2][0], 3 * max(maxSigma / 4, eignvalue[0][0]));
-    AnisotropyBuffer[i].AniY = float4(eignvectors[0][1], eignvectors[1][1], eignvectors[2][1], 3 * max(maxSigma / 4, eignvalue[1][1]));
-    AnisotropyBuffer[i].AniZ = float4(eignvectors[0][2], eignvectors[1][2], eignvectors[2][2], 3 * max(maxSigma / 4, eignvalue[2][2]));
+    AnisotropyBuffer[i].AniX = float4(eignvectors[0][0], eignvectors[1][0], eignvectors[2][0], max(maxSigma / 4, eignvalue[0][0]));
+    AnisotropyBuffer[i].AniY = float4(eignvectors[0][1], eignvectors[1][1], eignvectors[2][1], max(maxSigma / 4, eignvalue[1][1]));
+    AnisotropyBuffer[i].AniZ = float4(eignvectors[0][2], eignvectors[1][2], eignvectors[2][2], max(maxSigma / 4, eignvalue[2][2]));
 }

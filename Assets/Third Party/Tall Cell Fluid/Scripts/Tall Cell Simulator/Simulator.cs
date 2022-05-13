@@ -201,7 +201,7 @@ public class Simulator
 
         Profiler.BeginSample("ParticlePostProcessing");
         m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position);
+        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, 20);//TODO: Awaiting refactoring to unify data transfer
         Profiler.EndSample();
     }
 

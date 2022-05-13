@@ -230,9 +230,9 @@
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
 
                 float4x4 q;
-                q._m00_m10_m20_m30 = float4(particleAnisotropy.AniX.xyz * particleAnisotropy.AniX.w, 0.0);
-                q._m01_m11_m21_m31 = float4(particleAnisotropy.AniY.xyz * particleAnisotropy.AniY.w, 0.0);
-                q._m02_m12_m22_m32 = float4(particleAnisotropy.AniZ.xyz * particleAnisotropy.AniZ.w, 0.0);
+                q._m00_m10_m20_m30 = float4(particleAnisotropy.AniX.xyz * particleAnisotropy.AniX.w * _ParticlesRadius, 0.0);
+                q._m01_m11_m21_m31 = float4(particleAnisotropy.AniY.xyz * particleAnisotropy.AniY.w * _ParticlesRadius, 0.0);
+                q._m02_m12_m22_m32 = float4(particleAnisotropy.AniZ.xyz * particleAnisotropy.AniZ.w * _ParticlesRadius, 0.0);
                 q._m03_m13_m23_m33 = float4(particlePosition, 1.0);
 
                 // transforms a normal to parameter space (inverse transpose of (q*modelview)^-T)
@@ -258,9 +258,9 @@
 
                 // construct inverse quadric matrix (used for ray-casting in parameter space)
                 float4x4 invq;
-                invq._m00_m10_m20_m30 = float4(particleAnisotropy.AniX.xyz / particleAnisotropy.AniX.w, 0.0);
-                invq._m01_m11_m21_m31 = float4(particleAnisotropy.AniY.xyz / particleAnisotropy.AniY.w, 0.0);
-                invq._m02_m12_m22_m32 = float4(particleAnisotropy.AniZ.xyz / particleAnisotropy.AniZ.w, 0.0);
+                invq._m00_m10_m20_m30 = float4(particleAnisotropy.AniX.xyz / particleAnisotropy.AniX.w / _ParticlesRadius, 0.0);
+                invq._m01_m11_m21_m31 = float4(particleAnisotropy.AniY.xyz / particleAnisotropy.AniY.w / _ParticlesRadius, 0.0);
+                invq._m02_m12_m22_m32 = float4(particleAnisotropy.AniZ.xyz / particleAnisotropy.AniZ.w / _ParticlesRadius, 0.0);
                 invq._m03_m13_m23_m33 = float4(0.0, 0.0, 0.0, 1.0);
 
                 invq = transpose(invq);
