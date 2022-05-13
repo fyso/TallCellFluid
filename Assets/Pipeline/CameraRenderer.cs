@@ -20,6 +20,7 @@ public partial class CameraRenderer : MonoBehaviour
     Material m_DrawFluidParticlesMaterial = Resources.Load<Material>("Materials/DrawFluidParticles");
     Material m_FilterMaterial = Resources.Load<Material>("Materials/Filter");
     Material m_GenerateNoramalMaterial = Resources.Load<Material>("Materials/GenerateNoramal");
+    Material m_ToolsMaterial = Resources.Load<Material>("Materials/Tools");
 
     uint m_FrameIndex = 0;
     ComputeBuffer m_SurfaceGridBuffer;
@@ -46,8 +47,8 @@ public partial class CameraRenderer : MonoBehaviour
             GenerateFluidNoramal();
         }
         if (m_RenderManager.m_PerspectiveGridSetting.m_OcclusionCullingDebug)
-            Show(m_GridDebugRT); 
-        else Show(m_FluidNormalRT);
+            Show(m_GridDebugRT);
+        else Show(m_FluidNormalRT, m_SceneDepthRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
@@ -160,7 +161,7 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_CommandBuffer.DispatchCompute(m_PerspectiveGridReSamplingCS, clearParticleCountOfGridKernel, Mathf.CeilToInt((float)gridCount / clearParticleCountOfGridGroupX), 1, 1);
 
-        m_CommandBuffer.SetComputeBufferParam(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, "_ParticlePositionBuffer", m_RenderManager.m_ParticleData.PositionBuffer);
+        m_CommandBuffer.SetComputeBufferParam(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, "_ParticlePositionBuffer", m_RenderManager.m_ParticleData.NarrowPositionBuffer);
         m_CommandBuffer.SetComputeBufferParam(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, "ParticleIndirectArgment_R", m_RenderManager.m_ParticleData.ArgumentBuffer);
         m_CommandBuffer.DispatchCompute(m_PerspectiveGridReSamplingCS, insertParticle2PerspectiveGridKernel, m_RenderManager.m_ParticleData.ArgumentBuffer, 0);
 
@@ -170,6 +171,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.DispatchCompute(m_PerspectiveGridReSamplingCS, surfaceGridKernel, Mathf.CeilToInt((float)clusterDimX / surfaceGridGroupX), Mathf.CeilToInt((float)clusterDimY / surfaceGridGroupY), 1);
         _ExecuteCommandBuffer();
     }
+
     void DrawParticles()
     {
         m_FluidDepthRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 32, RenderTextureFormat.Depth);
@@ -189,14 +191,14 @@ public partial class CameraRenderer : MonoBehaviour
         }
 
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
-        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_RenderManager.m_ParticleData.PositionBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_RenderManager.m_ParticleData.AnisotropyBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_RenderManager.m_ParticleData.NarrowPositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_RenderManager.m_FilterSetting.m_ParticlesRadius);
         m_CommandBuffer.DrawProceduralIndirect(
             Matrix4x4.identity,
-            m_DrawFluidParticlesMaterial, 0,
+            m_DrawFluidParticlesMaterial, 1,
             MeshTopology.Triangles, m_RenderManager.m_ParticleData.ArgumentBuffer, 12);
-
         _ExecuteCommandBuffer();
     }
 
@@ -272,10 +274,18 @@ public partial class CameraRenderer : MonoBehaviour
         vFar = Math.Min(p7.z, vFar);
         vFar = Math.Min(m_Camera.farClipPlane, -vFar);
     }
-    void Show(RenderTexture outputRT)
+    void Show(RenderTexture outputRT, RenderTexture depthRT = null)
     {
+        m_CommandBuffer.name = "Show";
         m_CommandBuffer.Blit(outputRT, m_Camera.targetTexture, Vector2.one, Vector2.zero);
-        m_Context.ExecuteCommandBuffer(m_CommandBuffer);
+
+        if (depthRT)
+        {
+            m_CommandBuffer.SetGlobalTexture("_SrcDepth", depthRT);
+            m_CommandBuffer.SetRenderTarget(0, m_Camera.targetTexture);
+            m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_ToolsMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        _ExecuteCommandBuffer();
     }
 
     void Clear()

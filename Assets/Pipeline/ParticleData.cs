@@ -4,5 +4,6 @@ using UnityEngine;
 public class ParticleData : ScriptableObject
 {
     public ComputeBuffer ArgumentBuffer;
-    public ComputeBuffer PositionBuffer;
+    public ComputeBuffer NarrowPositionBuffer;
+    public ComputeBuffer AnisotropyBuffer;
 }

@@ -1,0 +1,178 @@
+#include "Common.hlsl"
+
+#pragma enable_d3d11_debug_symbols
+#pragma kernel computeAnisotropyMatrix
+
+struct Anisotropy
+{
+    float4 AniX;
+    float4 AniY;
+    float4 AniZ;
+};
+
+StructuredBuffer<uint> IndirectArgmentBuffer;
+StructuredBuffer<float3> ParticlePosBuffer;
+RWStructuredBuffer<float3> NarrowPositionBuffer;
+RWStructuredBuffer<Anisotropy> AnisotropyBuffer;
+
+[numthreads(THREAD_NUM_1D, 1, 1)]
+void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint i = ThreadIdx + GroupIdx * THREAD_NUM_1D;
+    if (i >= IndirectArgmentBuffer[4]) return;
+    
+    float3 currentPos = ParticlePosBuffer[i];
+    NarrowPositionBuffer[i] = currentPos;
+
+    int3 centerCellIndex = convertPos2CellIndex(currentPos);
+    if (centerCellIndex.x < 0)
+        return;
+    
+    float weightSum = 0;
+    float3 centerPos = float3(0, 0, 0);
+    uint neighbourNum = 0;
+
+    for (uint x = max(centerCellIndex.x - 1, 0); x <= centerCellIndex.x + 1; x++)
+    {
+        for (uint y = max(centerCellIndex.y - 1, 0); y <= centerCellIndex.y + 1; y++)
+        {
+            for (uint z = max(centerCellIndex.z - 1, 0); z <= centerCellIndex.z + 1; z++)
+            {
+                uint mortonIndex = computeMorton3D(uint3(x, y, z));
+                uint count = HashCountBuffer[mortonIndex];
+                uint offset = HashOffsetBuffer[mortonIndex];
+                float3 neighbourPos = float3(0, 0, 0);
+                for (uint k = offset; k < offset + count; k++)
+                {
+                    neighbourPos = ParticlePosBuffer[k];
+                    float distance = length(currentPos - neighbourPos);
+                    
+                    float weight = 0;
+                    if (distance < CellLength)
+                    {
+                        float ratio = distance / CellLength;
+                        weight = 1 - ratio * ratio * ratio;
+                        centerPos += weight * neighbourPos;
+                        weightSum += weight;
+                        neighbourNum++;
+                    }
+                }
+            }
+        }
+    }
+    centerPos /= weightSum;
+
+        
+    float3x3 covMatrix =
+    {
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 }
+    };
+    for (uint x = max(centerCellIndex.x - 1, 0); x <= centerCellIndex.x + 1; x++)
+    {
+        for (uint y = max(centerCellIndex.y - 1, 0); y <= centerCellIndex.y + 1; y++)
+        {
+            for (uint z = max(centerCellIndex.z - 1, 0); z <= centerCellIndex.z + 1; z++)
+            {
+                uint mortonIndex = computeMorton3D(uint3(x, y, z));
+                uint count = HashCountBuffer[mortonIndex];
+                uint offset = HashOffsetBuffer[mortonIndex];
+
+                for (uint k = offset; k < offset + count; k++)
+                {
+                    float3 neighbourPos = ParticlePosBuffer[k];
+                    float distance = length(currentPos - neighbourPos);
+                    if (distance < CellLength)
+                    {
+                        float ratio = distance / CellLength;
+                        float weight = 1 - ratio * ratio * ratio;
+
+                        float1x3 posOffset = neighbourPos - centerPos;
+                        covMatrix += weight * mul(transpose(posOffset), posOffset);
+                    }
+                }
+            }
+        }
+    }
+    covMatrix /= weightSum;
+
+    
+    
+    
+    float eignvectors[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+    float eignvalue[3][3] =
+    {
+        { covMatrix[0][0], covMatrix[0][1], covMatrix[0][2] },
+        { covMatrix[1][0], covMatrix[1][1], covMatrix[1][2] },
+        { covMatrix[2][0], covMatrix[2][1], covMatrix[2][2] }
+    };
+
+    for (uint iter = 0; iter < 10; ++iter)
+    {
+        uint nRow = 0;
+        uint nCol = 1;
+        float dbMax = 0;
+        //Get max element row and column
+        for (uint i = 0; i < 2; ++i)
+        {
+            for (uint k = i + 1; k < 3; ++k)
+            {
+                float d = abs(eignvalue[i][k]);
+                if (dbMax <= d)
+                {
+                    dbMax = d;
+                    nRow = i;
+                    nCol = k;
+                }
+            }
+        }
+
+        
+        //Calculate Rotation Angle
+        float dbApp = eignvalue[nRow][nRow];
+        float dbAqq = eignvalue[nCol][nCol];
+        float dbApq = eignvalue[nRow][nCol];
+        float dbAngle = 0.7853975;
+        if (abs(dbAqq - dbApp) > 0.0000001)
+            dbAngle = 0.5f * atan2(-2 * dbApq, dbAqq - dbApp);
+        //float dbAngle = 0.5f * atan2(-2 * dbApq, dbAqq - dbApp);
+        float dbSin = sin(dbAngle);
+        float dbCos = cos(dbAngle);
+        float dbSin2 = sin(2 * dbAngle);
+        float dbCos2 = cos(2 * dbAngle);
+        
+        eignvalue[nRow][nRow] = dbCos * dbCos * dbApp + 2 * dbSin * dbCos * dbApq + dbSin * dbSin * dbAqq;
+        eignvalue[nCol][nCol] = dbSin * dbSin * dbApp - 2 * dbSin * dbCos * dbApq + dbCos * dbCos * dbAqq;
+        eignvalue[nRow][nCol] = 0.5 * (dbAqq - dbApp) * dbSin2 + dbApq * dbCos2;
+        eignvalue[nCol][nRow] = eignvalue[nRow][nCol];
+        
+        for (uint j = 0; j < 3; j++)
+        {
+            if (j != nRow && j != nCol)
+            {
+                dbMax = eignvalue[nRow][j];
+                float dbTemp = eignvalue[j][nCol];
+                eignvalue[nRow][j] = dbMax * dbCos + dbTemp * dbSin; //p
+                eignvalue[j][nRow] = eignvalue[nRow][j];
+                
+                eignvalue[j][nCol] = dbTemp * dbCos - dbMax * dbSin; //q
+                eignvalue[nCol][j] = eignvalue[j][nCol];
+            }
+        }
+        
+        //Calculate EignvectorsMatrix
+        for (uint n = 0; n < 3; n++)
+        {
+            dbMax = eignvectors[n][nRow];
+            float dbTemp = eignvectors[n][nCol];
+            eignvectors[n][nRow] = dbMax * dbCos + dbTemp * dbSin; //p
+            eignvectors[n][nCol] = dbTemp * dbCos - dbMax * dbSin; //q
+        }
+    }
+    
+    float maxSigma = max(max(eignvalue[0][0], eignvalue[1][1]), eignvalue[2][2]);
+    AnisotropyBuffer[i].AniX = float4(eignvectors[0][0], eignvectors[1][0], eignvectors[2][0], 3 * max(maxSigma / 4, eignvalue[0][0]));
+    AnisotropyBuffer[i].AniY = float4(eignvectors[0][1], eignvectors[1][1], eignvectors[2][1], 3 * max(maxSigma / 4, eignvalue[1][1]));
+    AnisotropyBuffer[i].AniZ = float4(eignvectors[0][2], eignvectors[1][2], eignvectors[2][2], 3 * max(maxSigma / 4, eignvalue[2][2]));
+}

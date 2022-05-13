@@ -152,13 +152,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 87215725}
-  m_LocalRotation: {x: -0.082296796, y: -0.06930596, z: -0.8763977, w: -0.4694157}
-  m_LocalPosition: {x: 28.3, y: 45.3, z: 17.708687}
+  m_LocalRotation: {x: 0.008802043, y: 0.008649743, z: 0.008649744, w: 0.99988645}
+  m_LocalPosition: {x: 21, y: 46.2, z: 11.4}
   m_LocalScale: {x: 20, y: 20, z: 20}
   m_Children: []
   m_Father: {fileID: 876869189}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 1, y: 1, z: 1}
 --- !u!54 &87215727
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -201,8 +201,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: -0.010026932, y: -0.011894226, z: 0.012937546}
-    m_Extent: {x: 10.641449, y: 10.636544, z: 10.615635}
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 10.663474, y: 10.663418, z: 10.663418}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers:
@@ -210,7 +210,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 5c4a3f2a3b1e6314fbec0210d37ee345, type: 2}
+  sdfData: {fileID: 11400000, guid: 21ddd99beb67bc3408b1357031043003, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -218,7 +218,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 0
+  bakerName: 1
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!135 &87215730
@@ -394,7 +394,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &876869189
 Transform:
   m_ObjectHideFlags: 0
@@ -560,11 +560,12 @@ MonoBehaviour:
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers:
-  - {fileID: 1035981721}
+  - {fileID: 87215731}
+  - {fileID: 803667930}
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 849866c66cd0adc4d9a878e54745a719, type: 2}
+  sdfData: {fileID: 11400000, guid: 0abb0889bf6604848805d1ae7ababdaa, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -572,7 +573,7 @@ MonoBehaviour:
   previewEpsilon: 0.003
   previewNormalDelta: 0.02
   previewMode: 0
-  bakerName: 0
+  bakerName: 1
   debugTex3D: {fileID: 0}
   volumeComputeMethodsShader: {fileID: 0}
 --- !u!114 &1035981718
@@ -624,7 +625,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1035981715}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -805,11 +806,11 @@ MonoBehaviour:
   m_SeaLevel: 32
   m_MaxParticleCount: 2000000
   m_TimeStep: 0.005
-  VisualParticle: 1
-  ShowGridDebugInfo: 0
+  VisualParticle: 0
+  ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 0
-    m_ShowInfo: 5
+    m_ShowInfo: 1
     MinShowValue: 0
     MinShowColor: {r: 0, g: 0, b: 0, a: 0}
     MaxShowValue: 50

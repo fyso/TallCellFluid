@@ -80,8 +80,8 @@ namespace GPUDPP
 
         public void ComputeNewIndex(ComputeBuffer vKey, GPUMultiSplitPlan vPlan, int vBucketCount, ComputeBuffer vArgument, int vElementCountOffset, int vGroupCountOffset, int vSplitPointOffset)
         {
-            m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.WarpLevelHistogram);
-            m_GPUBufferClear.ClraeUIntBufferWithZero(vPlan.WarpLevelHistogramOffset);
+            m_GPUBufferClear.ClearUIntBufferWithZero(vPlan.WarpLevelHistogram);
+            m_GPUBufferClear.ClearUIntBufferWithZero(vPlan.WarpLevelHistogramOffset);
 
             m_GPUMultiSplitCS.SetInt("BucketCount", vBucketCount);
             m_GPUMultiSplitCS.SetInt("ElementCountOffset", vElementCountOffset);

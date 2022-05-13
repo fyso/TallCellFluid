@@ -296,7 +296,6 @@ public class Grid
     public void InitMesh(Texture vTerrian, float vSeaLevel)
     {
         m_RemeshTools.ComputeTerrianHeight(vTerrian, FineGrid.TerrainHeight, 20.0f);
-        __DownSampleTerrainHeight();
 
         Profiler.BeginSample("init fine level tallcell grid");
         m_RemeshTools.ComputeH1H2WithSeaLevel(FineGrid.TerrainHeight, m_GPUCache.H1H2Cahce, vSeaLevel);
@@ -304,7 +303,7 @@ public class Grid
         Profiler.EndSample();
 
         Profiler.BeginSample("down sample height");
-        __DownSampleTallCellHeight();
+        __DownSampleHeight();
         Profiler.EndSample();
     }
 
@@ -317,7 +316,7 @@ public class Grid
         Profiler.EndSample();
 
         Profiler.BeginSample("down sample height");
-        __DownSampleTallCellHeight();
+        __DownSampleHeight();
         Profiler.EndSample();
     }
 
@@ -351,35 +350,43 @@ public class Grid
 
     #region DownSample
     private ComputeShader m_DownsampleCS;
-    private int downSampleTerrainHeight;
-    private int downSampleTallCellHeight;
+    private int m_DownSampleHeight;
     private int m_DownSampleRegularCellKernelIndex;
     private int m_DownSampleTallCellKernelIndex;
 
     private void __InitDownSampleTools()
     {
         m_DownsampleCS = Resources.Load<ComputeShader>(Common.DownsampleToolsCSPath);
-        downSampleTerrainHeight = m_DownsampleCS.FindKernel("downSampleTerrainHeight");
-        downSampleTallCellHeight = m_DownsampleCS.FindKernel("downSampleTallCellHeight");
+        m_DownSampleHeight = m_DownsampleCS.FindKernel("downSampleHeight");
         m_DownSampleRegularCellKernelIndex = m_DownsampleCS.FindKernel("downSampleRegularCell");
         m_DownSampleTallCellKernelIndex = m_DownsampleCS.FindKernel("downSampleTallCell");
     }
 
     private void __DownSampleTallCellHeight(int vSrcLevel, int LeftLevel)
     {
-        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTex", m_GridData[vSrcLevel].TallCellHeight);
-        m_DownsampleCS.SetTexture(downSampleTallCellHeight, "SrcTerrain", m_GridData[vSrcLevel].TerrainHeight);
+        m_DownsampleCS.SetTexture(m_DownSampleHeight, "SrcTall", m_GridData[vSrcLevel].TallCellHeight);
+        m_DownsampleCS.SetTexture(m_DownSampleHeight, "SrcTerrain", m_GridData[vSrcLevel].TerrainHeight);
         m_DownsampleCS.SetInts("SrcResolution", m_GridData[vSrcLevel].ResolutionXZ.x, m_GridData[vSrcLevel].ResolutionXZ.y);
         m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
+        m_DownsampleCS.SetFloat("SrcCellLength", m_GridData[vSrcLevel].CellLength);
+
         for (int i = 1; i <= 4; i++)
         {
-            if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
-            else m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel].TallCellHeight);
+            if (i <= LeftLevel)
+            {
+                m_DownsampleCS.SetTexture(m_DownSampleHeight, "OutTallMip" + i, m_GridData[vSrcLevel + i].TallCellHeight);
+                m_DownsampleCS.SetTexture(m_DownSampleHeight, "OutTerrainMip" + i, m_GridData[vSrcLevel + i].TerrainHeight);
+            }
+            else
+            {
+                m_DownsampleCS.SetTexture(m_DownSampleHeight, "OutTallMip" + i, m_GridData[vSrcLevel].TallCellHeight);
+                m_DownsampleCS.SetTexture(m_DownSampleHeight, "OutTerrainMip" + i, m_GridData[vSrcLevel].TerrainHeight);
+            }
         }
-        m_DownsampleCS.Dispatch(downSampleTallCellHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
+        m_DownsampleCS.Dispatch(m_DownSampleHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
     }
 
-    private void __DownSampleTallCellHeight()
+    private void __DownSampleHeight()
     {
         for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
         {
@@ -387,32 +394,11 @@ public class Grid
         }
     }
 
-    private void __DownSampleTerrainHeight(int vSrcLevel, int LeftLevel)
-    {
-        m_DownsampleCS.SetTexture(downSampleTerrainHeight, "SrcTex", m_GridData[vSrcLevel].TerrainHeight);
-        m_DownsampleCS.SetInts("SrcResolution", m_GridData[vSrcLevel].ResolutionXZ.x, m_GridData[vSrcLevel].ResolutionXZ.y);
-        m_DownsampleCS.SetInt("NumMipLevels", LeftLevel);
-        for (int i = 1; i <= 4; i++)
-        {
-            if (i <= LeftLevel) m_DownsampleCS.SetTexture(downSampleTerrainHeight, "OutMip" + i, m_GridData[vSrcLevel + i].TerrainHeight);
-            else m_DownsampleCS.SetTexture(downSampleTallCellHeight, "OutMip" + i, m_GridData[vSrcLevel].TallCellHeight);
-        }
-        m_DownsampleCS.Dispatch(downSampleTerrainHeight, Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.x / 8, 1), Mathf.Max(m_GridData[vSrcLevel + 1].ResolutionXZ.y / 8, 1), 1);
-    }
-    
-    private void __DownSampleTerrainHeight()
-    {
-        for (int i = 0; i < m_HierarchicalLevel - 1; i += 4)
-        {
-            __DownSampleTerrainHeight(i, m_HierarchicalLevel - i - 1);
-        }
-    }
-
     private void __DownSampleValue()
     {
         for (int i = 0; i < m_HierarchicalLevel - 1; i++)
         {
-            if (i < 4) m_DownsampleCS.SetInt("SaveMoreAir", 1);
+            if (i < 2) m_DownsampleCS.SetInt("SaveMoreAir", 1);
             else m_DownsampleCS.SetInt("SaveMoreAir", 0);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTerrainHeight", m_GridData[i + 1].TerrainHeight);
             m_DownsampleCS.SetTexture(m_DownSampleRegularCellKernelIndex, "NextLevelTallCellHeight", m_GridData[i + 1].TallCellHeight);
