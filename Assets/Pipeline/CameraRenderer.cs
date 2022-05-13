@@ -126,13 +126,10 @@ public partial class CameraRenderer : MonoBehaviour
         int clusterDimX = 128;
         int clusterDimY = 128;
         AdaptiveFliudPlane(out zNear, out zFar);
-        float fieldOfView = m_Camera.fieldOfView * Mathf.Deg2Rad * 0.5f;
         float logFarAndNear = Mathf.Log(zFar / zNear);
+        float fieldOfView = m_Camera.fieldOfView * Mathf.Deg2Rad * 0.5f; //TODO:Orthographic
         float sampleRadioInv = clusterDimY / (2.0f * Mathf.Tan(fieldOfView));
-        //float scaleFactorZ   = Mathf.Pow((float)(0.5 * clusterDimX / sampleRadioInv), 2) + Mathf.Pow((float)0.5 * clusterDimY / sampleRadioInv, 2) + 1;
-        //scaleFactorZ = Mathf.Sqrt(scaleFactorZ);
-        float scaleFactorZ = 1.0f;
-        int clusterDimZ = Mathf.CeilToInt(logFarAndNear * sampleRadioInv * scaleFactorZ);
+        int clusterDimZ = Mathf.CeilToInt(logFarAndNear * sampleRadioInv);
         int gridCount = clusterDimX * clusterDimY * clusterDimZ;
         int surfaceGridKernel = m_PerspectiveGridReSamplingCS.FindKernel("searchSurfaceGrid");
         int clearSurfaceGridKernel = m_PerspectiveGridReSamplingCS.FindKernel("clearSurfaceGrid");
