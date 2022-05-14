@@ -19,9 +19,10 @@
             #pragma fragment SpriteGenerateDepthPassFrag
             #pragma multi_compile _ _OCCLUSIONCULLDEBUG
             #include "../ShaderLibrary/Common.hlsl"
+            float4x4 _ViewMatrixForGrid;
 
             StructuredBuffer<float3> _ParticlePositionBuffer;
-            StructuredBuffer<uint> SurfaceGrid_RW;
+            StructuredBuffer<uint> _VisibleGridBuffer;
 
             Texture2D _SceneDepth;
             SamplerState _point_clamp_sampler;
@@ -78,7 +79,7 @@
                 output.sphereCenterVS = TransformWorldToView(_ParticlePositionBuffer[instanceID]);
                 float3 posVS = output.sphereCenterVS;
                 #ifdef _OCCLUSIONCULLDEBUG
-                    posVS = mul(unity_MatrixVHistory, float4(_ParticlePositionBuffer[instanceID], 1.0f));
+                    posVS = mul(_ViewMatrixForGrid, float4(_ParticlePositionBuffer[instanceID], 1.0f));
                 #endif
                 int3 tex3DIndex = viewPos2Index3D(posVS);
                 #ifdef _OCCLUSIONCULLDEBUG
@@ -87,14 +88,14 @@
                     else
                     {
                         uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
-                        uint  isSurface = SurfaceGrid_RW[cellLinerIndex];
+                        uint  isSurface = _VisibleGridBuffer[cellLinerIndex];
                         output.cellOfParticleIndex3D = float3(cellLinerIndex, instanceID, isSurface);
                     }
                 #else
                     if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
                         return Clip();
                     uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
-                    uint  isSurface = SurfaceGrid_RW[cellLinerIndex];
+                    uint  isSurface = _VisibleGridBuffer[cellLinerIndex];
                     if (isSurface != 1) return Clip();
                 #endif
                 output.positionCS = TransformWViewToHClip(output.sphereCenterVS + float3(_ParticlesRadius * output.uv, 0.0f));

@@ -11,7 +11,6 @@ CBUFFER_END
 //调用SetupCameraProperties时传入的内置属性
 float4x4 unity_MatrixVP;
 float4x4 unity_MatrixV;
-float4x4 unity_MatrixVHistory;
 float4x4 unity_CameraInvProjection;
 float unity_CameraWorldClipPlanes[6];
 float4x4 glstate_matrix_projection;

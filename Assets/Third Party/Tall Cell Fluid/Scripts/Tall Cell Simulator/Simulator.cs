@@ -35,17 +35,13 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
-    public void SetupBounding(Bounding vBounding)
+    public void SetupDataForReconstruction(SimulatorData vData)
     {
-        vBounding.MinPos = new Vector3(0.1f, 0.1f, 0.1f);
-        vBounding.MaxPos = new Vector3(64, 32, 64);  //TODO:
-    }
-
-    public void SetupParticleDataForReconstruction(ParticleData vParticleData)
-    {
-        vParticleData.ArgumentBuffer = m_DynamicParticle.Argument;
-        vParticleData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
-        vParticleData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
+        vData.ArgumentBuffer = m_DynamicParticle.Argument;
+        vData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
+        vData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
+        vData.MinPos = m_Min;
+        vData.MaxPos = new Vector3(64, 32, 64);  //TODO:
     }
 
     public void VisualParticle(Material vMaterial)

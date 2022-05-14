@@ -10,9 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a38892840ff59844495f97ba5debe979, type: 3}
-  m_Name: RenderManager
+  m_Name: SettingManager
   m_EditorClassIdentifier: 
-  m_Bounding: {fileID: 11400000, guid: 2afa0af94cf364a43abc0453611bb3b0, type: 2}
-  m_ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
+  m_SimulatorData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
+  m_CullParticleSetting: {fileID: 11400000, guid: e0aa751be2f640445935e4ae31c3f8c9, type: 2}
   m_FilterSetting: {fileID: 11400000, guid: 2a12ad91724788646a94004ed9ec78ba, type: 2}
-  m_PerspectiveGridSetting: {fileID: 11400000, guid: e0aa751be2f640445935e4ae31c3f8c9, type: 2}

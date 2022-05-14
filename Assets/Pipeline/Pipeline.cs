@@ -3,9 +3,9 @@ using UnityEngine.Rendering;
 
 public class Pipeline : RenderPipeline
 {
-	RenderManager m_RenderManager;
+	SettingManager m_RenderManager;
 	CameraRenderer m_CameraRenderer;
-	public Pipeline(RenderManager renderManager, CameraRenderer cameraRenderer)
+	public Pipeline(SettingManager renderManager, CameraRenderer cameraRenderer)
 	{
 		m_RenderManager = renderManager;
 		m_CameraRenderer = cameraRenderer;

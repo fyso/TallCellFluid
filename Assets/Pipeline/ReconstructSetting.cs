@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Rendering/Filter Setting Asset")]
-public class FilterSetting : ScriptableObject
+public class ReconstructSetting : ScriptableObject
 {
     [Range(0, 3)]
     public float m_ParticlesRadius = 0.25f;

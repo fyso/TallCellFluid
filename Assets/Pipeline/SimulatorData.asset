@@ -9,10 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86d3f50f70bba1746b0dc74a55152d3e, type: 3}
-  m_Name: FilterSetting
+  m_Script: {fileID: 11500000, guid: 5376734e5aa61764b949d96da8c5dcf5, type: 3}
+  m_Name: SimulatorData
   m_EditorClassIdentifier: 
-  m_ParticlesRadius: 3
-  m_FilterRadiusWS: 0.16
-  m_ClampRatio: 1.93
-  m_ThresholdRatio: 1.08
