@@ -9,7 +9,7 @@ public class Simulator
     public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
     public static int ScatterOnlyTallCellParticleArgmentOffset { get{ return 0; }}
 
-    public Simulator(InitializationParameter vParam, RuntimeParameter vRuntimeParam)
+    public Simulator(InitializationParameter vParam)
     {
         m_Min = vParam.m_Min;
         m_CellLength = vParam.m_CellLength;
@@ -33,7 +33,6 @@ public class Simulator
         m_Argument.SetData(InitArgument);
 
         m_Grid.UpdateGridValue();
-        m_RuntimeParam = vRuntimeParam;
     }
 
     public void SetupDataForReconstruction(SimulatorData vData)
@@ -113,10 +112,10 @@ public class Simulator
         m_Utils.CopyFloat4Texture3DToAnother(Regular, FineGrid.Velocity.RegularCellValue);
     }
 
-    public void Step(float vTimeStep)
+    public void Step(float vTimeStep, RuntimeParameter vRuntimeParam)
     {
         Profiler.BeginSample("ParticleInCell");
-        __ParticleInCell(vTimeStep);
+        __ParticleInCell(vTimeStep, vRuntimeParam);
         Profiler.EndSample();
 
         Profiler.BeginSample("Remesh");
@@ -132,7 +131,7 @@ public class Simulator
         Profiler.EndSample();
     }
 
-    private void __ParticleInCell(float vTimeStep)
+    private void __ParticleInCell(float vTimeStep, RuntimeParameter vRuntimeParam)
     {
         Profiler.BeginSample("MarkParticleWtihCellType");
         m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_Grid.FineGrid);
@@ -198,14 +197,13 @@ public class Simulator
 
         Profiler.BeginSample("ParticlePostProcessing");
         m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, m_RuntimeParam.m_PCAIterationNum);
+        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, vRuntimeParam.m_PCAIterationNum);
         Profiler.EndSample();
     }
 
     private Vector3 m_Min;
     private Vector3 m_Max;
     private float m_CellLength;
-    public RuntimeParameter m_RuntimeParam;
 
     private Grid m_Grid;
     private DynamicParticle m_DynamicParticle;

@@ -27,6 +27,7 @@ public struct InitializationParameter
 [System.Serializable]
 public struct RuntimeParameter
 {
+    [Range(0.0f, 10f)]
     public int m_PCAIterationNum;
 }
 
@@ -84,14 +85,14 @@ public class Invoker : MonoBehaviour
 
     void Start()
     {
-        m_Simulator = new Simulator(m_InitializationParam, m_RuntimeParam);
+        m_Simulator = new Simulator(m_InitializationParam);
         m_Simulator.GenerateRandomVelicty();
         m_Simulator.SetupDataForReconstruction(m_ParticleData);
     }
 
     void Update()
     {
-        m_Simulator.Step(m_InitializationParam.m_TimeStep);
+        m_Simulator.Step(m_InitializationParam.m_TimeStep, m_RuntimeParam);
     }
 
     private void OnRenderObject()
