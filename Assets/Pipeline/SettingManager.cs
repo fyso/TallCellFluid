@@ -5,5 +5,5 @@ public class SettingManager : ScriptableObject
 {
     public SimulatorData m_SimulatorData;
     public CullParticleSetting m_CullParticleSetting;
-    public ReconstructSetting m_FilterSetting;
+    public ReconstructSetting m_ReconstructSetting;
 }

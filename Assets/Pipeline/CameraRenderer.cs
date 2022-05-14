@@ -306,14 +306,24 @@ public partial class CameraRenderer : MonoBehaviour
         }
 
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
-        m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_SettingManager.m_SimulatorData.AnisotropyBuffer);
         m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_SettingManager.m_SimulatorData.NarrowPositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);
-        m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_SettingManager.m_FilterSetting.m_ParticlesRadius);
-        m_CommandBuffer.DrawProceduralIndirect(
-            Matrix4x4.identity,
-            m_DrawFluidParticlesMaterial, 1,
-            MeshTopology.Triangles, m_SettingManager.m_SimulatorData.ArgumentBuffer, 12);
+        m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_SettingManager.m_ReconstructSetting.m_ParticlesRadius);
+        if (m_SettingManager.m_SimulatorData.AnisotropyBuffer != null)
+        {
+            m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_SettingManager.m_SimulatorData.AnisotropyBuffer);
+            m_CommandBuffer.DrawProceduralIndirect(
+                Matrix4x4.identity,
+                m_DrawFluidParticlesMaterial, 1,
+                MeshTopology.Triangles, m_SettingManager.m_SimulatorData.ArgumentBuffer, 12);
+        }
+        else
+        {
+            m_CommandBuffer.DrawProceduralIndirect(
+                Matrix4x4.identity,
+                m_DrawFluidParticlesMaterial, 0,
+                MeshTopology.Triangles, m_SettingManager.m_SimulatorData.ArgumentBuffer, 12);
+        }
         ExecuteCommandBuffer();
     }
 
@@ -322,7 +332,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_SmoothFluidDepthRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 32, RenderTextureFormat.Depth);
 
         m_CommandBuffer.name = "SmoothFluidDepth";
-        m_SettingManager.m_FilterSetting.UpdateShaderProperty();
+        m_SettingManager.m_ReconstructSetting.UpdateShaderProperty();
         m_CommandBuffer.SetRenderTarget(m_SmoothFluidDepthRT, m_SmoothFluidDepthRT);
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
         m_CommandBuffer.SetGlobalTexture("_FluidDepthRT", m_FluidDepthRT);

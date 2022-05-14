@@ -35,11 +35,19 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
-    public void SetupDataForReconstruction(SimulatorData vData)
+    public void SetupDataForReconstruction(SimulatorData vData, bool vComputeAnisotropyMatrix)
     {
         vData.ArgumentBuffer = m_DynamicParticle.Argument;
-        vData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
-        vData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
+        if(vComputeAnisotropyMatrix)
+        {
+            vData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
+            vData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
+        }
+        else
+        {
+            vData.NarrowPositionBuffer = m_DynamicParticle.MainParticle.Position;
+            vData.AnisotropyBuffer = null;
+        }
         vData.MinPos = m_Min;
         vData.MaxPos = new Vector3(64, 32, 64);  //TODO:
     }
@@ -195,10 +203,13 @@ public class Simulator
         m_ParticleInCellTools.ComputeH1H2WithParticle(m_DynamicParticle, m_Grid, m_SimulatorGPUCache);
         Profiler.EndSample();
 
-        Profiler.BeginSample("ParticlePostProcessing");
-        m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, vRuntimeParam.m_PCAIterationNum);
-        Profiler.EndSample();
+        if(vRuntimeParam.m_ComputeAnisotropyMatrix)
+        {
+            Profiler.BeginSample("ParticlePostProcessing");
+            m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
+            m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, vRuntimeParam.m_PCAIterationNum);
+            Profiler.EndSample();
+        }
     }
 
     private Vector3 m_Min;

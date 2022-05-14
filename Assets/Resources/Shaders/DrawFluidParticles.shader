@@ -226,6 +226,12 @@
                 nointerpolation float3 cellOfParticleIndex3D : VAR_CELLINDEX3D;
             #endif
             };
+            Varyings Clip()
+            {
+                Varyings output;
+                output.positionCS = float4(100, 100, 100, 1);
+                return output;
+            }
             Varyings GenerateDepthPassVertex(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
                 Varyings output;
