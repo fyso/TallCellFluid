@@ -25,6 +25,7 @@
             float _FilterRadiusWS;
             float _ClampRatio;
             float _ThresholdRatio;
+            float _Sigma;
 
             float NarrowRangeFilterPassFrag(Varyings input) : SV_Depth
             {
@@ -56,7 +57,7 @@
                         if (standardDeviation != 0)
                         {
                             float2 distance = float2(i, k) / standardDeviation;
-                            weight = exp(-0.5 * dot(distance, distance));
+                            weight = exp(-_Sigma * dot(distance, distance));
                         }
 
                         if (sampleDepth > upper)

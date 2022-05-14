@@ -17,12 +17,12 @@
             #pragma target 5.0
             #pragma vertex GenerateDepthPassVertex
             #pragma fragment SpriteGenerateDepthPassFrag
-            #pragma multi_compile _ _OCCLUSIONCULLDEBUG
+            #pragma multi_compile _ _CULL _FREEZE
             #include "../ShaderLibrary/Common.hlsl"
-            float4x4 _ViewMatrixForGrid;
 
             StructuredBuffer<float3> _ParticlePositionBuffer;
             StructuredBuffer<uint> _VisibleGridBuffer;
+            float4x4 _ViewMatrixForGrid;
 
             Texture2D _SceneDepth;
             SamplerState _point_clamp_sampler;
@@ -33,7 +33,7 @@
                 float4 positionCS : SV_POSITION;
                 float2 uv : VAR_SCREEN_UV;
                 nointerpolation float3 sphereCenterVS : VAR_POSITION_VS;
-                #ifdef _OCCLUSIONCULLDEBUG
+                #ifdef _FREEZE
                    nointerpolation float3 cellOfParticleIndex3D : VAR_CELLINDEX3D;
                 #endif
             };
@@ -76,28 +76,28 @@
                     break;
                 }
 
-                output.sphereCenterVS = TransformWorldToView(_ParticlePositionBuffer[instanceID]);
-                float3 posVS = output.sphereCenterVS;
-                #ifdef _OCCLUSIONCULLDEBUG
-                    posVS = mul(_ViewMatrixForGrid, float4(_ParticlePositionBuffer[instanceID], 1.0f));
-                #endif
-                int3 tex3DIndex = viewPos2Index3D(posVS);
-                #ifdef _OCCLUSIONCULLDEBUG
+                float3 particlePos = _ParticlePositionBuffer[instanceID];
+
+                #ifdef _CULL
+                    int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePos, 1.0f)));
+                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                        return Clip();
+                    uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+                    uint visible = _VisibleGridBuffer[cellLinerIndex];
+                    if (visible != 1) return Clip(); 
+                #elif _FREEZE
+                    int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePos, 1.0f)));
                     if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
                         output.cellOfParticleIndex3D = float3(1, instanceID, 0);
                     else
                     {
-                        uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
-                        uint  isSurface = _VisibleGridBuffer[cellLinerIndex];
-                        output.cellOfParticleIndex3D = float3(cellLinerIndex, instanceID, isSurface);
+                        uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+                        uint visible = _VisibleGridBuffer[cellLinerIndex];
+                        output.cellOfParticleIndex3D = float3(cellLinerIndex, instanceID, visible);
                     }
-                #else
-                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
-                        return Clip();
-                    uint  cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
-                    uint  isSurface = _VisibleGridBuffer[cellLinerIndex];
-                    if (isSurface != 1) return Clip();
                 #endif
+                
+                output.sphereCenterVS = TransformWorldToView(particlePos);
                 output.positionCS = TransformWViewToHClip(output.sphereCenterVS + float3(_ParticlesRadius * output.uv, 0.0f));
                 return output;
             }
@@ -105,7 +105,7 @@
             struct Targets
             {
                 float depth : SV_Depth;
-                #ifdef _OCCLUSIONCULLDEBUG
+                #ifdef _FREEZE
                     float4 gridIndexDebug : SV_Target0;
                 #endif
             };
@@ -126,12 +126,11 @@
 
                 Targets output;
                 output.depth = fluidDepth;
-                #ifdef _OCCLUSIONCULLDEBUG
+                #ifdef _FREEZE
                     float3 cellIndex3D = input.cellOfParticleIndex3D;
-                    //if (cellIndex3D.z == 0) output.gridIndexDebug = float4(1, 0, 0, 1.0);
-                    //else output.gridIndexDebug = float4(0, 1, 0, 1.0);
                     output.gridIndexDebug = float4(cellIndex3D, 1.0);
                 #endif
+
                 return output;
             }
 
@@ -154,6 +153,8 @@
             #pragma target 5.0
             #pragma vertex GenerateDepthPassVertex
             #pragma fragment SpriteGenerateDepthPassFrag
+            #pragma multi_compile _ _CULL _FREEZE
+            
             #include "../ShaderLibrary/Common.hlsl"
 
             struct Anisotropy
@@ -163,6 +164,8 @@
             };
             StructuredBuffer<Anisotropy> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
+            StructuredBuffer<uint> _VisibleGridBuffer;
+            float4x4 _ViewMatrixForGrid;
 
             Texture2D _SceneDepth;
             SamplerState _point_clamp_sampler;
@@ -219,15 +222,36 @@
                 nointerpolation float4 invQ1 : TEXCOORD2;
                 nointerpolation float4 invQ2 : TEXCOORD3;
                 nointerpolation float4 invQ3 : TEXCOORD4;
-                nointerpolation uint id : ID;
+            #ifdef _FREEZE
+                nointerpolation float3 cellOfParticleIndex3D : VAR_CELLINDEX3D;
+            #endif
             };
             Varyings GenerateDepthPassVertex(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID)
             {
                 Varyings output;
-                output.id = instanceID;
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
+
+                #ifdef _CULL
+                    int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePosition, 1.0f)));
+                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                        return Clip();
+                    uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+                    uint visible = _VisibleGridBuffer[cellLinerIndex];
+                    if (visible != 1) return Clip(); 
+                #elif _FREEZE
+                    int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePosition, 1.0f)));
+                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                        output.cellOfParticleIndex3D = float3(1, instanceID, 0);
+                    else
+                    {
+                        uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
+                        uint visible = _VisibleGridBuffer[cellLinerIndex];
+                        output.cellOfParticleIndex3D = float3(cellLinerIndex, instanceID, visible);
+                    }
+                #endif
+
                 Anisotropy ani = _AnisotropyBuffer[instanceID];
-                float3 scale = ani.Scale * _ParticlesRadius;
+                float3 scale = ani.Scale * _ParticlesRadius * 10;
                 float3x3 r =
                 {
                     {
@@ -322,10 +346,15 @@
 
                 return output;
             }
-
-            float SpriteGenerateDepthPassFrag(Varyings input) : SV_Depth
+            struct Targets
             {
-                float id = input.id;
+                float depth : SV_Depth;
+            #ifdef _FREEZE
+                float4 gridIndexDebug : SV_Target0;
+            #endif
+            };
+            Targets SpriteGenerateDepthPassFrag(Varyings input)
+            {
                 // transform from view space to parameter space
                 //column_major
                 float4x4 invQuadric;
@@ -361,7 +390,14 @@
                 float sceneDepth = _SceneDepth.Sample(_point_clamp_sampler, GetUVFromCS(ndcPos)).x;
                 if (ndcPos.z < sceneDepth) discard;
 
-                return ndcPos.z + id - id;
+
+                Targets output;
+                output.depth = ndcPos.z;
+            #ifdef _FREEZE
+                float3 cellIndex3D = input.cellOfParticleIndex3D;
+                output.gridIndexDebug = float4(cellIndex3D, 1.0);
+            #endif
+                return output;
             }
 
             ENDHLSL

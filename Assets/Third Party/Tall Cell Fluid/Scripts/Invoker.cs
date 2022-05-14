@@ -1,6 +1,36 @@
 using UnityEngine;
 
 [System.Serializable]
+public enum Resolution
+{
+    FOUR = 4,
+    EIGHT = 8,
+    SIXTEEN = 16,
+    THIRTY_TWO = 32,
+    SIXTY_FOUR = 64,
+    ONE_HUNDRED_TWENTY_EIGHT = 128,
+}
+
+[System.Serializable]
+public struct InitializationParameter
+{
+    public Texture m_Terrian;
+    public Vector3 m_Min;
+    public Resolution m_ResolutionXZ;
+    public Resolution m_RegularCellYCount;
+    public float m_CellLength;
+    public float m_SeaLevel;
+    public int m_MaxParticleCount;
+    public float m_TimeStep;
+}
+
+[System.Serializable]
+public struct RuntimeParameter
+{
+    public int m_PCAIterationNum;
+}
+
+[System.Serializable]
 public enum ShowMode
 {
     Entity = 0,
@@ -41,41 +71,27 @@ public struct VisualGridInfo
 
 public class Invoker : MonoBehaviour
 {
-    public Texture m_Terrian;
-    public Vector3 m_Min;
-    public Vector2Int m_ResolutionXZ;//TODO: The number with exponent 2
-    public int m_RegularCellYCount;//TODO: The number with exponent 2
-    public float m_CellLength;
-    public float m_SeaLevel;
-    public int m_MaxParticleCount;
-    public float m_TimeStep;
+    public InitializationParameter m_InitializationParam;
+    public RuntimeParameter m_RuntimeParam;
 
     public bool VisualParticle = false;
-    public bool ShowGridDebugInfo = false;
-    public VisualGridInfo VisualGridInfo;
     public Material VisualParticleMaterial;
+    public bool VisualGrid = false;
+    public VisualGridInfo VisualGridInfo;
 
     private Simulator m_Simulator;
     public SimulatorData m_ParticleData;
 
     void Start()
     {
-        m_Simulator = new Simulator(
-            m_Terrian, 
-            m_ResolutionXZ, 
-            m_RegularCellYCount, 
-            m_Min,
-            m_CellLength, 
-            m_SeaLevel, 
-            m_MaxParticleCount
-        );
+        m_Simulator = new Simulator(m_InitializationParam, m_RuntimeParam);
         m_Simulator.GenerateRandomVelicty();
         m_Simulator.SetupDataForReconstruction(m_ParticleData);
     }
 
     void Update()
     {
-        m_Simulator.Step(m_TimeStep);
+        m_Simulator.Step(m_InitializationParam.m_TimeStep);
     }
 
     private void OnRenderObject()
@@ -83,7 +99,7 @@ public class Invoker : MonoBehaviour
         if(m_Simulator != null && VisualParticle)
             m_Simulator.VisualParticle(VisualParticleMaterial);
 
-        if (m_Simulator != null && ShowGridDebugInfo)
+        if (m_Simulator != null && VisualGrid)
         {
             if ((int)VisualGridInfo.m_ShowInfo > 1)
                 VisualGridInfo.m_GridLevel = 0;

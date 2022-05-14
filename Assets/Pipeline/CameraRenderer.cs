@@ -169,7 +169,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-        if (m_SettingManager.m_CullParticleSetting.m_Freeze)
+        if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FREEZE)
             Show(m_CullDebugRT);
         else Show(m_FluidNormalRT, m_SceneDepthRT);
 
@@ -243,7 +243,7 @@ public partial class CameraRenderer : MonoBehaviour
                 m_SettingManager.m_SimulatorData.MaxPos,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimX,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimY,
-                m_SettingManager.m_CullParticleSetting.m_Freeze);
+                m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FREEZE);
         }
         else
         {
@@ -285,16 +285,24 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_CommandBuffer.name = "DrawParticles";
 
-        if (m_SettingManager.m_CullParticleSetting.m_Freeze)
+        switch(m_SettingManager.m_CullParticleSetting.m_CullMode)
         {
-            m_CullDebugRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 0, RenderTextureFormat.ARGBFloat);
-            m_CommandBuffer.EnableShaderKeyword("_OCCLUSIONCULLDEBUG");
-            m_CommandBuffer.SetRenderTarget(m_CullDebugRT, m_FluidDepthRT);
-        }
-        else
-        {
-            m_CommandBuffer.DisableShaderKeyword("_OCCLUSIONCULLDEBUG");
-            m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
+            case CullMode.None:
+                m_CommandBuffer.DisableShaderKeyword("_CULL");
+                m_CommandBuffer.DisableShaderKeyword("_FREEZE");
+                m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
+                break;
+            case CullMode.Cull:
+                m_CommandBuffer.EnableShaderKeyword("_CULL");
+                m_CommandBuffer.DisableShaderKeyword("_FREEZE");
+                m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
+                break;
+            case CullMode.FREEZE:
+                m_CommandBuffer.DisableShaderKeyword("_CULL");
+                m_CommandBuffer.EnableShaderKeyword("_FREEZE");
+                m_CullDebugRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 0, RenderTextureFormat.ARGBFloat);
+                m_CommandBuffer.SetRenderTarget(m_CullDebugRT, m_FluidDepthRT);
+                break;
         }
 
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
@@ -304,7 +312,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_SettingManager.m_FilterSetting.m_ParticlesRadius);
         m_CommandBuffer.DrawProceduralIndirect(
             Matrix4x4.identity,
-            m_DrawFluidParticlesMaterial, 0,
+            m_DrawFluidParticlesMaterial, 1,
             MeshTopology.Triangles, m_SettingManager.m_SimulatorData.ArgumentBuffer, 12);
         ExecuteCommandBuffer();
     }

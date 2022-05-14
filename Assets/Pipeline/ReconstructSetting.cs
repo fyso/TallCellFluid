@@ -11,6 +11,8 @@ public class ReconstructSetting : ScriptableObject
     public float m_ClampRatio = 1.0f;
     [Range(0, 20)]
     public float m_ThresholdRatio = 10.5f;
+    [Range(0, 1)]
+    public float m_Sigma = 0.5f;
 
     public void UpdateShaderProperty()
     {
@@ -18,5 +20,6 @@ public class ReconstructSetting : ScriptableObject
         Shader.SetGlobalFloat("_FilterRadiusWS", m_FilterRadiusWS);
         Shader.SetGlobalFloat("_ClampRatio", m_ClampRatio);
         Shader.SetGlobalFloat("_ThresholdRatio", m_ThresholdRatio);
+        Shader.SetGlobalFloat("_Sigma", m_Sigma);
     }
 }

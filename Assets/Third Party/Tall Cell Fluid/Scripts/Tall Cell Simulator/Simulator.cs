@@ -9,22 +9,22 @@ public class Simulator
     public static int OnlyRegularCellParticleTypeIndex { get{ return 0; }}
     public static int ScatterOnlyTallCellParticleArgmentOffset { get{ return 0; }}
 
-    public Simulator(Texture vTerrian, Vector2Int vResolutionXZ, int vRegularCellYCount, Vector3 vMin, float vCellLength, float vSeaLevel, int vMaxParticleCount)
+    public Simulator(InitializationParameter vParam, RuntimeParameter vRuntimeParam)
     {
-        m_Min = vMin;
-        m_CellLength = vCellLength;
-        m_Max = vMin + (new Vector3(vResolutionXZ.x, vRegularCellYCount * 32, vResolutionXZ.y)) * vCellLength;
+        m_Min = vParam.m_Min;
+        m_CellLength = vParam.m_CellLength;
+        m_Max = m_Min + (new Vector3((int)vParam.m_ResolutionXZ, (int)vParam.m_RegularCellYCount * 8, (int)vParam.m_ResolutionXZ)) * m_CellLength;
 
-        m_Grid = new Grid(vResolutionXZ, vRegularCellYCount, vCellLength);
-        m_Grid.InitMesh(vTerrian, vSeaLevel);
+        m_Grid = new Grid(new Vector2Int((int)vParam.m_ResolutionXZ, (int)vParam.m_ResolutionXZ), (int)vParam.m_RegularCellYCount, m_CellLength);
+        m_Grid.InitMesh(vParam.m_Terrian, vParam.m_SeaLevel);
 
         m_Utils = new Utils();
-        m_SimulatorGPUCache = new SimulatorGPUCache(vMaxParticleCount, vResolutionXZ);
+        m_SimulatorGPUCache = new SimulatorGPUCache(vParam.m_MaxParticleCount, new Vector2Int((int)vParam.m_ResolutionXZ, (int)vParam.m_ResolutionXZ));
         m_ParticleSortTools = new ParticleSortTools();
-        m_DynamicParticle = new DynamicParticle(vMaxParticleCount, vCellLength / 4.0f);
-        m_ParticlePostProcessingTools = new PostProcessingParticle(vMaxParticleCount, vMin, vCellLength, m_DynamicParticle.Argument, m_SimulatorGPUCache.HashCount, m_SimulatorGPUCache.HashOffset);
-        m_ParticleInCellTools = new ParticleInCellTools(vMin, vResolutionXZ, vCellLength, vRegularCellYCount);
-        m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vSeaLevel, m_DynamicParticle);
+        m_DynamicParticle = new DynamicParticle(vParam.m_MaxParticleCount, m_CellLength / 4.0f);
+        m_ParticlePostProcessingTools = new PostProcessingParticle(vParam.m_MaxParticleCount, m_Min, m_CellLength, m_DynamicParticle.Argument, m_SimulatorGPUCache.HashCount, m_SimulatorGPUCache.HashOffset);
+        m_ParticleInCellTools = new ParticleInCellTools(m_Min, new Vector2Int((int)vParam.m_ResolutionXZ, (int)vParam.m_ResolutionXZ), m_CellLength, (int)vParam.m_RegularCellYCount);
+        m_ParticleInCellTools.InitParticleDataWithSeaLevel(m_Grid.FineGrid, vParam.m_SeaLevel, m_DynamicParticle);
 
         m_Argument = new ComputeBuffer(3, sizeof(uint), ComputeBufferType.IndirectArguments);
         uint[] InitArgument = new uint[3] {
@@ -33,6 +33,7 @@ public class Simulator
         m_Argument.SetData(InitArgument);
 
         m_Grid.UpdateGridValue();
+        m_RuntimeParam = vRuntimeParam;
     }
 
     public void SetupDataForReconstruction(SimulatorData vData)
@@ -197,13 +198,14 @@ public class Simulator
 
         Profiler.BeginSample("ParticlePostProcessing");
         m_ParticleSortTools.SortParticleHashFull(m_DynamicParticle, m_SimulatorGPUCache, m_Min, m_CellLength);
-        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, 20);//TODO: Awaiting refactoring to unify data transfer
+        m_ParticlePostProcessingTools.computeAnisotropyMatrix(m_DynamicParticle.MainParticle.Position, m_RuntimeParam.m_PCAIterationNum);
         Profiler.EndSample();
     }
 
     private Vector3 m_Min;
     private Vector3 m_Max;
     private float m_CellLength;
+    public RuntimeParameter m_RuntimeParam;
 
     private Grid m_Grid;
     private DynamicParticle m_DynamicParticle;
@@ -213,6 +215,5 @@ public class Simulator
     private Utils m_Utils;
 
     private ComputeBuffer m_Argument;
-
     private SimulatorGPUCache m_SimulatorGPUCache;
 }
