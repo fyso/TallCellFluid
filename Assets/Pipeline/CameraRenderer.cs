@@ -270,6 +270,18 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_SimulatorData.ArgumentBuffer, 0);
 
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearVisibleGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 256), 1, 1);
+
+        switch (m_SettingManager.m_CullParticleSetting.m_CullMode)
+        {
+            case CullMode.CullWithLayer:
+                m_CommandBuffer.EnableShaderKeyword("_CULLWITYLAYER");
+                m_CommandBuffer.DisableShaderKeyword("_CULLWITHADAPTIVE");
+                break;
+            case CullMode.CullWithAdaptive:
+                m_CommandBuffer.DisableShaderKeyword("_CULLWITYLAYER");
+                m_CommandBuffer.EnableShaderKeyword("_CULLWITHADAPTIVE");
+                break;
+        }
         m_CommandBuffer.DispatchCompute(
             m_CullParticlesCS, searchVisibleGridKernel,
             Mathf.CeilToInt((float)m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimX / 8),
@@ -292,7 +304,8 @@ public partial class CameraRenderer : MonoBehaviour
                 m_CommandBuffer.DisableShaderKeyword("_FREEZE");
                 m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
                 break;
-            case CullMode.Cull:
+            case CullMode.CullWithLayer:
+            case CullMode.CullWithAdaptive:
                 m_CommandBuffer.EnableShaderKeyword("_CULL");
                 m_CommandBuffer.DisableShaderKeyword("_FREEZE");
                 m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);

@@ -2,10 +2,14 @@
 #pragma kernel addUpParticleCountOfGrid
 #pragma kernel clearVisibleGrid
 #pragma kernel searchVisibleGrid
+#pragma kernel calThicknessGrid
 #include "../ShaderLibrary/Common.hlsl"
+#pragma multi_compile _ _CULLWITYLAYER _CULLWITHADAPTIVE
 
 #define GROUP_THREAD_NUM 256
 int _DrawLayer;
+uint _MaxVisibleCount;
+
 float4x4 _ViewMatrixForGrid;
 
 StructuredBuffer<float3> _ParticlePositionBuffer;
@@ -51,16 +55,49 @@ void clearVisibleGrid(uint3 DTid : SV_DispatchThreadID)
 void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
 {
     uint count = 1;
+    uint sumCount = 0;
     for (uint z = 0; z < _PerspectiveGridDimZ; z++)
     {
         uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
-        if ((_ParticleCountOfGrid[cellLinerIndex] >= 1) && (count <= _DrawLayer)) 
-        {
-            _VisibleGridBuffer[cellLinerIndex] = 1;
-            if (count == _DrawLayer)
-                break;
+        #ifdef _CULLWITYLAYER
+            if ((_ParticleCountOfGrid[cellLinerIndex] >= 1) && (count <= _DrawLayer))
+            {
+                _VisibleGridBuffer[cellLinerIndex] = 1;
+                if (count == _DrawLayer)
+                    break;
                 
-            count++;
-        }
+                count++;
+            }
+        #elif _CULLWITHADAPTIVE     
+            _VisibleGridBuffer[cellLinerIndex] = 1;
+            if (sumCount > _MaxVisibleCount)
+                break;
+            sumCount += _ParticleCountOfGrid[cellLinerIndex];
+        #endif
     } 
+}
+
+[numthreads(8, 8, 1)]
+void calThicknessGrid(uint3 DTid : SV_DispatchThreadID)
+{
+    uint cellLayerCount = 0;
+    uint particleCountOfPreGrid = 0;
+    bool innerFlag = false;
+    for (uint z = 0; z < _PerspectiveGridDimZ; z++)
+    {
+        uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
+        uint count = _ParticleCountOfGrid[cellLinerIndex];
+        if (particleCountOfPreGrid != 0 && count == 0)
+        {
+            innerFlag = false;
+            break;
+        }
+        if (particleCountOfPreGrid == 0 && count != 0)
+        {
+            innerFlag = true;
+        }
+        if (innerFlag) cellLayerCount++;
+       
+        particleCountOfPreGrid = count;
+    }
 }

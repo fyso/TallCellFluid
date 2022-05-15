@@ -257,7 +257,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 5
-  far clip plane: 150
+  far clip plane: 200
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -493,6 +493,7 @@ GameObject:
   - component: {fileID: 1456825980}
   - component: {fileID: 1456825979}
   - component: {fileID: 1456825981}
+  - component: {fileID: 1456825982}
   m_Layer: 0
   m_Name: Simulator
   m_TagString: Simulator
@@ -522,6 +523,7 @@ MonoBehaviour:
     m_MaxParticleCount: 2000000
     m_TimeStep: 0
   m_RuntimeParam:
+    m_ComputeAnisotropyMatrix: 0
     m_PCAIterationNum: 3
   VisualParticle: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}
@@ -569,3 +571,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7f9d279411323048bde7be674927407, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1456825982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456825978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06c0317e0632e6c47bb855ee99f95544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  renderPipelineAsset: {fileID: 11400000, guid: 46b29c2503bfe714ab6e7d31481896ee, type: 2}

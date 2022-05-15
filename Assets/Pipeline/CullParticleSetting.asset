@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 046eb2c772a33d6439d137418d473320, type: 3}
   m_Name: CullParticleSetting
   m_EditorClassIdentifier: 
-  m_DrawLayer: 6
+  m_DrawLayer: 0
+  m_MaxVisibleCount: 1
   m_PerspectiveGridDimX: 128
   m_PerspectiveGridDimY: 128
-  m_CullMode: 1
+  m_CullMode: 3
