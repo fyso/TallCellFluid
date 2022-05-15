@@ -4,7 +4,7 @@
 #pragma kernel searchVisibleGrid
 #pragma kernel calThicknessGrid
 #include "../ShaderLibrary/Common.hlsl"
-#pragma multi_compile _ _CULLWITYLAYER _CULLWITHADAPTIVE
+#pragma multi_compile _ _CULLWITHLAYER _CULLWITHADAPTIVE
 
 #define GROUP_THREAD_NUM 256
 int _DrawLayer;
@@ -59,7 +59,7 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
     for (uint z = 0; z < _PerspectiveGridDimZ; z++)
     {
         uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
-        #ifdef _CULLWITYLAYER
+        #ifdef _CULLWITHLAYER
             if ((_ParticleCountOfGrid[cellLinerIndex] >= 1) && (count <= _DrawLayer))
             {
                 _VisibleGridBuffer[cellLinerIndex] = 1;

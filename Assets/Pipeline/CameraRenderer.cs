@@ -169,7 +169,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
         }
-        if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FREEZE)
+        if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
             Show(m_CullDebugRT);
         else Show(m_FluidNormalRT, m_SceneDepthRT);
 
@@ -235,6 +235,7 @@ public partial class CameraRenderer : MonoBehaviour
     #region Cull
     void CullParticles()
     {
+        if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.None) return;
         if (PerspectiveGridData.ContainsKey(m_Camera.name))
         {
             PerspectiveGridData[m_Camera.name].UpdatePerspectiveGridData(
@@ -243,7 +244,7 @@ public partial class CameraRenderer : MonoBehaviour
                 m_SettingManager.m_SimulatorData.MaxPos,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimX,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimY,
-                m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FREEZE);
+                m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive);
         }
         else
         {
@@ -274,11 +275,13 @@ public partial class CameraRenderer : MonoBehaviour
         switch (m_SettingManager.m_CullParticleSetting.m_CullMode)
         {
             case CullMode.CullWithLayer:
-                m_CommandBuffer.EnableShaderKeyword("_CULLWITYLAYER");
+            case CullMode.FreezeWithLayer:
+                m_CommandBuffer.EnableShaderKeyword("_CULLWITHLAYER");
                 m_CommandBuffer.DisableShaderKeyword("_CULLWITHADAPTIVE");
                 break;
             case CullMode.CullWithAdaptive:
-                m_CommandBuffer.DisableShaderKeyword("_CULLWITYLAYER");
+            case CullMode.FreezeWithAdaptive:
+                m_CommandBuffer.DisableShaderKeyword("_CULLWITHLAYER");
                 m_CommandBuffer.EnableShaderKeyword("_CULLWITHADAPTIVE");
                 break;
         }
@@ -310,7 +313,8 @@ public partial class CameraRenderer : MonoBehaviour
                 m_CommandBuffer.DisableShaderKeyword("_FREEZE");
                 m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
                 break;
-            case CullMode.FREEZE:
+            case CullMode.FreezeWithLayer:
+            case CullMode.FreezeWithAdaptive:
                 m_CommandBuffer.DisableShaderKeyword("_CULL");
                 m_CommandBuffer.EnableShaderKeyword("_FREEZE");
                 m_CullDebugRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 0, RenderTextureFormat.ARGBFloat);

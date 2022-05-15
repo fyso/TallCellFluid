@@ -5,7 +5,8 @@ public enum CullMode
     None = 0,
     CullWithLayer = 1,
     CullWithAdaptive = 2,
-    FREEZE = 3,
+    FreezeWithLayer = 3,
+    FreezeWithAdaptive = 4,
 }
 [CreateAssetMenu(menuName = "Rendering/PerspectiveGrid Setting Asset")]
 public class CullParticleSetting : ScriptableObject
@@ -13,7 +14,7 @@ public class CullParticleSetting : ScriptableObject
 
     [Range(0, 10)]
     public int m_DrawLayer = 1;
-    [Range(0, 20)]
+    [Range(0, 100)]
     public int m_MaxVisibleCount = 1;
     [Range(32, 256)]
     public int m_PerspectiveGridDimX = 128;
