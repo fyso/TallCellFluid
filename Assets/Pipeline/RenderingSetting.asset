@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdec0d718e20f704d93a4cd99242dcb6, type: 3}
+  m_Name: RenderingSetting
+  m_EditorClassIdentifier: 
+  m_Skybox: {fileID: 8900000, guid: 2288e023d12a740468d683a2c1ebddc8, type: 3}
+  m_Diffuse: {r: 0.6745283, g: 0.7809704, b: 1, a: 0.05490196}
+  m_GrazingDiffuse: {r: 0.44918123, g: 0.79285127, b: 0.9245283, a: 1}
+  m_WaterIOF: 1.33
+  m_ShowSkyBox: 1
+  m_ShowDiffuse: 1
+  m_ShowSpecular: 1
+  m_ShowReflecion: 1
+  m_ShowRefraction: 1
+  m_DiffuseStrength: 1
+  m_SpecularSpottedStrength: 1
+  m_SpecularStrength: 1
+  m_ReflecionStrength: 1
+  m_RefractionStrength: 1

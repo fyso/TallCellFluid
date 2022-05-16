@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
+using UnityEngine.Experimental.Rendering;
 
 public class PerspectiveGridData
 {
@@ -134,7 +135,11 @@ public partial class CameraRenderer : MonoBehaviour
     CullingResults m_CullingResults;
     CommandBuffer m_CommandBuffer;
 
-    RenderTexture m_SceneColorRT;
+    RenderTextureManager m_OutputRTManager = new RenderTextureManager("Output")
+    {
+        m_EnableRandomWrite = true
+    };
+    RenderTexture m_OutputRT;
     RenderTexture m_SceneDepthRT;
     RenderTexture m_FluidDepthRT;
     RenderTexture m_SmoothFluidDepthRT;
@@ -148,6 +153,18 @@ public partial class CameraRenderer : MonoBehaviour
     ComputeShader m_CullParticlesCS = Resources.Load("Shaders/CullParticles") as ComputeShader;
 
     Dictionary<string, PerspectiveGridData> PerspectiveGridData = new Dictionary<string, PerspectiveGridData>();
+
+    RayTracingAccelerationStructure m_AccelerationStructure;
+    RayTracingShader m_ShadeFluidShader = Resources.Load<RayTracingShader>("Shaders/ShadeFluid");
+
+    public CameraRenderer()
+    {
+        RayTracingAccelerationStructure.RASSettings setting = new RayTracingAccelerationStructure.RASSettings(
+            RayTracingAccelerationStructure.ManagementMode.Automatic,
+            RayTracingAccelerationStructure.RayTracingModeMask.Everything,
+            -1 ^ (1 << 7));
+        m_AccelerationStructure = new RayTracingAccelerationStructure(setting);
+    }
 
     public void Render(ScriptableRenderContext context, Camera camera, SettingManager renderManager)
     {
@@ -168,10 +185,11 @@ public partial class CameraRenderer : MonoBehaviour
             DrawParticles();
             SmoothFluidDepth();
             GenerateFluidNoramal();
+            RenderFluid();
         }
         if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
             Show(m_CullDebugRT);
-        else Show(m_FluidNormalRT, m_SceneDepthRT);
+        else Show(m_OutputRT, m_SceneDepthRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
@@ -218,11 +236,11 @@ public partial class CameraRenderer : MonoBehaviour
 
     void RenderScene()
     {
-        m_SceneColorRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 0, RenderTextureFormat.ARGB32);
+        m_OutputRT = m_OutputRTManager.GetOrCreateRT(m_Context, m_Camera.name, m_Camera.pixelWidth, m_Camera.pixelHeight, true);
         m_SceneDepthRT = RenderTexture.GetTemporary(m_Camera.pixelWidth, m_Camera.pixelHeight, 32, RenderTextureFormat.Depth);
 
         m_CommandBuffer.name = "RenderScene";
-        m_CommandBuffer.SetRenderTarget(m_SceneColorRT, m_SceneDepthRT);
+        m_CommandBuffer.SetRenderTarget(m_OutputRT, m_SceneDepthRT);
         m_CommandBuffer.ClearRenderTarget(true, true, Color.gray);
         ExecuteCommandBuffer();
 
@@ -240,8 +258,8 @@ public partial class CameraRenderer : MonoBehaviour
         {
             PerspectiveGridData[m_Camera.name].UpdatePerspectiveGridData(
                 m_Camera,
-                m_SettingManager.m_SimulatorData.MinPos,
-                m_SettingManager.m_SimulatorData.MaxPos,
+                m_SettingManager.m_Simulator2ReconstructionData.MinPos,
+                m_SettingManager.m_Simulator2ReconstructionData.MaxPos,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimX,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimY,
                 m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive);
@@ -250,8 +268,8 @@ public partial class CameraRenderer : MonoBehaviour
         {
             PerspectiveGridData perspectiveGridData = new PerspectiveGridData(
                 m_Camera,
-                m_SettingManager.m_SimulatorData.MinPos,
-                m_SettingManager.m_SimulatorData.MaxPos,
+                m_SettingManager.m_Simulator2ReconstructionData.MinPos,
+                m_SettingManager.m_Simulator2ReconstructionData.MaxPos,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimX,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimY);
             PerspectiveGridData.Add(m_Camera.name, perspectiveGridData);
@@ -266,9 +284,9 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.name = "PerspectiveGrid ReSampling";
 
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearParticleCountOfGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 256), 1, 1);
-        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticlePositionBuffer", m_SettingManager.m_SimulatorData.NarrowPositionBuffer);
-        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticleIndirectArgment", m_SettingManager.m_SimulatorData.ArgumentBuffer);
-        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_SimulatorData.ArgumentBuffer, 0);
+        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.NarrowPositionBuffer);
+        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticleIndirectArgment", m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer);
+        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 0);
 
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearVisibleGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 256), 1, 1);
 
@@ -323,23 +341,23 @@ public partial class CameraRenderer : MonoBehaviour
         }
 
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
-        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_SettingManager.m_SimulatorData.NarrowPositionBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.NarrowPositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_SettingManager.m_ReconstructSetting.m_ParticlesRadius);
-        if (m_SettingManager.m_SimulatorData.AnisotropyBuffer != null)
+        if (m_SettingManager.m_Simulator2ReconstructionData.AnisotropyBuffer != null)
         {
-            m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_SettingManager.m_SimulatorData.AnisotropyBuffer);
+            m_CommandBuffer.SetGlobalBuffer("_AnisotropyBuffer", m_SettingManager.m_Simulator2ReconstructionData.AnisotropyBuffer);
             m_CommandBuffer.DrawProceduralIndirect(
                 Matrix4x4.identity,
                 m_DrawFluidParticlesMaterial, 1,
-                MeshTopology.Triangles, m_SettingManager.m_SimulatorData.ArgumentBuffer, 12);
+                MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 12);
         }
         else
         {
             m_CommandBuffer.DrawProceduralIndirect(
                 Matrix4x4.identity,
                 m_DrawFluidParticlesMaterial, 0,
-                MeshTopology.Triangles, m_SettingManager.m_SimulatorData.ArgumentBuffer, 12);
+                MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 12);
         }
         ExecuteCommandBuffer();
     }
@@ -373,6 +391,24 @@ public partial class CameraRenderer : MonoBehaviour
     }
     #endregion
 
+    void RenderFluid()
+    {
+        m_SettingManager.m_RenderingSetting.UpdateShaderProperty();
+        m_AccelerationStructure.Build();
+
+        m_CommandBuffer.name = "RenderFluid";
+        m_CommandBuffer.SetRayTracingAccelerationStructure(m_ShadeFluidShader, "_AccelerationStructure", m_AccelerationStructure);
+        m_CommandBuffer.SetRayTracingTextureParam(m_ShadeFluidShader, "_SceneDepthRT", m_SceneDepthRT);
+        m_CommandBuffer.SetRayTracingTextureParam(m_ShadeFluidShader, "_FluidNormalRT", m_FluidNormalRT);
+        m_CommandBuffer.SetRayTracingTextureParam(m_ShadeFluidShader, "_Skybox", m_SettingManager.m_RenderingSetting.m_Skybox);
+        m_CommandBuffer.SetRayTracingTextureParam(m_ShadeFluidShader, "_OutputRT", m_OutputRT);
+
+        m_CommandBuffer.SetRayTracingShaderPass(m_ShadeFluidShader, "SceneHit");
+        m_CommandBuffer.DispatchRays(m_ShadeFluidShader, "FluidRayGen", (uint)m_Camera.pixelWidth, (uint)m_Camera.pixelHeight, 1);
+
+        ExecuteCommandBuffer();
+    }
+
     void Show(RenderTexture outputRT, RenderTexture depthRT = null)
     {
         m_CommandBuffer.name = "Show";
@@ -389,12 +425,10 @@ public partial class CameraRenderer : MonoBehaviour
 
     void Clear()
     {
-        RenderTexture.ReleaseTemporary(m_SceneColorRT);
         RenderTexture.ReleaseTemporary(m_SceneDepthRT);
         RenderTexture.ReleaseTemporary(m_FluidDepthRT);
         RenderTexture.ReleaseTemporary(m_SmoothFluidDepthRT);
         RenderTexture.ReleaseTemporary(m_FluidNormalRT);
-
         RenderTexture.ReleaseTemporary(m_CullDebugRT);
     }
 

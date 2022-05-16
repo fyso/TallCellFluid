@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a38892840ff59844495f97ba5debe979, type: 3}
   m_Name: SettingManager
   m_EditorClassIdentifier: 
-  m_SimulatorData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
+  m_Simulator2ReconstructionData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
   m_CullParticleSetting: {fileID: 11400000, guid: e0aa751be2f640445935e4ae31c3f8c9, type: 2}
   m_ReconstructSetting: {fileID: 11400000, guid: 2a12ad91724788646a94004ed9ec78ba, type: 2}
+  m_RenderingSetting: {fileID: 11400000, guid: 0a4b205c68dede0428ad129652eece81, type: 2}

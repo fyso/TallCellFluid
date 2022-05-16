@@ -35,7 +35,7 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
-    public void SetupDataForReconstruction(SimulatorData vData, bool vComputeAnisotropyMatrix)
+    public void SetupDataForReconstruction(Simulator2ReconstructionData vData, bool vComputeAnisotropyMatrix)
     {
         vData.ArgumentBuffer = m_DynamicParticle.Argument;
         if(vComputeAnisotropyMatrix)
