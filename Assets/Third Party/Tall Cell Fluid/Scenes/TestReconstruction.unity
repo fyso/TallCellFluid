@@ -427,7 +427,7 @@ MonoBehaviour:
     m_MaxParticleCount: 2000000
     m_TimeStep: 0
   m_RuntimeParam:
-    m_ComputeAnisotropyMatrix: 0
+    m_ComputeAnisotropyMatrix: 1
     m_PCAIterationNum: 3
   VisualParticle: 0
   VisualParticleMaterial: {fileID: 2100000, guid: 94892ecf4232a754f9c778556b458118, type: 2}

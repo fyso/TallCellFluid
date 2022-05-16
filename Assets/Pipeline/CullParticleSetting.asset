@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CullParticleSetting
   m_EditorClassIdentifier: 
   m_DrawLayer: 3
-  m_MaxVisibleCount: 14
+  m_MaxVisibleCount: 20
   m_PerspectiveGridDimX: 152
   m_PerspectiveGridDimY: 128
   m_CullMode: 0
