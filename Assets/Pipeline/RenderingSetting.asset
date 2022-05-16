@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdec0d718e20f704d93a4cd99242dcb6, type: 3}
   m_Name: RenderingSetting
   m_EditorClassIdentifier: 
-  m_Skybox: {fileID: 8900000, guid: 2288e023d12a740468d683a2c1ebddc8, type: 3}
-  m_Diffuse: {r: 0.6745283, g: 0.7809704, b: 1, a: 0.05490196}
-  m_GrazingDiffuse: {r: 0.44918123, g: 0.79285127, b: 0.9245283, a: 1}
+  m_Skybox: {fileID: 8900000, guid: 65844975f3a977b419b0d5fdff86f07a, type: 3}
+  m_Diffuse: {r: 0.6745283, g: 0.7809704, b: 1, a: 0.09411765}
+  m_GrazingDiffuse: {r: 0.44918123, g: 0.79285127, b: 0.9245283, a: 0.13333334}
   m_WaterIOF: 1.33
   m_ShowSkyBox: 1
   m_ShowDiffuse: 1

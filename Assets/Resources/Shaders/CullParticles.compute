@@ -59,8 +59,9 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
     for (uint z = 0; z < _PerspectiveGridDimZ; z++)
     {
         uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
+        uint particleCountOfGrid = _ParticleCountOfGrid[cellLinerIndex];
         #ifdef _CULLWITHLAYER
-            if ((_ParticleCountOfGrid[cellLinerIndex] >= 1) && (count <= _DrawLayer))
+            if ((particleCountOfGrid > 0) && (count <= _DrawLayer))
             {
                 _VisibleGridBuffer[cellLinerIndex] = 1;
                 if (count == _DrawLayer)
@@ -69,11 +70,10 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
                 count++;
             }
         #elif _CULLWITHADAPTIVE     
-            _VisibleGridBuffer[cellLinerIndex] = 1;
-            if (sumCount > _MaxVisibleCount)
-                break;
-            sumCount += _ParticleCountOfGrid[cellLinerIndex];
-        #endif
+            if(particleCountOfGrid > 0) _VisibleGridBuffer[cellLinerIndex] = 1;
+            sumCount += particleCountOfGrid;
+            if (sumCount > _MaxVisibleCount) break;
+            #endif
     } 
 }
 

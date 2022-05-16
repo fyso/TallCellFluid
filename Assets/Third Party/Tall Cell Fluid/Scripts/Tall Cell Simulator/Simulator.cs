@@ -120,8 +120,11 @@ public class Simulator
         m_Utils.CopyFloat4Texture3DToAnother(Regular, FineGrid.Velocity.RegularCellValue);
     }
 
+    uint FrameIndex = 0;
     public void Step(float vTimeStep, RuntimeParameter vRuntimeParam)
     {
+        FrameIndex++;
+        if (FrameIndex != 1) return;
         Profiler.BeginSample("ParticleInCell");
         __ParticleInCell(vTimeStep, vRuntimeParam);
         Profiler.EndSample();
