@@ -70,10 +70,10 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
                 count++;
             }
         #elif _CULLWITHADAPTIVE     
-            if(particleCountOfGrid > 0) _VisibleGridBuffer[cellLinerIndex] = 1;
             sumCount += particleCountOfGrid;
             if (sumCount > _MaxVisibleCount) break;
-            #endif
+            if(particleCountOfGrid > 0) _VisibleGridBuffer[cellLinerIndex] = 1;
+#endif
     } 
 }
 

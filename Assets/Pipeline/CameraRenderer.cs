@@ -8,6 +8,7 @@ public class PerspectiveGridData
     float m_CameraFov;
     float m_CameraNear;
     float m_CameraFar;
+    float m_GridNear;
     Vector3 m_GridMin;
     Vector3 m_GridMax;
     int m_PerspectiveGridDimX;
@@ -20,16 +21,17 @@ public class PerspectiveGridData
 
     public PerspectiveGridData(Camera camera, Vector3 gridMin, Vector3 gridMax, int perspectiveGridDimX, int perspectiveGridDimY)
     {
-        m_ViewMatrixForGrid = camera.worldToCameraMatrix;
-        m_CameraFov = camera.fieldOfView;
-        m_CameraNear = camera.nearClipPlane;
-        m_CameraFar = camera.farClipPlane;
         m_GridMin = gridMin;
         m_GridMax = gridMax;
+        m_CameraFov  = camera.fieldOfView;
+        m_CameraNear = camera.nearClipPlane;
+        m_CameraFar  = camera.farClipPlane;
         m_PerspectiveGridDimX = perspectiveGridDimX;
         m_PerspectiveGridDimY = perspectiveGridDimY;
+        m_ViewMatrixForGrid   = camera.worldToCameraMatrix;
         CalculateGridDim();
 
+        Shader.SetGlobalFloat("_NearPlane", m_GridNear);
         Shader.SetGlobalMatrix("_ViewMatrixForGrid", m_ViewMatrixForGrid);
         Shader.SetGlobalBuffer("_VisibleGridBuffer", m_VisibleGridBuffer);
         Shader.SetGlobalBuffer("_ParticleCountOfGrid", m_ParticleCountOfGridBuffer);
@@ -39,29 +41,21 @@ public class PerspectiveGridData
     {
         if(!isFreeze)
         {
-            m_ViewMatrixForGrid = camera.worldToCameraMatrix;
+            if ((m_GridMin != gridMin) || (m_GridMax != gridMax) || (m_CameraFov != camera.fieldOfView) || (m_CameraNear != camera.nearClipPlane) || (m_CameraFar != camera.farClipPlane) || (m_PerspectiveGridDimX != perspectiveGridDimX) || (m_PerspectiveGridDimY != perspectiveGridDimY) || (m_ViewMatrixForGrid != camera.worldToCameraMatrix))
+            {
+                m_GridMin = gridMin;
+                m_GridMax = gridMax;
+                m_CameraFov  = camera.fieldOfView;
+                m_CameraNear = camera.nearClipPlane;
+                m_CameraFar  = camera.farClipPlane;
+                m_PerspectiveGridDimX = perspectiveGridDimX;
+                m_PerspectiveGridDimY = perspectiveGridDimY;
+                m_ViewMatrixForGrid = camera.worldToCameraMatrix;
+                CalculateGridDim();
+            }
         }
 
-        if(
-            camera.fieldOfView != m_CameraFov ||
-            camera.nearClipPlane != m_CameraNear ||
-            camera.farClipPlane != m_CameraFar ||
-            gridMin != m_GridMin ||
-            gridMax != m_GridMax ||
-            perspectiveGridDimX != m_PerspectiveGridDimX ||
-            perspectiveGridDimY != m_PerspectiveGridDimY
-        )
-        {
-            m_CameraFov = camera.fieldOfView;
-            m_CameraNear = camera.nearClipPlane;
-            m_CameraFar = camera.farClipPlane;
-            m_GridMin = gridMin;
-            m_GridMax = gridMax;
-            m_PerspectiveGridDimX = perspectiveGridDimX;
-            m_PerspectiveGridDimY = perspectiveGridDimY;
-            CalculateGridDim();
-        }
-
+        Shader.SetGlobalFloat("_NearPlane", m_GridNear);
         Shader.SetGlobalMatrix("_ViewMatrixForGrid", m_ViewMatrixForGrid);
         Shader.SetGlobalBuffer("_VisibleGridBuffer", m_VisibleGridBuffer);
         Shader.SetGlobalBuffer("_ParticleCountOfGrid", m_ParticleCountOfGridBuffer);
@@ -96,7 +90,7 @@ public class PerspectiveGridData
         near = Math.Max(p5.z, near);
         near = Math.Max(p6.z, near);
         near = Math.Max(p7.z, near);
-        near = Math.Max(m_CameraNear, -near);
+        m_GridNear = Math.Max(m_CameraNear, -near);
 
         float far = 0;
         far = Math.Min(p0.z, far);
@@ -109,13 +103,12 @@ public class PerspectiveGridData
         far = Math.Min(p7.z, far);
         far = Math.Min(m_CameraFar, -far);
 
-        float logFarAndNear = Mathf.Log(far / near);
+        float logFarAndNear = Mathf.Log(far / m_GridNear);
         float fieldOfView = m_CameraFov * Mathf.Deg2Rad * 0.5f; //TODO:Orthographic
         float sampleRadioInv = m_PerspectiveGridDimY / (2.0f * Mathf.Tan(fieldOfView));
         int perspectiveGridDimZ = Mathf.CeilToInt(logFarAndNear * sampleRadioInv);
         m_GridCount = m_PerspectiveGridDimX * m_PerspectiveGridDimY * perspectiveGridDimZ;
 
-        Shader.SetGlobalFloat("_NearPlane", near);
         Shader.SetGlobalFloat("_SampleRadioInv", sampleRadioInv);
         Shader.SetGlobalInt("_PerspectiveGridDimZ", perspectiveGridDimZ);
 
