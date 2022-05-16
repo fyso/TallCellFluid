@@ -14,7 +14,7 @@ public class CullParticleSetting : ScriptableObject
 
     [Range(0, 10)]
     public int m_DrawLayer = 1;
-    [Range(0, 100)]
+    [Range(0, 20)]
     public int m_MaxVisibleCount = 1;
     [Range(32, 256)]
     public int m_PerspectiveGridDimX = 128;
