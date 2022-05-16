@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Rendering/Filter Setting Asset")]
+[CreateAssetMenu(menuName = "Rendering/Reconstruct Setting Asset")]
 public class ReconstructSetting : ScriptableObject
 {
     [Range(0, 3)]

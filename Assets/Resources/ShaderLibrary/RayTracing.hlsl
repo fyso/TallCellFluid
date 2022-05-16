@@ -9,7 +9,7 @@ RaytracingAccelerationStructure _AccelerationStructure;
 
 struct RayIntersection
 {
-  float4 color;
+  float3 color;
   float3 positionWS;
 };
 
@@ -57,8 +57,6 @@ Vertex GetTriangleVertex(uint vertexIndex)
 	Vertex vertex;
 	vertex.positionWS = UnityRayTracingFetchVertexAttribute3(vertexIndex, kVertexAttributePosition);
 	vertex.normalWS = UnityRayTracingFetchVertexAttribute3(vertexIndex, kVertexAttributeNormal);
-	vertex.tangentWS = UnityRayTracingFetchVertexAttribute3(vertexIndex, kVertexAttributeTangent);
-	vertex.uv = UnityRayTracingFetchVertexAttribute2(vertexIndex, kVertexAttributeTexCoord0);
 	return vertex;
 }
 

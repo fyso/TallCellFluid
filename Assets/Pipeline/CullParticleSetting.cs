@@ -8,7 +8,7 @@ public enum CullMode
     FreezeWithLayer = 3,
     FreezeWithAdaptive = 4,
 }
-[CreateAssetMenu(menuName = "Rendering/PerspectiveGrid Setting Asset")]
+[CreateAssetMenu(menuName = "Rendering/Cull Particles Setting Asset")]
 public class CullParticleSetting : ScriptableObject
 {
 

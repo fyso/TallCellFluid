@@ -35,7 +35,7 @@ public class Simulator
         m_Grid.UpdateGridValue();
     }
 
-    public void SetupDataForReconstruction(SimulatorData vData, bool vComputeAnisotropyMatrix)
+    public void SetupDataForReconstruction(Simulator2ReconstructionData vData, bool vComputeAnisotropyMatrix)
     {
         vData.ArgumentBuffer = m_DynamicParticle.Argument;
         if(vComputeAnisotropyMatrix)
@@ -124,7 +124,7 @@ public class Simulator
     public void Step(float vTimeStep, RuntimeParameter vRuntimeParam)
     {
         FrameIndex++;
-        if (FrameIndex != 1) return;
+        //if (FrameIndex != 1) return;
         Profiler.BeginSample("ParticleInCell");
         __ParticleInCell(vTimeStep, vRuntimeParam);
         Profiler.EndSample();

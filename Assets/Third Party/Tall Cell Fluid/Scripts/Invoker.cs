@@ -82,7 +82,7 @@ public class Invoker : MonoBehaviour
     public VisualGridInfo VisualGridInfo;
 
     private Simulator m_Simulator;
-    public SimulatorData m_ParticleData;
+    public Simulator2ReconstructionData m_ParticleData;
 
     void Start()
     {

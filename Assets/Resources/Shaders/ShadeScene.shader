@@ -49,6 +49,31 @@
 			ENDHLSL
 		}
 
+		Pass
+		{
+			Name "SceneHit"
+
+			HLSLPROGRAM
+
+			#pragma raytracing test
+
+			#include "../ShaderLibrary/Common.hlsl"
+			#include "../ShaderLibrary/RayTracing.hlsl"
+			float3 _BaseColor;
+
+			[shader("closesthit")]
+			void ClosestHitShader(inout RayIntersection rayIntersection : SV_RayPayload, AttributeData attributeData : SV_IntersectionAttributes)
+			{
+				Vertex intersectionVertex = GetIntersectionVertex(attributeData.barycentrics);
+				float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - intersectionVertex.positionWS);
+				rayIntersection.positionWS = intersectionVertex.positionWS.xyz;
+
+				float NdotL = dot(normalize(intersectionVertex.normalWS), _WorldSpaceLightDir0.xyz);
+				rayIntersection.color = _BaseColor * _LightColor0.rgb * (NdotL * 0.5 + 0.5);
+			}
+
+			ENDHLSL
+		}
 	}
 
 }
