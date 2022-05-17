@@ -70,10 +70,10 @@ public class Simulator
         {
             for (int y = 0; y < Top.height; y++)
             {
-                //Color TopVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
-                //Color BottomVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
-                Color TopVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
-                Color BottomVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
+                Color TopVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+                Color BottomVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+                //Color TopVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
+                //Color BottomVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
                 //Color TopVelocity = new Color(x / (float)Top.width * 10.0f, 0.0f, 0.0f, 1.0f);
                 //Color BottomVelocity = new Color(x / (float)Top.width * 10.0f, 0.0f, 0.0f, 1.0f);
                 Top.SetPixel(x, y, TopVelocity);
@@ -92,8 +92,8 @@ public class Simulator
             {
                 for (int z = 0; z < FineGrid.ResolutionXZ.y; z++)
                 {
-                    //Color RegularVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
-                    Color RegularVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
+                    Color RegularVelocity = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+                    //Color RegularVelocity = new Color(0.0f, -4.0f, 0.0f, 1.0f);
                     //Color RegularVelocity = new Color(x / (float)Top.width * 10.0f, 0.0f, 0.0f, 1.0f);
                     Regular.SetPixel(x, y, z, RegularVelocity);
                 }
@@ -105,21 +105,15 @@ public class Simulator
 
     public void Step(float vTimeStep, int vIterationCount)
     {
-        Profiler.BeginSample("ParticleInCell");
         __ParticleInCell(vTimeStep);
-        Profiler.EndSample();
 
-        Profiler.BeginSample("Remesh");
         m_Grid.Remesh();
-        Profiler.EndSample();
 
-        Profiler.BeginSample("UpdateGridValue");
         m_Grid.UpdateGridValue();
-        Profiler.EndSample();
 
-        Profiler.BeginSample("SparseMultiGridRedBlackGaussSeidel");
         m_Grid.SparseMultiGridRedBlackGaussSeidel(vTimeStep, 1, 2, vIterationCount);
-        Profiler.EndSample();
+
+        m_Grid.ExtrapolationVelocityEnforce(3);
     }
 
     //Send velocity from grid to particle, advect and then send velocity from particle to grid. During this phase, we will get water mark, air mark of grid
@@ -145,9 +139,9 @@ public class Simulator
         m_ParticleInCellTools.GatherGridToOnlyTallCellParticle(m_DynamicParticle, m_Grid.FineGrid);
         Profiler.EndSample();
 
-        //Profiler.BeginSample("Advect");
-        //m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
-        //Profiler.EndSample();
+        Profiler.BeginSample("Advect");
+        m_ParticleInCellTools.Advect(m_DynamicParticle, vTimeStep);
+        Profiler.EndSample();
 
         Profiler.BeginSample("MarkParticleWtihCellType");
         m_ParticleInCellTools.MarkParticleWtihCellType(m_DynamicParticle, m_Grid.FineGrid);
@@ -158,7 +152,7 @@ public class Simulator
         Profiler.EndSample();
 
         Profiler.BeginSample("ClearCache");
-        m_Grid.RestCache();
+        m_Grid.RestGrid();
         Profiler.EndSample();
 
         Profiler.BeginSample("ZSortIntersectCellParticleHashTallCell");

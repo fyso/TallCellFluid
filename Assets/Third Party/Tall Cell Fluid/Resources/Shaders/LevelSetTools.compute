@@ -3,27 +3,119 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel extrapolationVelocityEnforce
 #pragma kernel reinitialization
-#pragma kernel advect
+#pragma kernel advectVelocityMacCormack_FrontSL
+#pragma kernel advectVelocityMacCormack_BackSLAndMix
 #pragma kernel computeH1H2WithLevelSet
 
-RWTexture3D<float3> WaterSurface;
-RWTexture3D<float3> RegularCellVelocity;
-RWTexture3D<int> RegularCellMark;
-RWTexture3D<float> RegularCellSolidPercentage;
+Texture2D<float> TerrianHeight_R;
+Texture2D<float> TallCellHeight_R;
 
+Texture3D<float3> RegularCellVelocity_R;
+Texture2D<float3> TopCellVelocity_R;
+Texture2D<float3> BottomCellVelocity_R;
+RWTexture3D<float3> RegularCellVelocity_RW;
+RWTexture2D<float3> TopCellVelocity_RW;
+RWTexture2D<float3> BottomCellVelocity_RW;
+
+Texture3D<float3> RegularCellVelocity_Cache_R;
+Texture2D<float3> TopCellVelocity_Cache_R;
+Texture2D<float3> BottomCellVelocity_Cache_R;
+RWTexture3D<float3> RegularCellVelocity_Cache_RW;
+RWTexture2D<float3> TopCellVelocity_Cache_RW;
+RWTexture2D<float3> BottomCellVelocity_Cache_RW;
+
+RWTexture3D<int> RegularCellMark_RW;
+
+uint WaterSurfaceDetailLevel;
+Texture3D<float> RegularWaterSurfaceSignedDistance_R;
+RWTexture3D<float> RegularWaterSurfaceSignedDistance_RW;
+
+static int3 DivergenceOP[6] =
+{
+    { -1, 0, 0 },
+    { 1, 0, 0 },
+    { 0, -1, 0 },
+    { 0, 1, 0 },
+    { 0, 0, -1 },
+    { 0, 0, 1 }
+};
+
+float3 getRegularCellCenterPosition(uint3 DispatchThreadID)
+{
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xz];
+    float TallCellHeight = TallCellHeight_R[DispatchThreadID.xz];
+    float3 CenterCellPosition = DispatchThreadID * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+    CenterCellPosition.y += TerrianHeight + TallCellHeight;
+    
+    return CenterCellPosition;
+}
+
+float3 getTopCellCenterPosition(uint3 DispatchThreadID)
+{
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    float TallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
+    float2 CenterCellPositionXZ = DispatchThreadID.xy * CellLength + float2(0.5f, 0.5f) * CellLength;
+    float3 CenterCellPosition = float3(CenterCellPositionXZ.x, TerrianHeight + TallCellHeight - 0.5f * CellLength, CenterCellPositionXZ.y);
+    
+    return CenterCellPosition;
+}
+
+float3 getBottomCellCenterPosition(uint3 DispatchThreadID)
+{
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xy];
+    float TallCellHeight = TallCellHeight_R[DispatchThreadID.xy];
+    float2 CenterCellPositionXZ = DispatchThreadID.xy * CellLength + float2(0.5f, 0.5f) * CellLength;
+    float3 CenterCellPosition = float3(CenterCellPositionXZ.x, TerrianHeight + 0.5f * CellLength, CenterCellPositionXZ.y);
+    
+    return CenterCellPosition;
+}
+
+uint CurrExtrapolationDepth;
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void extrapolationVelocityEnforce(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-    if(RegularCellMark[DispatchThreadID] == 0)
-    {
-        
-    }
-}
-
-[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
-void extrapolationVelocityHierarchy(uint3 DispatchThreadID : SV_DispatchThreadID)
-{
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum || RegularCellMark_RW[DispatchThreadID] == 1)
+        return;
     
+    float3 AdjWaterCellVelocitySum = float3(0.0f, 0.0f, 0.0f);
+    int AdjWaterCellCount = 0;
+    
+    float TerrianHeight = TerrianHeight_R[DispatchThreadID.xz];
+    float TallCellHeight = TallCellHeight_R[DispatchThreadID.xz];
+    float3 CenterCellPosition = DispatchThreadID * CellLength + float3(0.5f, 0.5f, 0.5f) * CellLength;
+    CenterCellPosition.y += TerrianHeight + TallCellHeight;
+    
+    for (int c = 0; c < 6; c++)
+    {
+        int3 Position = CenterCellPosition + DivergenceOP[c] * CellLength;
+        
+        int2 XZ = floor(Position.xz / CellLength);
+        float AdjTerrianHeight = TerrianHeight_R[XZ];
+        float AdjTallCellHeight = TallCellHeight_R[XZ];
+        if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || Position.y < AdjTerrianHeight)
+            continue;
+        
+        if (Position.y >= AdjTerrianHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight)
+        {
+            float3 AdjPointVelocity = sampleTallCellValue(TopCellVelocity_R, BottomCellVelocity_R, AdjTerrianHeight, AdjTallCellHeight, XZ, Position.y);
+        }
+        else if (Position.y >= AdjTerrianHeight + AdjTallCellHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength)
+        {
+            int Y = (Position.y - (AdjTerrianHeight + AdjTallCellHeight)) / CellLength;
+            int Mark = RegularCellMark_RW[int3(XZ.x, Y, XZ.y)];
+            if (Mark <= CurrExtrapolationDepth && Mark != 0)
+            {
+                AdjWaterCellVelocitySum += RegularCellVelocity_RW[int3(XZ.x, Y, XZ.y)];
+                AdjWaterCellCount++;
+            }
+        }
+    }
+    
+    if(AdjWaterCellCount > 0)
+    {
+        RegularCellMark_RW[DispatchThreadID] = CurrExtrapolationDepth + 1;
+        RegularCellVelocity_RW[DispatchThreadID] = AdjWaterCellVelocitySum / AdjWaterCellCount;
+    }
 }
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
@@ -33,7 +125,131 @@ void reinitialization(uint3 DispatchThreadID : SV_DispatchThreadID)
 }
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
-void advect(uint3 DispatchThreadID : SV_DispatchThreadID)
+void advectVelocityMacCormack_FrontSL(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum + 2)
+        return;
+    float3 CenterCellPosition;
+    float3 CenterCellVelocity;
+    if (DispatchThreadID.y == 0)
+    {
+        CenterCellPosition = getBottomCellCenterPosition(DispatchThreadID);
+        CenterCellVelocity = RegularCellVelocity_R[DispatchThreadID];
+    }
+    else if(DispatchThreadID.y == 1)
+    {
+        CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
+        CenterCellVelocity = TopCellVelocity_R[DispatchThreadID.xy];
+    }
+    else
+    {
+        CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID);
+        CenterCellVelocity = BottomCellVelocity_R[DispatchThreadID.xy];
+    }
+    
+    float3 FrontSemiLagrangianPos = CenterCellPosition - CenterCellVelocity * TimeStep;
+    float3 FrontSemiLagrangianVel;
+    int2 XZ = floor(FrontSemiLagrangianPos.xz / CellLength);
+    float AdjTerrianHeight = TerrianHeight_R[XZ];
+    float AdjTallCellHeight = TallCellHeight_R[XZ];
+    
+    if (any(XZ < 0) || any(XZ >= XZResolution) || FrontSemiLagrangianPos.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || FrontSemiLagrangianPos.y < AdjTerrianHeight)
+    {
+        clamp(XZ, int2(0, 0), XZResolution);
+        clamp(FrontSemiLagrangianPos.y, AdjTerrianHeight, AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength);
+    }
+    
+    if (FrontSemiLagrangianPos.y < AdjTerrianHeight + AdjTallCellHeight)
+    {
+        FrontSemiLagrangianVel = sampleTallCellValue(TopCellVelocity_R, BottomCellVelocity_R, AdjTerrianHeight, AdjTallCellHeight, XZ, FrontSemiLagrangianPos.y);
+    }
+    else if (FrontSemiLagrangianPos.y >= AdjTerrianHeight + AdjTallCellHeight)
+    {
+        int Y = (FrontSemiLagrangianPos.y - (AdjTerrianHeight + AdjTallCellHeight)) / CellLength;
+        FrontSemiLagrangianVel = RegularCellVelocity_R[int3(XZ.x, Y, XZ.y)];
+    }
+    
+    if (DispatchThreadID.y == 0)
+        BottomCellVelocity_Cache_RW[DispatchThreadID.xy] = FrontSemiLagrangianVel;
+    else if (DispatchThreadID.y == 1)
+        TopCellVelocity_Cache_RW[DispatchThreadID.xy] = FrontSemiLagrangianVel;
+    else
+        RegularCellVelocity_Cache_RW[DispatchThreadID] = FrontSemiLagrangianVel;
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void advectVelocityMacCormack_BackSLAndMix(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    if (any(DispatchThreadID.xz >= XZResolution) || DispatchThreadID.y >= ConstantCellNum + 2)
+        return;
+    float3 CenterCellPosition;
+    float3 CenterCellVelocity;
+    float3 OldCellVelocity;
+    if (DispatchThreadID.y == 0)
+    {
+        CenterCellPosition = getBottomCellCenterPosition(DispatchThreadID);
+        OldCellVelocity = RegularCellVelocity_RW[DispatchThreadID];
+        CenterCellVelocity = RegularCellVelocity_Cache_R[DispatchThreadID];
+    }
+    else if (DispatchThreadID.y == 1)
+    {
+        CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
+        OldCellVelocity = TopCellVelocity_RW[DispatchThreadID.xy];
+        CenterCellVelocity = TopCellVelocity_Cache_R[DispatchThreadID.xy];
+    }
+    else
+    {
+        CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID);
+        OldCellVelocity = BottomCellVelocity_RW[DispatchThreadID.xy];
+        CenterCellVelocity = BottomCellVelocity_Cache_R[DispatchThreadID.xy];
+    }
+    
+    float3 BackSemiLagrangianPos = CenterCellPosition + CenterCellVelocity * TimeStep;
+    float3 BackSemiLagrangianVel;
+    int2 XZ = floor(BackSemiLagrangianPos.xz / CellLength);
+    float AdjTerrianHeight = TerrianHeight_R[XZ];
+    float AdjTallCellHeight = TallCellHeight_R[XZ];
+    
+    if (any(XZ < 0) || any(XZ >= XZResolution) || BackSemiLagrangianPos.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || BackSemiLagrangianPos.y < AdjTerrianHeight)
+    {
+        clamp(XZ, int2(0, 0), XZResolution);
+        clamp(BackSemiLagrangianPos.y, AdjTerrianHeight, AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength);
+    }
+    
+    if (BackSemiLagrangianPos.y < AdjTerrianHeight + AdjTallCellHeight)
+    {
+        BackSemiLagrangianVel = sampleTallCellValue(TopCellVelocity_Cache_R, BottomCellVelocity_Cache_R, AdjTerrianHeight, AdjTallCellHeight, XZ, BackSemiLagrangianPos.y);
+    }
+    else if (BackSemiLagrangianPos.y >= AdjTerrianHeight + AdjTallCellHeight)
+    {
+        int Y = (BackSemiLagrangianPos.y - (AdjTerrianHeight + AdjTallCellHeight)) / CellLength;
+        BackSemiLagrangianVel = RegularCellVelocity_Cache_R[int3(XZ.x, Y, XZ.y)];
+    }
+    
+    float3 MacCormackVelocity = CenterCellVelocity + (OldCellVelocity - BackSemiLagrangianVel) * 0.5f;
+    
+    if (DispatchThreadID.y == 0)
+        BottomCellVelocity_RW[DispatchThreadID.xy] = MacCormackVelocity;
+    else if (DispatchThreadID.y == 1)
+        TopCellVelocity_RW[DispatchThreadID.xy] = MacCormackVelocity;
+    else
+        RegularCellVelocity_RW[DispatchThreadID] = MacCormackVelocity;
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void advectWaterSurfaceSemiLagrangian(uint3 DispatchThreadID : SV_DispatchThreadID)
+{
+    uint2 WaterSurfaceXZResolution = XZResolution * WaterSurfaceDetailLevel;
+    uint WaterSurfaceConstantCellNum = ConstantCellNum * WaterSurfaceDetailLevel;
+    if (any(DispatchThreadID.xz >= WaterSurfaceXZResolution) || DispatchThreadID.y >= WaterSurfaceConstantCellNum)
+        return;
+    
+    float3 CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID / WaterSurfaceDetailLevel);
+
+}
+
+[numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
+void computeWaterMarkWithLevelSet(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     
 }

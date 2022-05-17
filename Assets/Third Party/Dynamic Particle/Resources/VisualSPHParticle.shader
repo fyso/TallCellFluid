@@ -97,13 +97,14 @@ Shader "Custom/VisualParticle"
                     }
                 result.positionCS = TransformWViewToHClip(sphereCenter + float3(_ParticleRadius * result.uv, 0.0f));
 
+                float MaxVel = 80.0f;
 #if _VISUALDATATYPE_VELOCITY
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(length(Velocity), 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(length(Velocity), 0.0f, MaxVel) / MaxVel;
                 result.col = float4(ClampVel, 0.0f, 0.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_VELOCITYX
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(abs(Velocity.x), 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(abs(Velocity.x), 0.0f, MaxVel) / MaxVel;
                 if(Velocity.x <= 0)
                     result.col = float4(ClampVel, 0.0f, 0.0f, 0.0f) + _ParticleColor;
                 else
@@ -111,14 +112,14 @@ Shader "Custom/VisualParticle"
 
 #elif _VISUALDATATYPE_VELOCITYY
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(abs(Velocity.y), 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(abs(Velocity.y), 0.0f, MaxVel) / MaxVel;
                 if (Velocity.y <= 0)
                     result.col = float4(ClampVel, 0.0f, 0.0f, 0.0f) + _ParticleColor;
                 else
                     result.col = float4(0.0f, ClampVel, 0.0f, 0.0f) + _ParticleColor;
 #elif _VISUALDATATYPE_VELOCITYZ
                 float3 Velocity = _particleVelocityBuffer[instanceID];
-                float ClampVel = clamp(abs(Velocity.z), 0.0f, 20.0f) / 20.0f;
+                float ClampVel = clamp(abs(Velocity.z), 0.0f, MaxVel) / MaxVel;
                 if (Velocity.z <= 0)
                     result.col = float4(ClampVel, 0.0f, 0.0f, 0.0f) + _ParticleColor;
                 else
