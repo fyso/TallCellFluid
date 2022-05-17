@@ -166,7 +166,7 @@
             struct Anisotropy
             {
                 uint quaternion;
-                float3 scale;
+                uint scale;
             };
             StructuredBuffer<Anisotropy> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
@@ -300,13 +300,12 @@
                     }
                 };
 
-                //uint s = ani.scale;
-                //float3 scale;
-                //scale.x = (s & 2047) / 4096.0f;
-                //scale.y = ((s >> 11) & 1023) / 1024.0f;
-                //scale.z = ((s >> 21) & 2047) / 4096.0f;
-                //scale *= _ParticlesRadius * 10;
-                float3 scale = ani.scale * _ParticlesRadius * 10;
+                uint s = ani.scale;
+                float3 scale;
+                scale.x = float(s & 2047) / 4096.0f;
+                scale.y = float((s >> 11) & 1023) / 2048.0f;
+                scale.z = float((s >> 21) & 2047) / 4096.0f;
+                scale *= _ParticlesRadius * 10;
                 float4x4 q;
                 q._m00_m10_m20_m30 = float4(r._m00_m10_m20 * scale.x, 0.0);
                 q._m01_m11_m21_m31 = float4(r._m01_m11_m21 * scale.y, 0.0);

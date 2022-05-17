@@ -6,7 +6,7 @@
 struct Anisotropy
 {
     uint quaternion;
-    float3 scale;
+    uint scale;
 };
 
 int IterNum;
@@ -30,8 +30,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     
     float weightSum = 0;
     float3 centerPos = float3(0, 0, 0);
-    uint neighbourNum = 0;
-
+    
     for (uint x = max(centerCellIndex.x - 1, 0); x <= centerCellIndex.x + 1; x++)
     {
         for (uint y = max(centerCellIndex.y - 1, 0); y <= centerCellIndex.y + 1; y++)
@@ -54,7 +53,6 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
                         weight = 1 - ratio * ratio * ratio;
                         centerPos += weight * neighbourPos;
                         weightSum += weight;
-                        neighbourNum++;
                     }
                 }
             }
@@ -173,11 +171,10 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     
     float maxSigma = max(max(eignvalue[0][0], eignvalue[1][1]), eignvalue[2][2]);
     float3 scale = float3(max(maxSigma / 4, eignvalue[0][0]), max(maxSigma / 4, eignvalue[1][1]), max(maxSigma / 4, eignvalue[2][2]));
-    //uint s = min(uint(scale.x * 4096), 2047);
-    //s |= min(uint(scale.y * 2048), 1023) << 11;
-    //s |= min(uint(scale.z * 4096), 2047) << 21;
-    //AnisotropyBuffer[id].scale = s;
-    AnisotropyBuffer[id].scale = scale;
+    uint s = min(uint(scale.x * 4096), 2047);
+    s |= min(uint(scale.y * 2048), 1023) << 11;
+    s |= min(uint(scale.z * 4096), 2047) << 21;
+    AnisotropyBuffer[id].scale = s;
     
     float u = eignvectors[0][0] + eignvectors[1][1] + eignvectors[2][2];
     float w = 0.5 * sqrt(u + 1);

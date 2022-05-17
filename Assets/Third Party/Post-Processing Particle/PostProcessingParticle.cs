@@ -13,7 +13,7 @@ public class PostProcessingParticle
         m_ParticlePostProcessingToolsCS.SetFloat("CellLength", vCellLength);
 
         m_NarrowPositionBuffer = new ComputeBuffer(vMaxParticleCount, sizeof(float) * 3);
-        m_AnisotropyBuffer = new ComputeBuffer(vMaxParticleCount, sizeof(float) * 4);
+        m_AnisotropyBuffer = new ComputeBuffer(vMaxParticleCount, sizeof(float) * 2);
     }
 
     public void computeAnisotropyMatrix(ComputeBuffer vParticlePos, int vIterNum)

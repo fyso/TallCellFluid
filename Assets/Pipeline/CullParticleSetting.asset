@@ -16,4 +16,4 @@ MonoBehaviour:
   m_MaxVisibleCount: 20
   m_PerspectiveGridDimX: 152
   m_PerspectiveGridDimY: 128
-  m_CullMode: 0
+  m_CullMode: 1
