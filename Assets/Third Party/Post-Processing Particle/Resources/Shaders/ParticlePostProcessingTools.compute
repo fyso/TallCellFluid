@@ -5,8 +5,8 @@
 
 struct Anisotropy
 {
-    float4 Quaterion;
-    float3 Scale;
+    uint quaternion;
+    float3 scale;
 };
 
 int IterNum;
@@ -18,10 +18,11 @@ RWStructuredBuffer<Anisotropy> AnisotropyBuffer;
 [numthreads(THREAD_NUM_1D, 1, 1)]
 void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
-    uint i = ThreadIdx + GroupIdx * THREAD_NUM_1D;
-    if (i >= IndirectArgmentBuffer[4]) return;
+    uint id = ThreadIdx + GroupIdx * THREAD_NUM_1D;
+    if (id >= IndirectArgmentBuffer[4])
+        return;
     
-    float3 currentPos = ParticlePosBuffer[i];
+    float3 currentPos = ParticlePosBuffer[id];
 
     int3 centerCellIndex = convertPos2CellIndex(currentPos);
     if (centerCellIndex.x < 0)
@@ -60,7 +61,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
         }
     }
     centerPos /= weightSum;
-    NarrowPositionBuffer[i] = centerPos;
+    NarrowPositionBuffer[id] = centerPos;
 
         
     float3x3 covMatrix =
@@ -171,44 +172,46 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     }
     
     float maxSigma = max(max(eignvalue[0][0], eignvalue[1][1]), eignvalue[2][2]);
-    AnisotropyBuffer[i].Scale = float3(max(maxSigma / 4, eignvalue[0][0]), max(maxSigma / 4, eignvalue[1][1]), max(maxSigma / 4, eignvalue[2][2]));
+    float3 scale = float3(max(maxSigma / 4, eignvalue[0][0]), max(maxSigma / 4, eignvalue[1][1]), max(maxSigma / 4, eignvalue[2][2]));
+    //uint s = min(uint(scale.x * 4096), 2047);
+    //s |= min(uint(scale.y * 2048), 1023) << 11;
+    //s |= min(uint(scale.z * 4096), 2047) << 21;
+    //AnisotropyBuffer[id].scale = s;
+    AnisotropyBuffer[id].scale = scale;
     
     float u = eignvectors[0][0] + eignvectors[1][1] + eignvectors[2][2];
     float w = 0.5 * sqrt(u + 1);
-    float4 quaterion = float4(
+    float4 quaternion =
+    {
         (eignvectors[2][1] - eignvectors[1][2]) / w / 4,
         (eignvectors[0][2] - eignvectors[2][0]) / w / 4,
         (eignvectors[1][0] - eignvectors[0][1]) / w / 4,
-        w);
-    
+        w
+    };
     
     // Compress quaternions
-    //float maxValue = 0;
-    //uint maxValueIndex = 0;
-    //for (uint i = 0; i < 4; ++i)
-    //{
-    //    if (maxValue < abs(quaterion[i]))
-    //    {
-    //        maxValue = quaterion[i];
-    //        maxValueIndex = i;
-    //    }
-    //}
-    //if (quaterion[maxValueIndex] < 0)
-    //    quaterion *= -1;
+    float maxValue = 0;
+    uint maxValueIndex = 0;
+    for (uint i = 0; i < 4; ++i)
+    {
+        if (maxValue < abs(quaternion[i]))
+        {
+            maxValue = abs(quaternion[i]);
+            maxValueIndex = i;
+        }
+    }
+    if (quaternion[maxValueIndex] < 0)
+        quaternion *= -1;
     
-    //uint result = maxValueIndex;
-    //uint index = 0;
-    //for (uint i = 0; i < 4; ++i)
-    //{
-    //    if (i != maxValueIndex)
-    //    {
-    //        result |= uint(1024 * (quaterion[i] + 0.707106781)) << (2 + index * 10);
-    //        index++;
-    //    }
-    //}
-    
-    AnisotropyBuffer[i].Quaterion.x = (eignvectors[2][1] - eignvectors[1][2]) / w / 4;
-    AnisotropyBuffer[i].Quaterion.y = (eignvectors[0][2] - eignvectors[2][0]) / w / 4;
-    AnisotropyBuffer[i].Quaterion.z = (eignvectors[1][0] - eignvectors[0][1]) / w / 4;
-    AnisotropyBuffer[i].Quaterion.w = w;
+    uint result = maxValueIndex;
+    uint index = 0;
+    for (uint ii = 0; ii < 4; ++ii)
+    {
+        if (ii != maxValueIndex)
+        {
+            result |= min(uint(724.07734515 * (quaternion[ii] + 0.707106781)), 1023) << (2 + index * 10);
+            index++;
+        }
+    }
+    AnisotropyBuffer[id].quaternion = result;
 }

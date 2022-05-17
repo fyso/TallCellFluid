@@ -165,8 +165,8 @@
 
             struct Anisotropy
             {
-                float4 Quaterion;
-                float3 Scale;
+                uint quaternion;
+                float3 scale;
             };
             StructuredBuffer<Anisotropy> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
@@ -263,25 +263,50 @@
                 #endif
 
                 Anisotropy ani = _AnisotropyBuffer[instanceID];
-                float3 scale = ani.Scale * _ParticlesRadius * 10;
+
+                // decompress quaternion
+                uint compressed = ani.quaternion;
+                uint maxValueIndex = compressed & 3;
+                float quaternion[4];
+                uint index = 0;
+                float sum2 = 0;
+                for (uint i = 0; i < 4; ++i)
+                {
+                    if (i != maxValueIndex)
+                    {
+                        quaternion[i] = float((compressed >> (2 + index * 10)) & 1023) * 0.001381067932 - 0.707106781;
+                        sum2 += quaternion[i] * quaternion[i];
+                        index++;
+                    }
+                }
+                quaternion[maxValueIndex] = sqrt(1 - sum2);
+
                 float3x3 r =
                 {
                     {
-                        1.0 - 2.0 * ani.Quaterion.y * ani.Quaterion.y - 2.0 * ani.Quaterion.z * ani.Quaterion.z,
-                        2.0 * ani.Quaterion.x * ani.Quaterion.y - 2.0 * ani.Quaterion.z * ani.Quaterion.w,
-                        2.0 * ani.Quaterion.x * ani.Quaterion.z + 2.0 * ani.Quaterion.y * ani.Quaterion.w
+                        1.0 - 2.0 * quaternion[1] * quaternion[1] - 2.0 * quaternion[2] * quaternion[2],
+                        2.0 * quaternion[0] * quaternion[1] - 2.0 * quaternion[2] * quaternion[3],
+                        2.0 * quaternion[0] * quaternion[2] + 2.0 * quaternion[1] * quaternion[3]
                     },
                     {
-                        2.0 * ani.Quaterion.x * ani.Quaterion.y + 2.0 * ani.Quaterion.z * ani.Quaterion.w,
-                        1.0 - 2.0 * ani.Quaterion.x * ani.Quaterion.x - 2.0 * ani.Quaterion.z * ani.Quaterion.z,
-                        2.0 * ani.Quaterion.y * ani.Quaterion.z - 2.0 * ani.Quaterion.x * ani.Quaterion.w
+                        2.0 * quaternion[0] * quaternion[1] + 2.0 * quaternion[2] * quaternion[3],
+                        1.0 - 2.0 * quaternion[0] * quaternion[0] - 2.0 * quaternion[2] * quaternion[2],
+                        2.0 * quaternion[1] * quaternion[2] - 2.0 * quaternion[0] * quaternion[3]
                     },
                     {
-                        2.0 * ani.Quaterion.x * ani.Quaterion.z - 2.0 * ani.Quaterion.y * ani.Quaterion.w,
-                        2.0 * ani.Quaterion.y * ani.Quaterion.z + 2.0 * ani.Quaterion.x * ani.Quaterion.w,
-                        1.0 - 2.0 * ani.Quaterion.x * ani.Quaterion.x - 2.0 * ani.Quaterion.y * ani.Quaterion.y
+                        2.0 * quaternion[0] * quaternion[2] - 2.0 * quaternion[1] * quaternion[3],
+                        2.0 * quaternion[1] * quaternion[2] + 2.0 * quaternion[0] * quaternion[3],
+                        1.0 - 2.0 * quaternion[0] * quaternion[0] - 2.0 * quaternion[1] * quaternion[1]
                     }
                 };
+
+                //uint s = ani.scale;
+                //float3 scale;
+                //scale.x = (s & 2047) / 4096.0f;
+                //scale.y = ((s >> 11) & 1023) / 1024.0f;
+                //scale.z = ((s >> 21) & 2047) / 4096.0f;
+                //scale *= _ParticlesRadius * 10;
+                float3 scale = ani.scale * _ParticlesRadius * 10;
                 float4x4 q;
                 q._m00_m10_m20_m30 = float4(r._m00_m10_m20 * scale.x, 0.0);
                 q._m01_m11_m21_m31 = float4(r._m01_m11_m21 * scale.y, 0.0);

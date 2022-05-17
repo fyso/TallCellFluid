@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ReconstructSetting
   m_EditorClassIdentifier: 
   m_ParticlesRadius: 0.29
-  m_FilterRadiusWS: 0.29
+  m_FilterRadiusWS: 0.1
   m_ClampRatio: 1.51
-  m_ThresholdRatio: 16.51
-  m_Sigma: 0.538
+  m_ThresholdRatio: 9.01
+  m_Sigma: 0.218
