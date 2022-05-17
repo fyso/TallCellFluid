@@ -1,5 +1,6 @@
 ﻿#ifndef CUSTOM_COMMON_INCLUDED
 #define CUSTOM_COMMON_INCLUDED
+#pragma multi_compile _ _DEPTHSPLIT_NONLINEAR
 #pragma enable_d3d11_debug_symbols
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -13,6 +14,7 @@ uint _PerspectiveGridDimY;
 uint _PerspectiveGridDimZ;
 float _SampleRadioInv;
 float _NearPlane;
+float _FarPlane;
 
 int3 viewPos2Index3D(float3 viewPos)
 {
@@ -27,8 +29,11 @@ int3 viewPos2Index3D(float3 viewPos)
     if (index_Y < 0 && index_Y > -3)
         index_Y = 0;
     
-    float nearPlane = _NearPlane;
-    int   index_Z = floor(log(-viewPos.z / nearPlane) * _SampleRadioInv);
+    #ifdef _DEPTHSPLIT_NONLINEAR
+        int index_Z = floor(log(-viewPos.z / _NearPlane) * _SampleRadioInv);
+    #else
+    int index_Z = floor((-viewPos.z - _NearPlane) / _SampleRadioInv * _PerspectiveGridDimZ);
+    #endif
 
     return int3(index_X, index_Y, index_Z);
 }

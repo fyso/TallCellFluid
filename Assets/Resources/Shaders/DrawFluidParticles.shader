@@ -131,8 +131,8 @@
                     output.gridIndexDebug = float4(cellIndex3D, 1.0);
                     //if(cellIndex3D.x == 32)
                     //    output.gridIndexDebug = float4(1, cellIndex3D.y,0, 1.0);
-                    ////else if (cellIndex3D.x == 44)
-                    ////    output.gridIndexDebug = float4(0, 1, cellIndex3D.y, 1.0);
+                    //else if (cellIndex3D.x == 44)
+                    //    output.gridIndexDebug = float4(0, 1, cellIndex3D.y, 1.0);
                     //else
                     //    output.gridIndexDebug = float4(0, 0, cellIndex3D.y, 1.0);
                 #endif

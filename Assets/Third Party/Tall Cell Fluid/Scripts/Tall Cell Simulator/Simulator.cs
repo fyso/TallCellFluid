@@ -124,7 +124,7 @@ public class Simulator
     public void Step(float vTimeStep, RuntimeParameter vRuntimeParam)
     {
         FrameIndex++;
-        //if (FrameIndex != 1) return;
+        if (FrameIndex != 1) return;
         Profiler.BeginSample("ParticleInCell");
         __ParticleInCell(vTimeStep, vRuntimeParam);
         Profiler.EndSample();
