@@ -17,5 +17,8 @@ MonoBehaviour:
   m_MidFactor: 0.375
   m_PerspectiveGridDimX: 128
   m_PerspectiveGridDimY: 128
+<<<<<<< HEAD
   m_DepthSplitMode: 1
+=======
+>>>>>>> faca7f1d9da300f5f2330e10c841a9f077b60ab0
   m_CullMode: 1
