@@ -218,11 +218,11 @@ public partial class CameraRenderer : MonoBehaviour
             DrawParticles();
             SmoothFluidDepth();
             GenerateFluidNoramal();
-            //RenderFluid();
+            RenderFluid();
         }
         if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
             Show(m_CullDebugRT);
-        else Show(m_FluidNormalRT);
+        else Show(m_FluidNormalRT, m_SceneDepthRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
