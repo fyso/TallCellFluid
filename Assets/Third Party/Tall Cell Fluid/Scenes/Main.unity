@@ -800,15 +800,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Terrian: {fileID: 2800000, guid: 7fdf947f02f27a84a8a279f022b0dc3f, type: 3}
   m_Min: {x: 0, y: 0, z: 0}
-  m_ResolutionXZ: {x: 16, y: 16}
+  m_ResolutionXZ: {x: 64, y: 64}
   m_RegularCellYCount: 16
   m_CellLength: 1
   m_SeaLevel: 80
   m_MaxParticleCount: 2006498
-  m_TimeStep: 0.001
-  m_IterationCount: 512
+  m_TimeStep: 0.033
+  m_IterationCount: 1024
   VisualParticle: 1
-  ShowGridDebugInfo: 0
+  ShowGridDebugInfo: 1
   VisualGridInfo:
     m_ShowMode: 1
     m_ShowInfo: 5
@@ -817,8 +817,8 @@ MonoBehaviour:
     MaxShowValue: 30
     MaxShowColor: {r: 1, g: 1, b: 1, a: 0}
     m_GridLevel: 0
-    m_ShowRegularCell: 1
-    m_ShowTallCell: 1
+    m_ShowRegularCell: 0
+    m_ShowTallCell: 0
     m_ShowTerrainCell: 1
     m_UseSpecifiedShowRange: 0
     m_MinX: 0
