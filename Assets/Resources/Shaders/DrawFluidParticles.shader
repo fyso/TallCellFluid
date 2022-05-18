@@ -163,12 +163,7 @@
             
             #include "../ShaderLibrary/Common.hlsl"
 
-            struct Anisotropy
-            {
-                uint quaternion;
-                uint scale;
-            };
-            StructuredBuffer<Anisotropy> _AnisotropyBuffer;
+            StructuredBuffer<uint2> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
             StructuredBuffer<uint> _VisibleGridBuffer;
             float4x4 _ViewMatrixForGrid;
@@ -262,10 +257,10 @@
                     }
                 #endif
 
-                Anisotropy ani = _AnisotropyBuffer[instanceID];
+                uint2 ani = _AnisotropyBuffer[instanceID];
 
                 // decompress quaternion
-                uint compressed = ani.quaternion;
+                uint compressed = ani.x;
                 uint maxValueIndex = compressed & 3;
                 float quaternion[4];
                 uint index = 0;
@@ -300,7 +295,7 @@
                     }
                 };
 
-                uint s = ani.scale;
+                uint s = ani.y;
                 float3 scale;
                 scale.x = float(s & 2047) / 4096.0f;
                 scale.y = float((s >> 11) & 1023) / 2048.0f;

@@ -3,20 +3,14 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel computeAnisotropyMatrix
 
-struct Anisotropy
-{
-    uint quaternion;
-    uint scale;
-};
-
 int IterNum;
 StructuredBuffer<uint> IndirectArgmentBuffer;
 StructuredBuffer<float3> ParticlePosBuffer;
 RWStructuredBuffer<float3> NarrowPositionBuffer;
-RWStructuredBuffer<Anisotropy> AnisotropyBuffer;
+RWStructuredBuffer<uint2> AnisotropyBuffer;
 
 [numthreads(THREAD_NUM_1D, 1, 1)]
-void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID, uint GroupIndex : SV_GroupIndex)
 {
     uint id = ThreadIdx + GroupIdx * THREAD_NUM_1D;
     if (id >= IndirectArgmentBuffer[4])
@@ -40,17 +34,15 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
                 uint mortonIndex = computeMorton3D(uint3(x, y, z));
                 uint count = HashCountBuffer[mortonIndex];
                 uint offset = HashOffsetBuffer[mortonIndex];
-                float3 neighbourPos = float3(0, 0, 0);
                 for (uint k = offset; k < offset + count; k++)
                 {
-                    neighbourPos = ParticlePosBuffer[k];
+                    float3 neighbourPos = ParticlePosBuffer[k];
                     float distance = length(currentPos - neighbourPos);
                     
-                    float weight = 0;
                     if (distance < CellLength)
                     {
                         float ratio = distance / CellLength;
-                        weight = 1 - ratio * ratio * ratio;
+                        float weight = 1 - ratio * ratio * ratio;
                         centerPos += weight * neighbourPos;
                         weightSum += weight;
                     }
@@ -169,13 +161,14 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
         }
     }
     
+    // Compress scale
     float maxSigma = max(max(eignvalue[0][0], eignvalue[1][1]), eignvalue[2][2]);
     float3 scale = float3(max(maxSigma / 4, eignvalue[0][0]), max(maxSigma / 4, eignvalue[1][1]), max(maxSigma / 4, eignvalue[2][2]));
     uint s = min(uint(scale.x * 4096), 2047);
     s |= min(uint(scale.y * 2048), 1023) << 11;
     s |= min(uint(scale.z * 4096), 2047) << 21;
-    AnisotropyBuffer[id].scale = s;
     
+    // Transform rotate matrix to quaternion
     float u = eignvectors[0][0] + eignvectors[1][1] + eignvectors[2][2];
     float w = 0.5 * sqrt(u + 1);
     float4 quaternion =
@@ -186,7 +179,7 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
         w
     };
     
-    // Compress quaternions
+    // Compress quaternion
     float maxValue = 0;
     uint maxValueIndex = 0;
     for (uint i = 0; i < 4; ++i)
@@ -210,5 +203,5 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
             index++;
         }
     }
-    AnisotropyBuffer[id].quaternion = result;
+    AnisotropyBuffer[id] = uint2(result, s);
 }
