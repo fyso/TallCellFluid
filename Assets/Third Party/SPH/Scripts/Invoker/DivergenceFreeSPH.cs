@@ -70,9 +70,12 @@ namespace LODFluid
             ComputeBuffer vTargetParticleClosestPointCache,
             ComputeBuffer vTargetParticleVolumeCache,
             ComputeBuffer vTargetParticleBoundaryVelocityBufferCache,
+            ComputeBuffer vNarrowPositionBuffer,
+            ComputeBuffer vAnisotropyBuffer,
             Vector3 vHashGridMin, float HashGridCellLength, Vector3Int vHashGridResolution,
             float vSearchRadius, float vParticleVolume, float vTimeStep, float vViscosity, float vSurfaceTension, float vGravity, 
-            int vDivergenceFreeIterationCount = 3, int vPressureIterationCount = 2, bool vUseVolumeMapBoundary = true, bool EnableDivergenceFreeSlover = true)
+            int vDivergenceFreeIterationCount = 3, int vPressureIterationCount = 2, bool vUseVolumeMapBoundary = true, bool EnableDivergenceFreeSlover = true,
+            bool vComputeAnisotropyMatrix = true, uint vIterNum = 3)
         {
             DivergenceFreeSPHSloverCS.SetFloats("HashGridMin", vHashGridMin.x, vHashGridMin.y, vHashGridMin.z);
             DivergenceFreeSPHSloverCS.SetFloat("HashGridCellLength", HashGridCellLength);
@@ -86,6 +89,8 @@ namespace LODFluid
             DivergenceFreeSPHSloverCS.SetFloat("SurfaceTension", vSurfaceTension);
             DivergenceFreeSPHSloverCS.SetFloat("Gravity", vGravity);
             DivergenceFreeSPHSloverCS.SetBool("UseVolumeMapBoundary", vUseVolumeMapBoundary);
+            DivergenceFreeSPHSloverCS.SetBool("ComputeAnisotropyMatrix", vComputeAnisotropyMatrix);
+            DivergenceFreeSPHSloverCS.SetInt("IterNum", (int)vIterNum);
 
             ///施加其它力
             Profiler.BeginSample("Update velocity with no pressure force");
@@ -113,6 +118,8 @@ namespace LODFluid
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "Normal_RW", vTargetParticleNormalCache);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "ParticleClosestPoint_R", vTargetParticleClosestPointCache);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "Volume_R", vTargetParticleVolumeCache);
+            DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "NarrowPositionBuffer_W", vNarrowPositionBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "AnisotropyBuffer_W", vAnisotropyBuffer);
             DivergenceFreeSPHSloverCS.DispatchIndirect(computeFluidPropertyKernel, vTargetParticleIndirectArgment);
             Profiler.EndSample();
 

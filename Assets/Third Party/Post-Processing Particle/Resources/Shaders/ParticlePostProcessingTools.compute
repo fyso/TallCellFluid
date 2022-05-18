@@ -3,17 +3,11 @@
 #pragma enable_d3d11_debug_symbols
 #pragma kernel computeAnisotropyMatrix
 
-struct Anisotropy
-{
-    uint quaternion;
-    uint scale;
-};
-
 int IterNum;
 StructuredBuffer<uint> IndirectArgmentBuffer;
 StructuredBuffer<float3> ParticlePosBuffer;
 RWStructuredBuffer<float3> NarrowPositionBuffer;
-RWStructuredBuffer<Anisotropy> AnisotropyBuffer;
+RWStructuredBuffer<uint2> AnisotropyBuffer;
 
 [numthreads(THREAD_NUM_1D, 1, 1)]
 void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID, uint GroupIndex : SV_GroupIndex)
@@ -173,7 +167,6 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
     uint s = min(uint(scale.x * 4096), 2047);
     s |= min(uint(scale.y * 2048), 1023) << 11;
     s |= min(uint(scale.z * 4096), 2047) << 21;
-    AnisotropyBuffer[id].scale = s;
     
     // Transform rotate matrix to quaternion
     float u = eignvectors[0][0] + eignvectors[1][1] + eignvectors[2][2];
@@ -210,5 +203,5 @@ void computeAnisotropyMatrix(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_
             index++;
         }
     }
-    AnisotropyBuffer[id].quaternion = result;
+    AnisotropyBuffer[id] = uint2(result, s);
 }
