@@ -568,7 +568,7 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
     CenterVel += float3(0.0f, -Gravity, 0.0f) * TimeStep;
     
     TargetParticleVelocity_RW[CurrentParticleIndex] = CenterVel;
-    FoamParticleCount_RW[CurrentParticleIndex] = /*Ike * */(NumTaRate * Ita + NumWcRate * Iwc) /* * TimeStep*/;
+    //FoamParticleCount_RW[CurrentParticleIndex] = /*Ike * */(NumTaRate * Ita + NumWcRate * Iwc) /* * TimeStep*/;
 }
 
 float rand1(float n)

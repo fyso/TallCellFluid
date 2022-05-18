@@ -11,7 +11,7 @@ namespace LODFluid
         public ComputeBuffer ParticleVelocityBuffer;
         public ComputeBuffer ParticleFilterBuffer;
         public ComputeBuffer ParticleMortonCodeBuffer;
-        public ComputeBuffer ParticleDensityBuffer;
+        public ComputeBuffer ParticleLifeTimeBuffer;
 
         public ParticleBuffer(uint vParticleBufferSize)
         {
@@ -19,7 +19,7 @@ namespace LODFluid
             ParticleVelocityBuffer = new ComputeBuffer((int)vParticleBufferSize, 3 * sizeof(float));
             ParticleFilterBuffer = new ComputeBuffer((int)vParticleBufferSize, sizeof(uint));
             ParticleMortonCodeBuffer = new ComputeBuffer((int)vParticleBufferSize, sizeof(uint));
-            ParticleDensityBuffer = new ComputeBuffer((int)vParticleBufferSize, sizeof(float));
+            ParticleLifeTimeBuffer = new ComputeBuffer((int)vParticleBufferSize, sizeof(float));
         }
 
         ~ParticleBuffer()
@@ -28,7 +28,7 @@ namespace LODFluid
             ParticleVelocityBuffer.Release();
             ParticleFilterBuffer.Release();
             ParticleMortonCodeBuffer.Release();
-            ParticleDensityBuffer.Release();
+            ParticleLifeTimeBuffer.Release();
         }
     }
 
@@ -45,6 +45,7 @@ namespace LODFluid
         public ComputeBuffer HashGridCellParticleOffsetBuffer;
 
         public ComputeBuffer Dynamic3DParticleAlphaBuffer;
+        public ComputeBuffer Dynamic3DParticleDensityBuffer;
         public ComputeBuffer Dynamic3DParticleDensityChangeBuffer;
         public ComputeBuffer Dynamic3DParticleDensityAdvBuffer;
         public ComputeBuffer Dynamic3DParticleNormalBuffer;
@@ -94,6 +95,7 @@ namespace LODFluid
 
             Dynamic3DParticle = new ParticleBuffer(vMaxParticleCount);
 
+            Dynamic3DParticleDensityBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
             Dynamic3DParticleAlphaBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
             Dynamic3DParticleDensityChangeBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
             Dynamic3DParticleDensityAdvBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
@@ -119,6 +121,7 @@ namespace LODFluid
             Dynamic3DParticleIndirectArgumentBuffer.Release();
             HashGridCellParticleCountBuffer.Release();
             HashGridCellParticleOffsetBuffer.Release();
+            Dynamic3DParticleDensityBuffer.Release();
             Dynamic3DParticleAlphaBuffer.Release();
             Dynamic3DParticleDensityChangeBuffer.Release();
             Dynamic3DParticleDensityAdvBuffer.Release();
@@ -180,6 +183,7 @@ namespace LODFluid
                     Dynamic3DParticleIndirectArgumentBuffer,
                     HashGridCellParticleCountBuffer,
                     HashGridCellParticleOffsetBuffer,
+                    Dynamic3DParticleDensityBuffer,
                     Dynamic3DParticleAlphaBuffer,
                     Dynamic3DParticleDensityChangeBuffer,
                     Dynamic3DParticleDensityAdvBuffer,

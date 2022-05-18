@@ -79,14 +79,10 @@ void deleteParticleOutofRange(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV
 StructuredBuffer<float3> TargetParticlePosition_R;
 StructuredBuffer<float3> TargetParticleVelocity_R;
 StructuredBuffer<uint> TargetParticleFilter_R;
-StructuredBuffer<uint> TargetParticleMortonCode_R;
-StructuredBuffer<uint> TargetParticleDensity_R;
 
 RWStructuredBuffer<float3> NarrowParticlePosition_RW;
 RWStructuredBuffer<float3> NarrowParticleVelocity_RW;
 RWStructuredBuffer<uint> NarrowParticleFilter_RW;
-RWStructuredBuffer<uint> NarrowParticleMortonCode_RW;
-RWStructuredBuffer<uint> NarrowParticleDensity_RW;
 
 StructuredBuffer<uint> ParticleScatterOffset_R;
 
@@ -104,8 +100,6 @@ void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Grou
         NarrowParticlePosition_RW[PrevTargetOffset] = TargetParticlePosition_R[i];
         NarrowParticleVelocity_RW[PrevTargetOffset] = TargetParticleVelocity_R[i];
         NarrowParticleFilter_RW[PrevTargetOffset] = TargetParticleFilter_R[i];
-        NarrowParticleMortonCode_RW[PrevTargetOffset] = TargetParticleMortonCode_R[i];
-        NarrowParticleDensity_RW[PrevTargetOffset] = TargetParticleDensity_R[i];
     }
 }
 
