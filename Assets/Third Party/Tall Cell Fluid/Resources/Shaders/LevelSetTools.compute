@@ -26,10 +26,6 @@ RWTexture2D<float3> BottomCellVelocity_Cache_RW;
 
 RWTexture3D<int> RegularCellMark_RW;
 
-uint WaterSurfaceDetailLevel;
-Texture3D<float> RegularWaterSurfaceSignedDistance_R;
-RWTexture3D<float> RegularWaterSurfaceSignedDistance_RW;
-
 static int3 DivergenceOP[6] =
 {
     { -1, 0, 0 },
@@ -235,6 +231,10 @@ void advectVelocityMacCormack_BackSLAndMix(uint3 DispatchThreadID : SV_DispatchT
     else
         RegularCellVelocity_RW[DispatchThreadID] = MacCormackVelocity;
 }
+
+uint WaterSurfaceDetailLevel;
+Texture3D<float> RegularWaterSurfaceSignedDistance_R;
+RWTexture3D<float> RegularWaterSurfaceSignedDistance_RW;
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void advectWaterSurfaceSemiLagrangian(uint3 DispatchThreadID : SV_DispatchThreadID)

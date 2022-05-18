@@ -358,11 +358,11 @@ void computeDataSum(float3 CenterCellPosition, float CenterPressure, out float A
                 AdjPressureSum += AdjCellPressure;
                 CurrPressureFactor++;
             }
-            else
-            {
-                AdjPressureSum += 0.0f;
-                CurrPressureFactor++;
-            }
+            //else
+            //{
+            //    AdjPressureSum += 0.0f;
+            //    CurrPressureFactor++;
+            //}
         }
     }
 }
@@ -388,11 +388,16 @@ float computeResidual(float3 CenterCellPosition, float CenterPressure, float B)
 
 int RedBlackTrigger;
 
-#define EBGS_CONDITION(CenterCellPosition)\
+#define EBGS_CONDITION(CenterCellPositionre, CenterPressure, Target)\
 int3 Euler3DIndex = CenterCellPosition / CellLength;\
-int EulerLinerIndex = Euler3DIndex.y * XZResolution.x * XZResolution.y + Euler3DIndex.z * XZResolution.x + Euler3DIndex.x;\
-if (EulerLinerIndex % 2 == RedBlackTrigger)\
+bool XIndexIsOdd = Euler3DIndex.x % 2 == RedBlackTrigger;\
+bool YIndexIsOdd = Euler3DIndex.y % 2 == RedBlackTrigger;\
+bool ZIndexIsOdd = Euler3DIndex.z % 2 == RedBlackTrigger;\
+if ((XIndexIsOdd && YIndexIsOdd && ZIndexIsOdd) || (!XIndexIsOdd && !YIndexIsOdd && ZIndexIsOdd) || (XIndexIsOdd && !YIndexIsOdd && !ZIndexIsOdd) || (!XIndexIsOdd && YIndexIsOdd && !ZIndexIsOdd))\
+{\
+    Target = CenterPressure;\
     return;\
+}
 
 [numthreads(THREAD_COUNT_3D, THREAD_COUNT_3D, THREAD_COUNT_3D)]
 void smooth_RBGS_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
@@ -411,7 +416,7 @@ void smooth_RBGS_Regular(uint3 DispatchThreadID : SV_DispatchThreadID)
     
     float3 CenterCellPosition = getRegularCellCenterPosition(DispatchThreadID);
     
-    //EBGS_CONDITION(CenterCellPosition)
+    EBGS_CONDITION(CenterCellPosition, CenterPressure, RegularCellPressure_Cache_RW[DispatchThreadID])
 
     RegularCellPressure_Cache_RW[DispatchThreadID] = doMatrixFreePressureProject(CenterCellPosition, CenterPressure, CurrB);
 }
@@ -433,7 +438,7 @@ void smooth_RBGS_Top(uint3 DispatchThreadID : SV_DispatchThreadID)
     
     float3 CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
     
-    //EBGS_CONDITION(CenterCellPosition)
+    EBGS_CONDITION(CenterCellPosition, CenterPressure, TopCellPressure_Cache_RW[DispatchThreadID.xy])
     
     TopCellPressure_Cache_RW[DispatchThreadID.xy] = doMatrixFreePressureProject(CenterCellPosition, CenterPressure, CurrB);
 }
@@ -445,14 +450,17 @@ void smooth_RBGS_Bottom(uint3 DispatchThreadID : SV_DispatchThreadID)
         return;
     
     if (BottomRigidBodyPercentage_R[DispatchThreadID.xy] > 0.9f)
+    {
+        BottomCellPressure_Cache_RW[DispatchThreadID.xy] = 0.0f;
         return;
+    }
     
     float CenterPressure = BottomCellPressure_R[DispatchThreadID.xy];
     float CurrB = VectorB_Bottom_R[DispatchThreadID.xy];
     
-    float3 CenterCellPosition = getTopCellCenterPosition(DispatchThreadID);
+    float3 CenterCellPosition = getBottomCellCenterPosition(DispatchThreadID);
     
-    //EBGS_CONDITION(CenterCellPosition)
+    EBGS_CONDITION(CenterCellPosition, CenterPressure, BottomCellPressure_Cache_RW[DispatchThreadID.xy])
     
     BottomCellPressure_Cache_RW[DispatchThreadID.xy] = doMatrixFreePressureProject(CenterCellPosition, CenterPressure, CurrB);
 }
@@ -703,15 +711,18 @@ float samplePressure(float3 CenterCellPosition, float CenterPressure, float3 Off
     
     float AdjTerrianHeight = TerrianHeight_R[XZ];
     float AdjTallCellHeight = TallCellHeight_R[XZ];
-    if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength)
+    if (any(XZ < 0) || any(XZ >= XZResolution) || Position.y >= AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength || Position.y < 0.0f)
     {
-        ResultPressure = 0.0f;
+        clamp(XZ, int2(0, 0), XZResolution);
+        clamp(Position.y, 0, AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength);
     }
-    else if (Position.y >= AdjTerrianHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight)
+    
+    if (Position.y >= AdjTerrianHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight)
     {
-        float SolidFactor = sampleTallCellValue(TopCellRigidBodyPercentage_R, BottomRigidBodyPercentage_R, AdjTerrianHeight, AdjTallCellHeight, XZ, Position.y);
-        float Pressure = sampleTallCellValue(TopCellPressure_R, BottomCellPressure_R, AdjTerrianHeight, AdjTallCellHeight, XZ, Position.y);
-        ResultPressure = SolidFactor * CenterPressure + (1 - SolidFactor) * Pressure;
+        //float SolidFactor = sampleTallCellValue(TopCellRigidBodyPercentage_R, BottomRigidBodyPercentage_R, AdjTerrianHeight, AdjTallCellHeight, XZ, Position.y);
+        //float Pressure = sampleTallCellValue(TopCellPressure_R, BottomCellPressure_R, AdjTerrianHeight, AdjTallCellHeight, XZ, Position.y);
+        ResultPressure = sampleTallCellValue(TopCellPressure_R, BottomCellPressure_R, AdjTerrianHeight, AdjTallCellHeight, XZ, Position.y);
+        //ResultPressure = SolidFactor * CenterPressure + (1 - SolidFactor) * Pressure;
     }
     else if (Position.y >= AdjTerrianHeight + AdjTallCellHeight && Position.y < AdjTerrianHeight + AdjTallCellHeight + ConstantCellNum * CellLength)
     {
@@ -723,7 +734,7 @@ float samplePressure(float3 CenterCellPosition, float CenterPressure, float3 Off
         if (Mark == 1)
             ResultPressure = SolidFactor * CenterPressure + (1 - SolidFactor) * Pressure;
         else
-            ResultPressure = 0.0f;
+            ResultPressure = CenterPressure;
     }
     else if (Position.y < AdjTerrianHeight)
     {

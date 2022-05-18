@@ -3,6 +3,7 @@ Shader "Custom/VisualParticle"
     Properties
     {
         _ParticleRadius ("Radius", float) = 0.25
+        _MaxFactor ("MaxFactor", float) = 80
         _ParticleColor ("Color", Color) = (.25, .5, .5, 1)
         [KeywordEnum(VELOCITY, PARTICLETYPE, VELOCITYX,VELOCITYY, VELOCITYZ)] _visualDataType("Visual DataType", float) = 0
     }
@@ -58,6 +59,7 @@ Shader "Custom/VisualParticle"
             };
 
             uniform float _ParticleRadius;
+            uniform float _MaxFactor;
             uniform float4 _ParticleColor;
 
             StructuredBuffer<float3> _particlePositionBuffer;
@@ -97,7 +99,7 @@ Shader "Custom/VisualParticle"
                     }
                 result.positionCS = TransformWViewToHClip(sphereCenter + float3(_ParticleRadius * result.uv, 0.0f));
 
-                float MaxVel = 80.0f;
+                float MaxVel = _MaxFactor;
 #if _VISUALDATATYPE_VELOCITY
                 float3 Velocity = _particleVelocityBuffer[instanceID];
                 float ClampVel = clamp(length(Velocity), 0.0f, MaxVel) / MaxVel;
