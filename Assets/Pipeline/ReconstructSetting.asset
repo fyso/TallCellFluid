@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d3f50f70bba1746b0dc74a55152d3e, type: 3}
   m_Name: ReconstructSetting
   m_EditorClassIdentifier: 
-  m_ParticlesRadius: 0.664
-  m_FilterRadiusWS: 0
-  m_ClampRatio: 0.84
-  m_ThresholdRatio: 11.01
-  m_Sigma: 0.253
+  m_ParticlesRadius: 0.345
+  m_FilterRadiusWS: 0.14
+  m_ClampRatio: 1.69
+  m_ThresholdRatio: 6.29
+  m_Sigma: 0.536
