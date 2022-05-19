@@ -220,9 +220,10 @@ public partial class CameraRenderer : MonoBehaviour
             GenerateFluidNoramal();
             RenderFluid();
         }
-        if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
+        if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || 
+            m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
             Show(m_CullDebugRT);
-        else Show(m_OutputRT, m_SceneDepthRT);
+        else Show(m_FluidNormalRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();
@@ -296,7 +297,8 @@ public partial class CameraRenderer : MonoBehaviour
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimX,
                 m_SettingManager.m_CullParticleSetting.m_PerspectiveGridDimY,
                 m_SettingManager.m_CullParticleSetting.m_DepthSplitMode,
-                m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive);
+                m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || 
+                m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive);
         }
         else
         {
@@ -317,18 +319,17 @@ public partial class CameraRenderer : MonoBehaviour
         int searchVisibleGridKernel = m_CullParticlesCS.FindKernel("searchVisibleGrid");
 
         m_CommandBuffer.name = "PerspectiveGrid ReSampling";
-
-        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearParticleCountOfGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 256), 1, 1);
+        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearParticleCountOfGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 512), 1, 1);
 
         if (m_SettingManager.m_CullParticleSetting.m_DepthSplitMode != DepthSplitMode.Uniform)
             m_CommandBuffer.EnableShaderKeyword("_DEPTHSPLIT_NONLINEAR");
         else
             m_CommandBuffer.DisableShaderKeyword("_DEPTHSPLIT_NONLINEAR");
+
         m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.NarrowPositionBuffer);
         m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticleIndirectArgment", m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer);
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 0);
-
-        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearVisibleGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 256), 1, 1);
+        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearVisibleGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 512), 1, 1);
 
         switch (m_SettingManager.m_CullParticleSetting.m_CullMode)
         {

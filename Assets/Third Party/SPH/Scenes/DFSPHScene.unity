@@ -266,8 +266,8 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 1
-  far clip plane: 5000
+  near clip plane: 5
+  far clip plane: 200
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -293,8 +293,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: -0.16790585, y: 0.3729201, z: -0.06881058, w: -0.9099469}
-  m_LocalPosition: {x: 52.145576, y: 21.700308, z: 7.7449183}
+  m_LocalRotation: {x: -0.05653341, y: 0.72835475, z: -0.060535837, w: -0.68017554}
+  m_LocalPosition: {x: 33.809544, y: 17.506058, z: 36.915257}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -359,6 +359,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1784697732}
   - component: {fileID: 1784697731}
+  - component: {fileID: 1784697733}
   m_Layer: 0
   m_Name: SPHSimulator
   m_TagString: Untagged
@@ -395,7 +396,7 @@ MonoBehaviour:
   MaxParticleCount: 250000
   DivergenceIterationCount: 1
   PressureIterationCount: 3
-  ComputeAnisotropyMatrix: 1
+  ComputeAnisotropyMatrix: 0
   IterNum: 3
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
@@ -412,6 +413,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1784697733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784697730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06c0317e0632e6c47bb855ee99f95544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  renderPipelineAsset: {fileID: 11400000, guid: 46b29c2503bfe714ab6e7d31481896ee, type: 2}
 --- !u!1 &137159759222451813
 GameObject:
   m_ObjectHideFlags: 0
@@ -472,7 +486,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 6e315669fbab6384e8a3b7c825825bc8, type: 2}
+  sdfData: {fileID: 11400000, guid: dbcd5c4950848d6469667e5b77016cf7, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -517,8 +531,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8164078560040880145}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 19.6, y: 31.8, z: 41.1}
-  m_LocalScale: {x: 180.86314, y: 45.700447, z: 40.284515}
+  m_LocalPosition: {x: -25, y: 20, z: 40}
+  m_LocalScale: {x: 90, y: 30, z: 40}
   m_Children: []
   m_Father: {fileID: 1766839093}
   m_RootOrder: 0
@@ -639,7 +653,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &8164078560040880146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -653,8 +667,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: -0.0000009536743, y: 0, z: 0}
-    m_Extent: {x: 96.46034, y: 24.373571, z: 21.485075}
+    m_Center: {x: 0, y: -0.0000019073486, z: 0}
+    m_Extent: {x: 48, y: 16, z: 21.333334}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers:
@@ -662,7 +676,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 8b6a95ef8fb891140bd3af12a6c26139, type: 2}
+  sdfData: {fileID: 11400000, guid: 96381d7df37133047a4eae21adea0101, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -681,7 +695,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 137159759222451813}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 48.6, y: 13.699999, z: 43.1}
+  m_LocalPosition: {x: -11.4, y: 7.1, z: 43.1}
   m_LocalScale: {x: 4, y: 4, z: 4}
   m_Children: []
   m_Father: {fileID: 1766839093}

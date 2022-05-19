@@ -6,7 +6,7 @@
 #include "../ShaderLibrary/Common.hlsl"
 #pragma multi_compile _ _CULLWITHLAYER _CULLWITHADAPTIVE
 
-#define GROUP_THREAD_NUM 256
+#define GROUP_THREAD_NUM 512
 int _DrawLayer;
 uint _MaxVisibleCount;
 
