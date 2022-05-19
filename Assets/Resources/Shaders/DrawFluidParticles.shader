@@ -41,7 +41,7 @@
             Varyings Clip()
             {
                 Varyings output;
-                output.positionCS = float4(100, 100, 100, 1);
+                output.positionCS = float4(100, 100, 100, 0);
                 return output;
             }
 

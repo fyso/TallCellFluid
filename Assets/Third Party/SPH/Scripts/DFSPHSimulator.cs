@@ -64,7 +64,7 @@ namespace LODFluid
             if (Input.GetKeyDown(KeyCode.Space))
                 Emit = !Emit;
 
-            if (Emit && Time.frameCount % 10 == 0)
+            if (Emit)
             {
                 DFSPH.AddParticleBlock(
                     WaterGeneratePosition,

@@ -293,8 +293,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: -0.16790585, y: 0.3729201, z: -0.06881058, w: -0.9099469}
-  m_LocalPosition: {x: 52.145576, y: 21.700308, z: 7.7449183}
+  m_LocalRotation: {x: -0.27396512, y: 0.42027935, z: -0.13474767, w: -0.854489}
+  m_LocalPosition: {x: 111.43091, y: 45.881718, z: -4.2837806}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -395,7 +395,7 @@ MonoBehaviour:
   MaxParticleCount: 250000
   DivergenceIterationCount: 1
   PressureIterationCount: 3
-  ComputeAnisotropyMatrix: 1
+  ComputeAnisotropyMatrix: 0
   IterNum: 3
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
