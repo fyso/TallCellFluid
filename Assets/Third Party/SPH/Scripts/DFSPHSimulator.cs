@@ -98,8 +98,8 @@ namespace LODFluid
                 ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
                 ParticleData.AnisotropyBuffer = null;
             }
-            ParticleData.MinPos = SimulationRangeMin;
-            ParticleData.MaxPos = new Vector3(64, 32, 64);  //TODO:
+            ParticleData.MinPos = new Vector3(-75, 0, 10);
+            ParticleData.MaxPos = new Vector3(20, 15, 60); 
         }
 
 
