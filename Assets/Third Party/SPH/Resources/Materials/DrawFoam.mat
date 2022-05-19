@@ -7,9 +7,9 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: VisualParticle
-  m_Shader: {fileID: 4800000, guid: be20f13f7b69a6644a63f704682a8e34, type: 3}
-  m_ShaderKeywords: _VISUALDATATYPE_VELOCITY
+  m_Name: DrawFoam
+  m_Shader: {fileID: 4800000, guid: 82f918860895b464688ec0cbd7ac8f41, type: 3}
+  m_ShaderKeywords: 
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -62,14 +62,12 @@ Material:
     - _CameraFarFadeDistance: 2
     - _CameraNearFadeDistance: 1
     - _Cull: 2
-    - _CustomEnum: 1.35
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DistortionBlend: 0.5
     - _DistortionEnabled: 0
     - _DistortionStrength: 1
     - _DistortionStrengthScaled: 0
-    - _DrawType: 2.71
     - _DstBlend: 0
     - _EmissionEnabled: 0
     - _FlipbookMode: 0
@@ -81,7 +79,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ParticleRadius: 0.25
+    - _ParticleRadius: 0.1
     - _SmoothnessTextureChannel: 0
     - _SoftParticlesEnabled: 0
     - _SoftParticlesFarFadeDistance: 1
@@ -90,12 +88,10 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
-    - _visualDataType: 0
-    - _visualVelocity: 0
     m_Colors:
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ParticleColor: {r: 0.04797081, g: 0.09482912, b: 0.13207549, a: 1}
+    - _ParticleColor: {r: 1, g: 1, b: 1, a: 1}
     - _SoftParticleFadeParams: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

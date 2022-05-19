@@ -57,7 +57,7 @@ namespace LODFluid
                 }
             }
 
-            GPUScanner = new GPUScan(vRadixSortCacheSize);
+            GPUScanner = new GPUScan();
         }
 
         public void RadixSort(

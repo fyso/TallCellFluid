@@ -13,6 +13,9 @@ namespace LODFluid
         private int slovePressureIterationKernel;
         private int updateVelocityWithNoPressureForceKernel;
         private int advectAndSwapParticleBufferKernel;
+        private int generateFoamParticle;
+        private int updateFoamParticleCountArgument;
+        private int advectFoamParticle;
 
         private ParticleBuffer BackParticleCache;
 
@@ -31,9 +34,13 @@ namespace LODFluid
             slovePressureIterationKernel = DivergenceFreeSPHSloverCS.FindKernel("solvePressureIteration");
             updateVelocityWithNoPressureForceKernel = DivergenceFreeSPHSloverCS.FindKernel("updateVelocityWithNoPressureForce");
             advectAndSwapParticleBufferKernel = DivergenceFreeSPHSloverCS.FindKernel("advectAndSwapParticleBuffer");
+            generateFoamParticle = DivergenceFreeSPHSloverCS.FindKernel("generateFoamParticle");
+            updateFoamParticleCountArgument = DivergenceFreeSPHSloverCS.FindKernel("updateFoamParticleCountArgument");
+            advectFoamParticle = DivergenceFreeSPHSloverCS.FindKernel("advectFoamParticle");
 
             BackParticleCache = new ParticleBuffer(vMaxParticleCount);
         }
+
         public void Advect(
             ref ParticleBuffer voTarget,
             ComputeBuffer vTargetParticleIndirectArgment, 
@@ -63,6 +70,7 @@ namespace LODFluid
             ComputeBuffer vTargetParticleIndirectArgment,
             ComputeBuffer vHashGridCellParticleCount,
             ComputeBuffer vHashGridCellParticleOffset,
+            ComputeBuffer vTargetParticleFoamParticleCountCache,
             ComputeBuffer vTargetParticleDensityCache,
             ComputeBuffer vTargetParticleAlphaCache,
             ComputeBuffer vTargetParticleDensityChangeCache,
@@ -73,7 +81,9 @@ namespace LODFluid
             ComputeBuffer vTargetParticleBoundaryVelocityBufferCache,
             Vector3 vHashGridMin, float HashGridCellLength, Vector3Int vHashGridResolution,
             float vSearchRadius, float vParticleVolume, float vTimeStep, float vViscosity, float vSurfaceTension, float vGravity, 
-            int vDivergenceFreeIterationCount = 3, int vPressureIterationCount = 2, bool vUseVolumeMapBoundary = true, bool EnableDivergenceFreeSlover = true)
+            int vDivergenceFreeIterationCount = 3, int vPressureIterationCount = 2, 
+            bool vUseVolumeMapBoundary = true, bool EnableDivergenceFreeSlover = true, 
+            float vMinCurvature = 0.5f, float vMaxCurvature = 15.0f, float vMinRelativeVelLength = 0.5f, float vMaxRelativeVelLength = 15.0f, int vNumTaRate = 10, int vNumWcRate = 100)
         {
             DivergenceFreeSPHSloverCS.SetFloats("HashGridMin", vHashGridMin.x, vHashGridMin.y, vHashGridMin.z);
             DivergenceFreeSPHSloverCS.SetFloat("HashGridCellLength", HashGridCellLength);
@@ -88,10 +98,20 @@ namespace LODFluid
             DivergenceFreeSPHSloverCS.SetFloat("Gravity", vGravity);
             DivergenceFreeSPHSloverCS.SetBool("UseVolumeMapBoundary", vUseVolumeMapBoundary);
 
+            DivergenceFreeSPHSloverCS.SetFloat("MinCurvature", vMinCurvature);
+            DivergenceFreeSPHSloverCS.SetFloat("MaxCurvature", vMaxCurvature);
+            DivergenceFreeSPHSloverCS.SetFloat("MinRelativeVelLength", vMinRelativeVelLength);
+            DivergenceFreeSPHSloverCS.SetFloat("MaxRelativeVelLength", vMaxRelativeVelLength);
+            DivergenceFreeSPHSloverCS.SetInt("NumTaRate", vNumTaRate);
+            DivergenceFreeSPHSloverCS.SetInt("NumWcRate", vNumWcRate);
+            DivergenceFreeSPHSloverCS.SetFloat("MaxKe", Mathf.Pow(0.00001f, 2) * vParticleVolume * 1000.0f * 0.5f);
+            DivergenceFreeSPHSloverCS.SetFloat("MinKe", Mathf.Pow(0.0f, 2) * vParticleVolume * 1000.0f * 0.5f);
+
             ///施加其它力
             Profiler.BeginSample("Update velocity with no pressure force");
             DivergenceFreeSPHSloverCS.SetBuffer(updateVelocityWithNoPressureForceKernel, "TargetParticlePosition_R", voTarget.ParticlePositionBuffer);
             DivergenceFreeSPHSloverCS.SetBuffer(updateVelocityWithNoPressureForceKernel, "TargetParticleVelocity_RW", voTarget.ParticleVelocityBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(updateVelocityWithNoPressureForceKernel, "FoamParticleCount_RW", vTargetParticleFoamParticleCountCache);
             DivergenceFreeSPHSloverCS.SetBuffer(updateVelocityWithNoPressureForceKernel, "TargetParticleIndirectArgment_R", vTargetParticleIndirectArgment);
             DivergenceFreeSPHSloverCS.SetBuffer(updateVelocityWithNoPressureForceKernel, "HashGridCellParticleCount_R", vHashGridCellParticleCount);
             DivergenceFreeSPHSloverCS.SetBuffer(updateVelocityWithNoPressureForceKernel, "HashGridCellParticleOffset_R", vHashGridCellParticleOffset);
@@ -186,6 +206,75 @@ namespace LODFluid
                 Profiler.EndSample();
             }
             Profiler.EndSample();
+        }
+
+        public void GenerateFoam(
+            ParticleBuffer vTarget,
+            ParticleBuffer voFoamParticle,
+            ComputeBuffer vTargetParticleIndirectArgment,
+            ComputeBuffer vFoamParticleIndirectArgment,
+            ComputeBuffer vTargetParticleFoamParticleCountCache,
+            ComputeBuffer vTargetParticleFoamParticleOffsetCache, 
+            float vSearchRadius, float vTimeStep, int vMaxFoamParticleCount)
+        {
+            DivergenceFreeSPHSloverCS.SetInt("MaxFoamParticleCount", vMaxFoamParticleCount);
+            DivergenceFreeSPHSloverCS.SetFloat("TimeStep", vTimeStep);
+            DivergenceFreeSPHSloverCS.SetFloat("SearchRadius", vSearchRadius);
+            Vector3 RandomSeed = new Vector3(Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f));
+            DivergenceFreeSPHSloverCS.SetFloats("TimeSeed", RandomSeed.x, RandomSeed.y, RandomSeed.z);
+
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "TargetParticleIndirectArgment_R", vTargetParticleIndirectArgment);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticleIndirectArgment_R", vFoamParticleIndirectArgment);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticleCount_R", vTargetParticleFoamParticleCountCache);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticleOffset_R", vTargetParticleFoamParticleOffsetCache);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "TargetParticlePosition_R", vTarget.ParticlePositionBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "TargetParticleVelocity_R", vTarget.ParticleVelocityBuffer);
+
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticlePosition_RW", voFoamParticle.ParticlePositionBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticleVelocity_RW", voFoamParticle.ParticleVelocityBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticleFilter_RW", voFoamParticle.ParticleFilterBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(generateFoamParticle, "FoamParticleLifeTime_RW", voFoamParticle.ParticleLifeTimeBuffer);
+            DivergenceFreeSPHSloverCS.DispatchIndirect(generateFoamParticle, vTargetParticleIndirectArgment);
+
+            DivergenceFreeSPHSloverCS.SetBuffer(updateFoamParticleCountArgument, "TargetParticleIndirectArgment_R", vTargetParticleIndirectArgment);
+            DivergenceFreeSPHSloverCS.SetBuffer(updateFoamParticleCountArgument, "FoamParticleOffset_R", vTargetParticleFoamParticleOffsetCache);
+            DivergenceFreeSPHSloverCS.SetBuffer(updateFoamParticleCountArgument, "FoamParticleIndirectArgment_RW", vFoamParticleIndirectArgment);
+            DivergenceFreeSPHSloverCS.Dispatch(updateFoamParticleCountArgument, 1, 1, 1);
+        }
+
+        public void AdvectFoam(
+            ParticleBuffer vTarget,
+            ParticleBuffer voFoamParticle,
+            ComputeBuffer vHashGridCellParticleCount,
+            ComputeBuffer vHashGridCellParticleOffset,
+            ComputeBuffer vFoamParticleIndirectArgment,
+            ComputeBuffer vTargetParticleNormalCache,
+            Vector3 vHashGridMin, float HashGridCellLength, Vector3Int vHashGridResolution,
+            float vTimeStep, float vGravity, float vSearchRadius, float vParticleVolume, uint vFoamUpdateRate)
+        {
+            DivergenceFreeSPHSloverCS.SetFloats("HashGridMin", vHashGridMin.x, vHashGridMin.y, vHashGridMin.z);
+            DivergenceFreeSPHSloverCS.SetFloat("HashGridCellLength", HashGridCellLength);
+            DivergenceFreeSPHSloverCS.SetInt("HashGridResolutionX", vHashGridResolution.x);
+            DivergenceFreeSPHSloverCS.SetInt("HashGridResolutionY", vHashGridResolution.y);
+            DivergenceFreeSPHSloverCS.SetInt("HashGridResolutionZ", vHashGridResolution.z);
+
+            DivergenceFreeSPHSloverCS.SetFloat("TimeStep", vTimeStep);
+            DivergenceFreeSPHSloverCS.SetFloat("vGravity", vGravity);
+            DivergenceFreeSPHSloverCS.SetFloat("SearchRadius", vSearchRadius);
+            DivergenceFreeSPHSloverCS.SetFloat("ParticleVolume", vParticleVolume);
+            DivergenceFreeSPHSloverCS.SetFloat("FoamUpdateRate", vFoamUpdateRate);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "HashGridCellParticleCount_R", vHashGridCellParticleCount);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "HashGridCellParticleOffset_R", vHashGridCellParticleOffset);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "FoamParticleIndirectArgment_R", vFoamParticleIndirectArgment);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "FoamParticlePosition_RW", voFoamParticle.ParticlePositionBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "FoamParticleVelocity_RW", voFoamParticle.ParticleVelocityBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "FoamParticleLifeTime_RW", voFoamParticle.ParticleLifeTimeBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "FoamParticleFilter_RW", voFoamParticle.ParticleFilterBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "TargetParticlePosition_R", vTarget.ParticlePositionBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "TargetParticleVelocity_R", vTarget.ParticleVelocityBuffer);
+            DivergenceFreeSPHSloverCS.SetBuffer(advectFoamParticle, "Normal_R", vTargetParticleNormalCache);
+
+            DivergenceFreeSPHSloverCS.DispatchIndirect(advectFoamParticle, vFoamParticleIndirectArgment);
         }
     }
 }

@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: DrawSPHParticle
+  m_Name: DrawWater
   m_Shader: {fileID: 4800000, guid: 82f918860895b464688ec0cbd7ac8f41, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 0

@@ -8,18 +8,11 @@ namespace LODFluid
         private int insertParticleIntoHashGridKernel;
         private int countingSortFullKernel;
 
-        ComputeBuffer ParticleCellIndexCache;
-        ComputeBuffer ParticleInnerSortIndexCache;
-
-        ParticleBuffer SortedParticleCache;
-
-        GPUScan GPUScanner;
-        GPUBufferClear GPUBufferClearer;
+        public GPUScan GPUScanner;
+        public GPUBufferClear GPUBufferClearer;
 
         ~GPUCountingSortHash()
         {
-            ParticleCellIndexCache.Release();
-            ParticleInnerSortIndexCache.Release();
         }
 
         public GPUCountingSortHash(uint vMaxParticleCount)
@@ -28,20 +21,19 @@ namespace LODFluid
             insertParticleIntoHashGridKernel = GPUCountingHashSortCS.FindKernel("insertParticleIntoHashGrid");
             countingSortFullKernel = GPUCountingHashSortCS.FindKernel("countingSortFull");
 
-            SortedParticleCache = new ParticleBuffer(vMaxParticleCount);
 
-            ParticleCellIndexCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
-            ParticleInnerSortIndexCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
-
-            GPUScanner = new GPUScan(vMaxParticleCount);
+            GPUScanner = new GPUScan();
             GPUBufferClearer = new GPUBufferClear();
         }
 
         public void CountingHashSort(
             ref ParticleBuffer voTarget,
+            ref ParticleBuffer voSortedCache,
             ComputeBuffer voHashGridParticleCount,
             ComputeBuffer voHashGridParticleOffset,
             ComputeBuffer vArgumentBuffer,
+            ComputeBuffer vParticleCellIndexCache,
+            ComputeBuffer vParticleInnerSortIndexCache,
             Vector3 vHashGridMin, float vHashGridCellLength)
         {
             GPUBufferClearer.ClearFloatBufferWithZero(voHashGridParticleCount.count, voHashGridParticleCount);
@@ -51,30 +43,29 @@ namespace LODFluid
 
             GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "ParticleIndrectArgment_R", vArgumentBuffer);
             GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "ParticlePosition_R", voTarget.ParticlePositionBuffer);
-            GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "ParticleCellIndex_RW", ParticleCellIndexCache);
+            GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "ParticleCellIndex_RW", vParticleCellIndexCache);
             GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "HashGridCellParticleCount_RW", voHashGridParticleCount);
-            GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "ParticleInnerSortIndex_RW", ParticleInnerSortIndexCache);
+            GPUCountingHashSortCS.SetBuffer(insertParticleIntoHashGridKernel, "ParticleInnerSortIndex_RW", vParticleInnerSortIndexCache);
             GPUCountingHashSortCS.DispatchIndirect(insertParticleIntoHashGridKernel, vArgumentBuffer);
 
             GPUScanner.Scan(voHashGridParticleCount, voHashGridParticleOffset);
 
             GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleIndrectArgment_R", vArgumentBuffer);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleCellIndex_R", ParticleCellIndexCache);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleInnerSortIndex_R", ParticleInnerSortIndexCache);
+            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleCellIndex_R", vParticleCellIndexCache);
+            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleInnerSortIndex_R", vParticleInnerSortIndexCache);
             GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "HashGridCellParticleOffset_R", voHashGridParticleOffset);
             GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticlePosition_R", voTarget.ParticlePositionBuffer);
             GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleVelocity_R", voTarget.ParticleVelocityBuffer);
             GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleFilter_R", voTarget.ParticleFilterBuffer);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleMortonCode_R", voTarget.ParticleMortonCodeBuffer);
             GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "ParticleLifeTime_R", voTarget.ParticleLifeTimeBuffer);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticlePosition_RW", SortedParticleCache.ParticlePositionBuffer);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticleVelocity_RW", SortedParticleCache.ParticleVelocityBuffer);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticleFilter_RW", SortedParticleCache.ParticleFilterBuffer);
-            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticleLifeTime_RW", SortedParticleCache.ParticleLifeTimeBuffer);
+            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticlePosition_RW", voSortedCache.ParticlePositionBuffer);
+            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticleVelocity_RW", voSortedCache.ParticleVelocityBuffer);
+            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticleFilter_RW", voSortedCache.ParticleFilterBuffer);
+            GPUCountingHashSortCS.SetBuffer(countingSortFullKernel, "SortedParticleLifeTime_RW", voSortedCache.ParticleLifeTimeBuffer);
             GPUCountingHashSortCS.DispatchIndirect(countingSortFullKernel, vArgumentBuffer);
 
-            ParticleBuffer Temp = SortedParticleCache;
-            SortedParticleCache = voTarget;
+            ParticleBuffer Temp = voSortedCache;
+            voSortedCache = voTarget;
             voTarget = Temp;
         }
     }

@@ -12,20 +12,16 @@ namespace LODFluid
         private uint scanInBucketGroupThreadNum;
         private uint scanAddBucketResultGroupThreadNum;
 
-        private uint ScanArrayCount = 0;
         private ComputeBuffer ScanCache1;
         private ComputeBuffer ScanCache2;
 
         ~GPUScan()
         {
             ScanCache1.Release();
-            if (Mathf.CeilToInt((float)ScanArrayCount / scanInBucketGroupThreadNum) > 0)
-            {
-                ScanCache2.Release();
-            }
+            ScanCache2.Release();
         }
 
-        public GPUScan(uint vScanBufferSize)
+        public GPUScan()
         {
             GPUScanCS = Resources.Load<ComputeShader>("Shaders/GPU Operation/GPUScan");
             scanInBucketKernel = GPUScanCS.FindKernel("scanInBucket");
@@ -34,15 +30,12 @@ namespace LODFluid
             GPUScanCS.GetKernelThreadGroupSizes(scanInBucketKernel, out scanInBucketGroupThreadNum, out _, out _);
             GPUScanCS.GetKernelThreadGroupSizes(scanAddBucketResultKernel, out scanAddBucketResultGroupThreadNum, out _, out _);
             ScanCache1 = new ComputeBuffer((int)Mathf.Pow(scanInBucketGroupThreadNum, 2), sizeof(uint));
-            if (Mathf.CeilToInt((float)vScanBufferSize / scanInBucketGroupThreadNum) > 0)
-            {
-                ScanCache2 = new ComputeBuffer((int)scanInBucketGroupThreadNum, sizeof(uint));
-            }
-            ScanArrayCount = vScanBufferSize;
+            ScanCache2 = new ComputeBuffer((int)scanInBucketGroupThreadNum, sizeof(uint));
         }
 
         public void Scan(ComputeBuffer vCountBuffer, ComputeBuffer voOffsetBuffer)
         {
+            int ScanArrayCount = vCountBuffer.count;
             GPUScanCS.SetBuffer(scanInBucketKernel, "Input", vCountBuffer);
             GPUScanCS.SetBuffer(scanInBucketKernel, "Output", voOffsetBuffer);
             int GroupCount = (int)Mathf.Ceil((float)ScanArrayCount / scanInBucketGroupThreadNum);

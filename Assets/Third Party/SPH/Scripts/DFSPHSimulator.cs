@@ -11,7 +11,8 @@ namespace LODFluid
         public Vector3 WaterGeneratePosition = new Vector3(0, 0, 0);
         public Vector3Int WaterGenerateResolution = new Vector3Int(8, 1, 8);
         public Vector3 WaterGenerateInitVelocity = new Vector3(0, 0, 0);
-        public Material SPHVisualMaterial;
+        public Material WaterVisualMaterial;
+        public Material FoamVisualMaterial;
         public List<GameObject> BoundaryObjects;
 
         [Range(0.025f, 0.25f)]
@@ -32,6 +33,9 @@ namespace LODFluid
         [Range(100000, 300000)]
         public uint MaxParticleCount = 250000;
 
+        [Range(1000000, 10000000)]
+        public uint MaxFoamParticleCount = 1000000;
+
         public int DivergenceIterationCount = 3;
         public int PressureIterationCount = 1;
 
@@ -51,7 +55,7 @@ namespace LODFluid
 
         void Start()
         {
-            DFSPH = new DivergenceFreeSPHSolver(BoundaryObjects, MaxParticleCount, SimulationRangeMin, SimulationRangeRes, ParticleRadius);
+            DFSPH = new DivergenceFreeSPHSolver(BoundaryObjects, MaxParticleCount, MaxFoamParticleCount, SimulationRangeMin, SimulationRangeRes, ParticleRadius);
         }
 
         private bool Emit = true;
@@ -67,29 +71,33 @@ namespace LODFluid
                     WaterGenerateResolution,
                     WaterGenerateInitVelocity);
             }
-        }
-
-        private void FixedUpdate()
-        {
+            //if (Input.GetKeyDown(KeyCode.Space))
+            //{
+            //    DFSPH.AddParticleBlock(
+            //        WaterGeneratePosition,
+            //        WaterGenerateResolution,
+            //        WaterGenerateInitVelocity);
+            //}
             DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
             DFSPH.Advect(TimeStep);
             SetupDataForReconstruction();
         }
 
+        //private void FixedUpdate()
+        //{
+        //    DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
+        //    DFSPH.Advect(TimeStep);
+        //    SetupDataForReconstruction();
+        //}
+
         public Simulator2ReconstructionData m_ParticleData;
         public void SetupDataForReconstruction()
         {
             m_ParticleData.ArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
-            //if (vComputeAnisotropyMatrix)
-            //{
-            //    m_ParticleData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
-            //    m_ParticleData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
-            //}
-            //else
-            //{
-                m_ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
-                m_ParticleData.AnisotropyBuffer = null;
-            //}
+
+            m_ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
+            m_ParticleData.AnisotropyBuffer = null;
+
             m_ParticleData.MinPos = SimulationRangeMin;
             m_ParticleData.MaxPos = new Vector3(64, 32, 64);  //TODO:
         }
@@ -97,10 +105,15 @@ namespace LODFluid
 
         void OnRenderObject()
         {
-            SPHVisualMaterial.SetPass(0);
-            SPHVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.Dynamic3DParticle.ParticlePositionBuffer);
-            SPHVisualMaterial.SetBuffer("_particleVelocityBuffer", DFSPH.Dynamic3DParticle.ParticleVelocityBuffer);
+            WaterVisualMaterial.SetPass(0);
+            WaterVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.Dynamic3DParticle.ParticlePositionBuffer);
+            WaterVisualMaterial.SetBuffer("_particleVelocityBuffer", DFSPH.Dynamic3DParticle.ParticleVelocityBuffer);
             Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, DFSPH.Dynamic3DParticleIndirectArgumentBuffer, 12);
+
+            FoamVisualMaterial.SetPass(0);
+            FoamVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.FoamParticle.ParticlePositionBuffer);
+            FoamVisualMaterial.SetBuffer("_particleVelocityBuffer", DFSPH.FoamParticle.ParticleVelocityBuffer);
+            Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, DFSPH.Dynamic3DFoamParticleIndirectArgumentBuffer, 12);
         }
     }
 }

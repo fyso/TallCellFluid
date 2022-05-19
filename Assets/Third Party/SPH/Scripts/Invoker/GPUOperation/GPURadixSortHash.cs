@@ -57,7 +57,7 @@ namespace LODFluid
             CompactNSearchCS.SetInts("HashGridResolution", vHashGridResolution.x, vHashGridResolution.y, vHashGridResolution.z);
             CompactNSearchCS.SetBuffer(computeMortonCodeKernel, "ParticleIndrectArgment_R", vParticleIndirectArgumentBuffer);
             CompactNSearchCS.SetBuffer(computeMortonCodeKernel, "ParticlePosition_R", voTarget.ParticlePositionBuffer);
-            CompactNSearchCS.SetBuffer(computeMortonCodeKernel, "ParticleCellIndex_RW", voTarget.ParticleMortonCodeBuffer);
+            //CompactNSearchCS.SetBuffer(computeMortonCodeKernel, "ParticleCellIndex_RW", voTarget.ParticleMortonCodeBuffer);
             CompactNSearchCS.DispatchIndirect(computeMortonCodeKernel, vParticleIndirectArgumentBuffer);
         }
 
@@ -67,10 +67,10 @@ namespace LODFluid
         {
             GPUBufferClearer.ClearUIntBufferWithSequence(ParticleIndexCache.count, ParticleIndexCache);
 
-            GPURadixSorter.RadixSort(
-                ref voTarget.ParticleMortonCodeBuffer,
-                ref ParticleIndexCache,
-                vParticleIndirectArgumentBuffer);
+            //GPURadixSorter.RadixSort(
+            //    ref voTarget.ParticleMortonCodeBuffer,
+            //    ref ParticleIndexCache,
+            //    vParticleIndirectArgumentBuffer);
 
             CompactNSearchCS.SetBuffer(assignParticleKernel, "ParticleIndrectArgment_R", vParticleIndirectArgumentBuffer);
             CompactNSearchCS.SetBuffer(assignParticleKernel, "NewIndex_R", ParticleIndexCache);
@@ -97,13 +97,13 @@ namespace LODFluid
             GPUBufferClearer.ClearUIntBufferWithZero(vHashGridParticleCountBuffer.count, vHashGridParticleCountBuffer);
 
             CompactNSearchCS.SetBuffer(computeHashGridParticleOffsetKernel, "ParticleIndrectArgment_R", vParticleIndirectArgumentBuffer);
-            CompactNSearchCS.SetBuffer(computeHashGridParticleOffsetKernel, "ParticleCellIndex_R", vTarget.ParticleMortonCodeBuffer);
+            //CompactNSearchCS.SetBuffer(computeHashGridParticleOffsetKernel, "ParticleCellIndex_R", vTarget.ParticleMortonCodeBuffer);
             CompactNSearchCS.SetBuffer(computeHashGridParticleOffsetKernel, "HashGridParticleOffset_RW", vHashGridParticleOffsetBuffer);
             CompactNSearchCS.DispatchIndirect(computeHashGridParticleOffsetKernel, vParticleIndirectArgumentBuffer);
 
             CompactNSearchCS.SetInt("HashCellCount", vHashGridParticleOffsetBuffer.count);
             CompactNSearchCS.SetBuffer(computeHashGridParticleCountKernel, "ParticleIndrectArgment_R", vParticleIndirectArgumentBuffer);
-            CompactNSearchCS.SetBuffer(computeHashGridParticleCountKernel, "ParticleCellIndex_R", vTarget.ParticleMortonCodeBuffer);
+            //CompactNSearchCS.SetBuffer(computeHashGridParticleCountKernel, "ParticleCellIndex_R", vTarget.ParticleMortonCodeBuffer);
             CompactNSearchCS.SetBuffer(computeHashGridParticleCountKernel, "HashGridParticleOffset_R", vHashGridParticleOffsetBuffer);
             CompactNSearchCS.SetBuffer(computeHashGridParticleCountKernel, "HashGridParticleCount_RW", vHashGridParticleCountBuffer);
             CompactNSearchCS.DispatchIndirect(computeHashGridParticleCountKernel, vParticleIndirectArgumentBuffer);

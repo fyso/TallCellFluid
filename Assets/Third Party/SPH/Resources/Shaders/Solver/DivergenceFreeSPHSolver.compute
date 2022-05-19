@@ -9,6 +9,7 @@
 #pragma kernel updateVelocityWithNoPressureForce
 #pragma kernel advectAndSwapParticleBuffer
 #pragma kernel generateFoamParticle
+#pragma kernel updateFoamParticleCountArgument
 #pragma kernel advectFoamParticle
 
 //sph slot
@@ -46,17 +47,21 @@ StructuredBuffer<float> Volume_R;
 StructuredBuffer<float3> ParticleBoundaryVelocity_R;
 
 //foam slot
-uint MaxGenFoamPerParticle;
 float3 TimeSeed;
-uint MaxDiffuseParticleCount;
+uint MaxFoamParticleCount;
 float MaxRelativeVelLength;
 float MinRelativeVelLength;
 float MaxCurvature;
 float MinCurvature;
+float MaxK;
+float MinK;
 uint NumTaRate;
 uint NumWcRate;
+uint FoamUpdateRate;
 StructuredBuffer<uint> FoamParticleIndirectArgment_R;
+RWStructuredBuffer<uint> FoamParticleIndirectArgment_RW;
 StructuredBuffer<uint> FoamParticleCount_R;
+StructuredBuffer<uint> FoamParticleOffset_R;
 RWStructuredBuffer<uint> FoamParticleCount_RW;
 StructuredBuffer<float3> FoamParticlePosition_R;
 RWStructuredBuffer<float3> FoamParticlePosition_RW;
@@ -64,6 +69,7 @@ StructuredBuffer<float3> FoamParticleVelocity_R;
 RWStructuredBuffer<float3> FoamParticleVelocity_RW;
 StructuredBuffer<uint> FoamParticleFilter_R;
 RWStructuredBuffer<uint> FoamParticleFilter_RW;
+StructuredBuffer<float> FoamParticleLifeTime_R;
 RWStructuredBuffer<float> FoamParticleLifeTime_RW;
 
 #define FOR_EACH_NEIGHBOR(CODE) \
@@ -555,7 +561,7 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
     }
     
     float Iwc = clamp(Curvature * dot(normalize(CenterVel), CenterNormal) >= 0.6f ? 1.0f : 0.0f, MinCurvature, MaxCurvature) / (MaxCurvature - MinCurvature);
-    //float Ike = clamp(0.5f * ParticleMass * dot(CenterP.Velocity, CenterP.Velocity), MinCurvature, MaxCurvature) / (MaxCurvature - MinCurvature);
+    float Ike = clamp(0.5f * ParticleVolume * Density0 * pow(length(CenterVel), 2.0f), MinK, MaxK) / (MaxK - MinK);
     float Ita = clamp(Vdiff, MinRelativeVelLength, MaxRelativeVelLength) / (MaxRelativeVelLength - MinRelativeVelLength);
     if (NeighborCount > 16)
     {
@@ -568,7 +574,7 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
     CenterVel += float3(0.0f, -Gravity, 0.0f) * TimeStep;
     
     TargetParticleVelocity_RW[CurrentParticleIndex] = CenterVel;
-    //FoamParticleCount_RW[CurrentParticleIndex] = /*Ike * */(NumTaRate * Ita + NumWcRate * Iwc) /* * TimeStep*/;
+    FoamParticleCount_RW[CurrentParticleIndex] = floor(/*Ike * */((float) NumTaRate * Ita + (float) NumWcRate * Iwc)/* * TimeStep*/);
 }
 
 float rand1(float n)
@@ -584,11 +590,13 @@ void generateFoamParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     if (CurrentParticleIndex >= ParticleCount)
         return;
     
-    if (FoamParticleIndirectArgment_R[ParticleCountArgumentOffset] >= MaxDiffuseParticleCount)
+    uint CurrCount = FoamParticleCount_R[CurrentParticleIndex];
+    uint CurrOffset = 0 ? 0 : FoamParticleOffset_R[CurrentParticleIndex - 1];
+    uint CurrFoamParticleCount = FoamParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    if (CurrFoamParticleCount + CurrCount + CurrOffset >= MaxFoamParticleCount)
         return;
     
-    int DiffuseParticelNum = FoamParticleCount_R[CurrentParticleIndex];
-    if (DiffuseParticelNum <= 0)
+    if (CurrCount <= 0)
         return;
     
     float3 CenterPos = TargetParticlePosition_R[CurrentParticleIndex];
@@ -602,64 +610,83 @@ void generateFoamParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     float3 e2 = normalize(cross(Vn, e1));
     
     //generate diffuse particle
-    for (int c = 0; c < min(DiffuseParticelNum, MaxGenFoamPerParticle); c++)
+    for (int c = 0; c < CurrCount; c++)
     {
-        float H = rand1(TimeSeed.y + CurrentParticleIndex + c + 0);
-        float R = rand1(TimeSeed.y * TimeSeed.x + CurrentParticleIndex + c + 1);
-        float Theta = rand1(TimeSeed.y * TimeSeed.x * TimeSeed.z + CurrentParticleIndex + c + 2);
+        float H = rand1(TimeSeed.x + CurrentParticleIndex + c);
+        float R = rand1(TimeSeed.y + CurrentParticleIndex + c);
+        float Theta = rand1(TimeSeed.z + CurrentParticleIndex + c);
         
         H = (H - 0.5f) * TimeStep * length(CenterVel);
-        R = SearchRadius / 4.0f * R * 10;
+        R = SearchRadius * R * 100;
         Theta = Theta * 2.0f * PI;
     
         float3 X = CenterPos + R * cos(Theta) * e1 + R * sin(Theta) * e2 + H * Vn;
         float3 V = R * cos(Theta) * e1 + R * sin(Theta) * e2 + CenterVel;
         
-        int InsertIndex = CurrentParticleIndex * MaxGenFoamPerParticle + c;
+        int InsertIndex = CurrFoamParticleCount + CurrOffset + c;
         FoamParticlePosition_RW[InsertIndex] = X;
         FoamParticleVelocity_RW[InsertIndex] = V;
         FoamParticleFilter_RW[InsertIndex] = 1;
+        FoamParticleLifeTime_RW[InsertIndex] = 0.0f;
     }
+}
+
+[numthreads(1, 1, 1)]
+void updateFoamParticleCountArgument(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint ParticleCount = TargetParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    uint CurrAddFoamParticleCount = FoamParticleOffset_R[ParticleCount - 1];
+    int NewFoamParticleCount = min(FoamParticleIndirectArgment_RW[ParticleCountArgumentOffset] + CurrAddFoamParticleCount, MaxFoamParticleCount);
+    FoamParticleIndirectArgment_RW[ParticleCountArgumentOffset] = NewFoamParticleCount;
+    FoamParticleIndirectArgment_RW[ParticleXGridCountArgumentOffset] = ceil((float) NewFoamParticleCount / SPH_THREAD_NUM);
 }
 
 [numthreads(SPH_THREAD_NUM, 1, 1)]
 void advectFoamParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint CurrentParticleIndex = ThreadIdx + GroupIdx * SPH_THREAD_NUM;
-    uint ParticleCount = TargetParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    uint ParticleCount = FoamParticleIndirectArgment_R[ParticleCountArgumentOffset];
     if (CurrentParticleIndex >= ParticleCount)
         return;
     
-    float3 CenterPos = FoamParticlePosition_R[CurrentParticleIndex];
-    float3 CenterVel = FoamParticleVelocity_R[CurrentParticleIndex];
+    float3 CenterPos = FoamParticlePosition_RW[CurrentParticleIndex];
+    float3 CenterVel = FoamParticleVelocity_RW[CurrentParticleIndex];
     
     float3 VelocitySum = float3(0, 0, 0);
-    float3 DensityDrad = float3(0, 0, 0);
-    float3 CurrSurfaceNormal = float3(0, 0, 0);
     uint NeighborCount = 0;
+    float3 CurrSurfaceNormal = float3(0, 0, 0);
+    float3 DensityDrad = float3(0, 0, 0);
     
     FOR_EACH_NEIGHBOR(
         float3 NeighborPosition = TargetParticlePosition_R[c];
-        float3 NeighborVelocity = TargetParticleVelocity_R[c];
         float Dist = length(CenterPos - NeighborPosition);
         if (Dist < SearchRadius && Dist > 0.0f)
         {
-            VelocitySum += NeighborVelocity;
+            CurrSurfaceNormal += Normal_R[c];
+            VelocitySum += TargetParticleVelocity_R[c];
+            DensityDrad -= (ParticleVolume * Density0 * computeCubicKernelGradW(CenterPos - NeighborPosition, SearchRadius));
             NeighborCount++;
         }
     );
     
+    float MixFactor = 0.213f;
+    if (abs(length(DensityDrad) - 0.0f) >= 1e-6 && abs(length(CurrSurfaceNormal) - 0.0f) >= 1e-6)
+    {
+        CurrSurfaceNormal = normalize(CurrSurfaceNormal);
+        float3 HizFactor = dot(CurrSurfaceNormal, DensityDrad);
+        CenterVel = (1 - MixFactor) * CenterVel + MixFactor * length(CenterVel) * normalize(DensityDrad - HizFactor * CurrSurfaceNormal);
+    }
+    
     float CurrLifeTime = FoamParticleLifeTime_RW[CurrentParticleIndex];
-    if (NeighborCount > 32 || NeighborCount < 2 || CurrLifeTime > 6 * TimeStep)
+    if (NeighborCount > 32 || CurrLifeTime > 50 * TimeStep)
         FoamParticleFilter_RW[CurrentParticleIndex] = 0;
     
-    if (NeighborCount > 8)
-    {
-        CenterVel = VelocitySum / (float) NeighborCount;
-    }
+    if (NeighborCount < 2)
+        CurrLifeTime += TimeStep * 10;
     
     FoamParticleLifeTime_RW[CurrentParticleIndex] = CurrLifeTime + TimeStep;
     FoamParticlePosition_RW[CurrentParticleIndex] += CenterVel * TimeStep;
+    FoamParticleVelocity_RW[CurrentParticleIndex] = CenterVel;
 }
 
 StructuredBuffer<float3> BackParticlePosition_R;

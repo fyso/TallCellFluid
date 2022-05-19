@@ -16,6 +16,8 @@ StructuredBuffer<float3> ParticleVelocity_R;
 RWStructuredBuffer<float3> ParticleVelocity_RW;
 StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<uint> ParticleFilter_RW;
+StructuredBuffer<float> ParticleLifeTime_R;
+RWStructuredBuffer<float> ParticleLifeTim_RW;
 
 StructuredBuffer<float> ParticleBoundaryDiatance_R;
 
@@ -31,6 +33,8 @@ float3 ParticleInitVel;
 float3 HashGridMin;
 float HashGridCellLength;
 uint3 HashGridResolution;
+
+float MaxLifeTime;
 
 [numthreads(SPH_THREAD_NUM, 1, 1)]
 void addParticleBlock(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
@@ -67,10 +71,11 @@ void deleteParticleOutofRange(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV
         return;
     
     float3 Postion = ParticlePosition_R[i];
+    float LifeTime = ParticleLifeTime_R[i];
     float BoundaryDistance = ParticleBoundaryDiatance_R[i];
 	
     float3 HashGridMax = HashGridMin + HashGridCellLength * HashGridResolution;
-    if (any(Postion < HashGridMin) || any(Postion >= HashGridMax) || BoundaryDistance < 0.0f)
+    if (any(Postion < HashGridMin) || any(Postion >= HashGridMax) || BoundaryDistance < 0.0f || LifeTime >= MaxLifeTime)
     {
         ParticleFilter_RW[i] = 0;
     }
@@ -79,10 +84,12 @@ void deleteParticleOutofRange(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV
 StructuredBuffer<float3> TargetParticlePosition_R;
 StructuredBuffer<float3> TargetParticleVelocity_R;
 StructuredBuffer<uint> TargetParticleFilter_R;
+StructuredBuffer<float> TargetParticleLifeTime_R;
 
 RWStructuredBuffer<float3> NarrowParticlePosition_RW;
 RWStructuredBuffer<float3> NarrowParticleVelocity_RW;
 RWStructuredBuffer<uint> NarrowParticleFilter_RW;
+RWStructuredBuffer<float> NarrowParticleLifeTime_RW;
 
 StructuredBuffer<uint> ParticleScatterOffset_R;
 
@@ -99,6 +106,7 @@ void scatterParticleData(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Grou
     {
         NarrowParticlePosition_RW[PrevTargetOffset] = TargetParticlePosition_R[i];
         NarrowParticleVelocity_RW[PrevTargetOffset] = TargetParticleVelocity_R[i];
+        NarrowParticleLifeTime_RW[PrevTargetOffset] = TargetParticleLifeTime_R[i];
         NarrowParticleFilter_RW[PrevTargetOffset] = TargetParticleFilter_R[i];
     }
 }
