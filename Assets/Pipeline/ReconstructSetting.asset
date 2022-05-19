@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ParticlesRadius: 0.345
   m_FilterRadiusWS: 0.14
-  m_ClampRatio: 1.69
-  m_ThresholdRatio: 6.29
-  m_Sigma: 0.536
+  m_ClampRatio: 1.58
+  m_ThresholdRatio: 12.91
+  m_Sigma: 0.147

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Skybox: {fileID: 8900000, guid: 65844975f3a977b419b0d5fdff86f07a, type: 3}
   m_Diffuse: {r: 0.51731044, g: 0.776545, b: 0.8773585, a: 0.07058824}
-  m_GrazingDiffuse: {r: 0.9103774, g: 0.9778145, b: 1, a: 0.2}
+  m_GrazingDiffuse: {r: 0.23331259, g: 0.4025377, b: 0.46226418, a: 0.2}
   m_WaterIOF: 1.33
   m_ShowSkyBox: 1
   m_ShowDiffuse: 1
