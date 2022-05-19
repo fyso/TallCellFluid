@@ -214,7 +214,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
 --- !u!1 &963194225
 GameObject:
@@ -293,12 +293,12 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: -0.27396512, y: 0.42027935, z: -0.13474767, w: -0.854489}
-  m_LocalPosition: {x: 111.43091, y: 45.881718, z: -4.2837806}
+  m_LocalRotation: {x: -0.20219228, y: 0.54009235, z: -0.13554673, w: -0.80563366}
+  m_LocalPosition: {x: 94.56095, y: 16.806076, z: 28.950396}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &963194229
 MonoBehaviour:
@@ -395,7 +395,7 @@ MonoBehaviour:
   MaxParticleCount: 250000
   DivergenceIterationCount: 1
   PressureIterationCount: 3
-  ComputeAnisotropyMatrix: 0
+  ComputeAnisotropyMatrix: 1
   IterNum: 3
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
@@ -410,7 +410,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &137159759222451813
 GameObject:

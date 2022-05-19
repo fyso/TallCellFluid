@@ -272,6 +272,7 @@ void computeFluidProperty(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         // Compress scale
         float maxSigma = max(max(Eignvalue[0][0], Eignvalue[1][1]), Eignvalue[2][2]);
         float3 scale = float3(max(maxSigma / 4, Eignvalue[0][0]), max(maxSigma / 4, Eignvalue[1][1]), max(maxSigma / 4, Eignvalue[2][2]));
+        //float3 scale = float3(0.05, 0.05, 0.05);
         uint s = min(uint(scale.x * 4096), 2047);
         s |= min(uint(scale.y * 2048), 1023) << 11;
         s |= min(uint(scale.z * 4096), 2047) << 21;

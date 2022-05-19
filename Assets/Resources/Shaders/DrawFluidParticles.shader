@@ -128,11 +128,11 @@
                 output.depth = fluidDepth;
                 #ifdef _FREEZE
                     float3 cellIndex3D = input.cellOfParticleIndex3D;
-                   // output.gridIndexDebug = float4(cellIndex3D, 1.0);
-                    if(cellIndex3D.x < 62)
-                        output.gridIndexDebug = float4(1, 0, 0, 1.0);
-                    else
-                        output.gridIndexDebug = float4(0, 0, 1, 1.0);
+                    output.gridIndexDebug = float4(cellIndex3D, 1.0);
+                    //if(cellIndex3D.x < 62)
+                    //    output.gridIndexDebug = float4(1, 0, 0, 1.0);
+                    //else
+                    //    output.gridIndexDebug = float4(0, 0, 1, 1.0);
                 #endif
 
                 return output;
@@ -235,6 +235,10 @@
             {
                 Varyings output;
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
+                float4 positionCS = TransformWorldToHClip(particlePosition);
+                positionCS.xyz /= positionCS.w;
+                if (any(abs(positionCS.xy / positionCS.w) > 1)) return Clip();
+                if (positionCS.z < 0) return Clip();
 
                 #ifdef _CULL
                     int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePosition, 1.0f)));
@@ -418,7 +422,6 @@
 
                 float sceneDepth = _SceneDepth.Sample(_point_clamp_sampler, GetUVFromCS(ndcPos)).x;
                 if (ndcPos.z < sceneDepth) discard;
-
 
                 Targets output;
                 output.depth = ndcPos.z;
