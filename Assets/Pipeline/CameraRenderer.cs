@@ -425,7 +425,26 @@ public partial class CameraRenderer : MonoBehaviour
         switch(m_SettingManager.m_ReconstructSetting.m_FilterMethod)
         {
             case FilterMethod._1D:
+                m_CommandBuffer.SetRenderTarget(m_SmoothFluidDepthRT, m_SmoothFluidDepthRT);
+                m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
+                m_CommandBuffer.SetGlobalTexture("_FluidDepthRT", m_FluidDepthRT);
+                m_CommandBuffer.DisableShaderKeyword("_2D");
+                m_CommandBuffer.EnableShaderKeyword("_1D_X");
+                m_CommandBuffer.DisableShaderKeyword("_1D_Y");
+                m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_FilterMaterial, 0, MeshTopology.Triangles, 3);
 
+                m_CommandBuffer.SetRenderTarget(m_FluidDepthRT, m_FluidDepthRT);
+                m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
+                m_CommandBuffer.SetGlobalTexture("_FluidDepthRT", m_SmoothFluidDepthRT);
+                m_CommandBuffer.DisableShaderKeyword("_2D");
+                m_CommandBuffer.DisableShaderKeyword("_1D_X");
+                m_CommandBuffer.EnableShaderKeyword("_1D_Y");
+                m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_FilterMaterial, 0, MeshTopology.Triangles, 3);
+
+                m_CommandBuffer.SetRenderTarget(m_SmoothFluidDepthRT, m_SmoothFluidDepthRT);
+                m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
+                m_CommandBuffer.SetGlobalTexture("_FluidDepthRT", m_FluidDepthRT);
+                m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_FilterMaterial, 1, MeshTopology.Triangles, 3);
                 break;
 
             case FilterMethod._2D:
