@@ -29,6 +29,7 @@ bool ComputeAnisotropyMatrix;
 uint IterNum;
 
 StructuredBuffer<uint> TargetParticleIndirectArgment_R;
+RWStructuredBuffer<uint> NarrowParticleIndirectArgment_R;
 StructuredBuffer<uint> HashGridCellParticleCount_R;
 StructuredBuffer<uint> HashGridCellParticleOffset_R;
 StructuredBuffer<float3> TargetParticlePosition_R;
@@ -164,7 +165,13 @@ void computeFluidProperty(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     );
     CenterPos /= WeightSum;
     NarrowPositionBuffer_W[CurrentParticleIndex] = CenterPos;
-    
+    NarrowParticleIndirectArgment_R[0] = TargetParticleIndirectArgment_R[0];
+    NarrowParticleIndirectArgment_R[1] = TargetParticleIndirectArgment_R[1];
+    NarrowParticleIndirectArgment_R[2] = TargetParticleIndirectArgment_R[2];
+    NarrowParticleIndirectArgment_R[3] = TargetParticleIndirectArgment_R[3];
+    NarrowParticleIndirectArgment_R[4] = TargetParticleIndirectArgment_R[4];
+    NarrowParticleIndirectArgment_R[5] = TargetParticleIndirectArgment_R[5];
+    NarrowParticleIndirectArgment_R[6] = TargetParticleIndirectArgment_R[6];
     
     if (ComputeAnisotropyMatrix)
     {

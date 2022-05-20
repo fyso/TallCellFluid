@@ -4,7 +4,7 @@ using UnityEngine;
 public class Simulator2ReconstructionData : ScriptableObject
 {
     public ComputeBuffer ParticleArgumentBuffer;
-    public ComputeBuffer NarrowPositionBuffer;
+    public ComputeBuffer PositionBuffer;
     public ComputeBuffer AnisotropyBuffer;
 
     public ComputeBuffer FoamArgumentBuffer;

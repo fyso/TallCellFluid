@@ -332,7 +332,7 @@ public partial class CameraRenderer : MonoBehaviour
         else
             m_CommandBuffer.DisableShaderKeyword("_DEPTHSPLIT_NONLINEAR");
 
-        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.NarrowPositionBuffer);
+        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.PositionBuffer);
         m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticleIndirectArgment", m_SettingManager.m_Simulator2ReconstructionData.ParticleArgumentBuffer);
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_Simulator2ReconstructionData.ParticleArgumentBuffer, 0);
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearVisibleGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 512), 1, 1);
@@ -394,7 +394,7 @@ public partial class CameraRenderer : MonoBehaviour
             m_CommandBuffer.DisableShaderKeyword("_DEPTHSPLIT_NONLINEAR");
 
         m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
-        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.NarrowPositionBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.PositionBuffer);
         m_CommandBuffer.SetGlobalTexture("_SceneDepth", m_SceneDepthRT);
         m_CommandBuffer.SetGlobalFloat("_ParticlesRadius", m_SettingManager.m_ReconstructSetting.m_ParticlesRadius);
         if (m_SettingManager.m_Simulator2ReconstructionData.AnisotropyBuffer != null)

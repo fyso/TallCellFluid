@@ -98,19 +98,20 @@ namespace LODFluid
         public Simulator2ReconstructionData ParticleData;
         public void SetupDataForReconstruction()
         {
-            ParticleData.ParticleArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
             ParticleData.FoamArgumentBuffer = DFSPH.Dynamic3DFoamParticleIndirectArgumentBuffer;
             ParticleData.FoamPositionBuffer = DFSPH.FoamParticle.ParticlePositionBuffer;
             ParticleData.FoamVelocityBuffer = DFSPH.FoamParticle.ParticleVelocityBuffer;
             ParticleData.FoamLifeTimeBuffer = DFSPH.FoamParticle.ParticleLifeTimeBuffer;
             if (ComputeAnisotropyMatrix)
             {
-                ParticleData.NarrowPositionBuffer = DFSPH.NarrowPositionBuffer;
+                ParticleData.PositionBuffer = DFSPH.NarrowPositionBuffer;
+                ParticleData.ParticleArgumentBuffer = DFSPH.NarrowParticleIndirectArgumentBuffer;
                 ParticleData.AnisotropyBuffer = DFSPH.AnisotropyBuffer;
             }
             else
             {
-                ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
+                ParticleData.PositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
+                ParticleData.ParticleArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
                 ParticleData.AnisotropyBuffer = null;
             }
             ParticleData.MinPos = new Vector3(-75, 0, 10);

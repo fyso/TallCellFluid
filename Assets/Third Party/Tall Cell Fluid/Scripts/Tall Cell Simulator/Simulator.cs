@@ -40,12 +40,12 @@ public class Simulator
         vData.ParticleArgumentBuffer = m_DynamicParticle.Argument;
         if(vComputeAnisotropyMatrix)
         {
-            vData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
+            vData.PositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
             vData.AnisotropyBuffer = m_ParticlePostProcessingTools.m_AnisotropyBuffer;
         }
         else
         {
-            vData.NarrowPositionBuffer = m_DynamicParticle.MainParticle.Position;
+            vData.PositionBuffer = m_DynamicParticle.MainParticle.Position;
             vData.AnisotropyBuffer = null;
         }
         vData.MinPos = m_Min;

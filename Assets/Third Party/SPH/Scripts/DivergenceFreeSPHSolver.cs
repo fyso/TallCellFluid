@@ -52,6 +52,7 @@ namespace LODFluid
         public List<CubicMap> SignedDistance;
         public List<CubicMap> Volume;
 
+        public ComputeBuffer NarrowParticleIndirectArgumentBuffer;
         public ComputeBuffer Dynamic3DParticleIndirectArgumentBuffer;
         public ComputeBuffer Dynamic3DFoamParticleIndirectArgumentBuffer;
 
@@ -110,7 +111,9 @@ namespace LODFluid
 
             int[] ParticleIndirectArgumentCPU = new int[7] { 1, 1, 1, 6, 0, 0, 0 };
             Dynamic3DParticleIndirectArgumentBuffer = new ComputeBuffer(7, sizeof(int), ComputeBufferType.IndirectArguments);
+            NarrowParticleIndirectArgumentBuffer = new ComputeBuffer(7, sizeof(int), ComputeBufferType.IndirectArguments);
             Dynamic3DParticleIndirectArgumentBuffer.SetData(ParticleIndirectArgumentCPU);
+            NarrowParticleIndirectArgumentBuffer.SetData(ParticleIndirectArgumentCPU);
 
             Dynamic3DFoamParticleIndirectArgumentBuffer = new ComputeBuffer(7, sizeof(int), ComputeBufferType.IndirectArguments);
             Dynamic3DFoamParticleIndirectArgumentBuffer.SetData(ParticleIndirectArgumentCPU);
@@ -236,6 +239,7 @@ namespace LODFluid
             DivergenceFreeSPHTool.Slove(
                     ref Dynamic3DParticle,
                     Dynamic3DParticleIndirectArgumentBuffer,
+                    NarrowParticleIndirectArgumentBuffer,
                     HashGridCellParticleCountBuffer,
                     HashGridCellParticleOffsetBuffer,
                     Dynamic3DParticleFoamParticleCountBuffer,

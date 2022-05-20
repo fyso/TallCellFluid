@@ -68,6 +68,7 @@ namespace LODFluid
         public void Slove(
             ref ParticleBuffer voTarget,
             ComputeBuffer vTargetParticleIndirectArgment,
+            ComputeBuffer vNarrowParticleIndirectArgment,
             ComputeBuffer vHashGridCellParticleCount,
             ComputeBuffer vHashGridCellParticleOffset,
             ComputeBuffer vTargetParticleFoamParticleCountCache,
@@ -131,6 +132,7 @@ namespace LODFluid
             ///预计算迭代不变值（密度与Alpha）
             Profiler.BeginSample("Compute alpha and density");
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "TargetParticleIndirectArgment_R", vTargetParticleIndirectArgment);
+            DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "NarrowParticleIndirectArgment_R", vNarrowParticleIndirectArgment);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "TargetParticlePosition_R", voTarget.ParticlePositionBuffer);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "HashGridCellParticleCount_R", vHashGridCellParticleCount);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFluidPropertyKernel, "HashGridCellParticleOffset_R", vHashGridCellParticleOffset);
