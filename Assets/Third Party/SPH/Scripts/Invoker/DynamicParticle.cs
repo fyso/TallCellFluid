@@ -16,8 +16,9 @@ namespace LODFluid
         private uint MaxParticleSize;
         private GPUScan GPUScanner;
 
-        ~DynamicParticle()
+        public void Relaese()
         {
+            GPUScanner.Release();
         }
 
         public DynamicParticle(uint vMaxParticleSize)

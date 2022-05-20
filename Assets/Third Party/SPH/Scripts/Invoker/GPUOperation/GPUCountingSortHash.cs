@@ -11,11 +11,11 @@ namespace LODFluid
         public GPUScan GPUScanner;
         public GPUBufferClear GPUBufferClearer;
 
-        ~GPUCountingSortHash()
+        public void Release()
         {
         }
 
-        public GPUCountingSortHash(uint vMaxParticleCount)
+        public GPUCountingSortHash()
         {
             GPUCountingHashSortCS = Resources.Load<ComputeShader>("Shaders/GPU Operation/GPUCountingSortHash");
             insertParticleIntoHashGridKernel = GPUCountingHashSortCS.FindKernel("insertParticleIntoHashGrid");

@@ -33,9 +33,9 @@ namespace LODFluid
             Data = new ComputeBuffer(TotalNodeCount, sizeof(float));
         }
 
-        ~CubicMap()
+        public void Release()
         {
-            Data.Dispose();
+            Data.Release();
         }
     }
 
@@ -105,6 +105,11 @@ namespace LODFluid
 
             m_GenerateVolumeMapCS.SetFloats("gaussian_weights_1_30", gaussian_weights_1_30);
             m_GenerateVolumeMapCS.SetFloats("gaussian_abscissae_1_30", gaussian_abscissae_1_30);
+        }
+
+        public void Release()
+        {
+
         }
 
         public void GenerateBoundaryMapData(

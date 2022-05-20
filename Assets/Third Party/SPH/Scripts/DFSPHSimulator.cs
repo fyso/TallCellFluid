@@ -75,23 +75,11 @@ namespace LODFluid
                     WaterGenerateResolution,
                     WaterGenerateInitVelocity);
             }
-            //if (Input.GetKeyDown(KeyCode.Space))
-            //{
-            //    DFSPH.AddParticleBlock(
-            //        WaterGeneratePosition,
-            //        WaterGenerateResolution,
-            //        WaterGenerateInitVelocity);
-            //}
-
-            //DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
-            //DFSPH.Advect(TimeStep);
-            //SetupDataForReconstruction();
         }
 
         private void FixedUpdate()
         {
-            DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
-            DFSPH.Advect(TimeStep);
+            DFSPH.Step(TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum, DivergenceIterationCount, PressureIterationCount);
             SetupDataForReconstruction();
         }
 
@@ -130,6 +118,11 @@ namespace LODFluid
             FoamVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.FoamParticle.ParticlePositionBuffer);
             FoamVisualMaterial.SetBuffer("_particleVelocityBuffer", DFSPH.FoamParticle.ParticleVelocityBuffer);
             Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, DFSPH.Dynamic3DFoamParticleIndirectArgumentBuffer, 12);
+        }
+
+        private void OnDestroy()
+        {
+            DFSPH.Release();
         }
     }
 }
