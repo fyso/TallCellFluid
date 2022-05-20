@@ -68,7 +68,7 @@ namespace LODFluid
             if (Input.GetKeyDown(KeyCode.Space))
                 Emit = !Emit;
 
-            if (Emit)
+            if (Emit && Time.frameCount % 10 == 0)
             {
                 DFSPH.AddParticleBlock(
                     WaterGeneratePosition,
@@ -82,21 +82,18 @@ namespace LODFluid
             //        WaterGenerateResolution,
             //        WaterGenerateInitVelocity);
             //}
-            //DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
+
+            //DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
             //DFSPH.Advect(TimeStep);
             //SetupDataForReconstruction();
+        }
 
+        private void FixedUpdate()
+        {
             DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
             DFSPH.Advect(TimeStep);
             SetupDataForReconstruction();
         }
-
-        //private void FixedUpdate()
-        //{
-        //    DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
-        //    DFSPH.Advect(TimeStep);
-        //    SetupDataForReconstruction();
-        //}
 
         public Simulator2ReconstructionData ParticleData;
         public void SetupDataForReconstruction()

@@ -735,7 +735,16 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
             NeighborCount++;
         }
     );
+    float Iwc = clamp(Curvature * dot(normalize(CurrentVel), CenterNormal) >= 0.6f ? 1.0f : 0.0f, MinCurvature, MaxCurvature) / (MaxCurvature - MinCurvature);
+    float Ike = clamp(0.5f * ParticleVolume * Density0 * pow(length(CurrentVel), 2.0f), MinK, MaxK) / (MaxK - MinK);
+    float Ita = clamp(Vdiff, MinRelativeVelLength, MaxRelativeVelLength) / (MaxRelativeVelLength - MinRelativeVelLength);
+    if (NeighborCount > 16)
+    {
+        Ita = 0;
+        Iwc = 0;
+    }
     
+    uint NewFoamParticleCount = floor( /*Ike * */((float) NumTaRate * Ita + (float) NumWcRate * Iwc) /* * TimeStep*/);
     if (UseVolumeMapBoundary)
     {
         float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
@@ -752,24 +761,16 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
             {
                 SurfaceTensionAcc -= SurfaceTension * CurrClosestPointAndVolume.w * Density0 * normalize(CurrentPos - CurrClosestPointAndVolume.xyz) * computeAdhesionKernelW(Dist, SearchRadius);
             }
+            NewFoamParticleCount = 0;
         }
     }
     
-    float Iwc = clamp(Curvature * dot(normalize(CurrentVel), CenterNormal) >= 0.6f ? 1.0f : 0.0f, MinCurvature, MaxCurvature) / (MaxCurvature - MinCurvature);
-    float Ike = clamp(0.5f * ParticleVolume * Density0 * pow(length(CurrentVel), 2.0f), MinK, MaxK) / (MaxK - MinK);
-    float Ita = clamp(Vdiff, MinRelativeVelLength, MaxRelativeVelLength) / (MaxRelativeVelLength - MinRelativeVelLength);
-    if (NeighborCount > 16)
-    {
-        Ita = 0;
-        Iwc = 0;
-    }
-
     CurrentVel += ViscosityAcc * TimeStep;
     CurrentVel += SurfaceTensionAcc * TimeStep;
     CurrentVel += float3(0.0f, -Gravity, 0.0f) * TimeStep;
     
     TargetParticleVelocity_RW[CurrentParticleIndex] = CurrentVel;
-    FoamParticleCount_RW[CurrentParticleIndex] = floor(/*Ike * */((float) NumTaRate * Ita + (float) NumWcRate * Iwc)/* * TimeStep*/);
+    FoamParticleCount_RW[CurrentParticleIndex] = NewFoamParticleCount;
 }
 
 float rand1(float n)
