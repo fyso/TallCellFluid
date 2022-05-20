@@ -41,7 +41,7 @@
             Varyings Clip()
             {
                 Varyings output;
-                output.positionCS = float4(100, 100, 100, 1);
+                output.positionCS = float4(100, 100, 100, 0);
                 return output;
             }
 
@@ -129,12 +129,10 @@
                 #ifdef _FREEZE
                     float3 cellIndex3D = input.cellOfParticleIndex3D;
                     output.gridIndexDebug = float4(cellIndex3D, 1.0);
-                    //if(cellIndex3D.x == 32)
-                    //    output.gridIndexDebug = float4(1, cellIndex3D.y,0, 1.0);
-                    //else if (cellIndex3D.x == 44)
-                    //    output.gridIndexDebug = float4(0, 1, cellIndex3D.y, 1.0);
+                    //if(cellIndex3D.x < 62)
+                    //    output.gridIndexDebug = float4(1, 0, 0, 1.0);
                     //else
-                    //    output.gridIndexDebug = float4(0, 0, cellIndex3D.y, 1.0);
+                    //    output.gridIndexDebug = float4(0, 0, 1, 1.0);
                 #endif
 
                 return output;
@@ -163,12 +161,7 @@
             
             #include "../ShaderLibrary/Common.hlsl"
 
-            struct Anisotropy
-            {
-                uint quaternion;
-                uint scale;
-            };
-            StructuredBuffer<Anisotropy> _AnisotropyBuffer;
+            StructuredBuffer<uint2> _AnisotropyBuffer;
             StructuredBuffer<float3> _ParticlePositionBuffer;
             StructuredBuffer<uint> _VisibleGridBuffer;
             float4x4 _ViewMatrixForGrid;
@@ -242,6 +235,10 @@
             {
                 Varyings output;
                 float3 particlePosition = _ParticlePositionBuffer[instanceID];
+                float4 positionCS = TransformWorldToHClip(particlePosition);
+                positionCS.xyz /= positionCS.w;
+                if (any(abs(positionCS.xy / positionCS.w) > 1)) return Clip();
+                if (positionCS.z < 0) return Clip();
 
                 #ifdef _CULL
                     int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePosition, 1.0f)));
@@ -262,10 +259,10 @@
                     }
                 #endif
 
-                Anisotropy ani = _AnisotropyBuffer[instanceID];
+                uint2 ani = _AnisotropyBuffer[instanceID];
 
                 // decompress quaternion
-                uint compressed = ani.quaternion;
+                uint compressed = ani.x;
                 uint maxValueIndex = compressed & 3;
                 float quaternion[4];
                 uint index = 0;
@@ -300,7 +297,7 @@
                     }
                 };
 
-                uint s = ani.scale;
+                uint s = ani.y;
                 float3 scale;
                 scale.x = float(s & 2047) / 4096.0f;
                 scale.y = float((s >> 11) & 1023) / 2048.0f;
@@ -425,7 +422,6 @@
 
                 float sceneDepth = _SceneDepth.Sample(_point_clamp_sampler, GetUVFromCS(ndcPos)).x;
                 if (ndcPos.z < sceneDepth) discard;
-
 
                 Targets output;
                 output.depth = ndcPos.z;

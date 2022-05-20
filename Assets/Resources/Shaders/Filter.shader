@@ -17,7 +17,7 @@
             #include "../ShaderLibrary/Common.hlsl"
             #include "../ShaderLibrary/FullScreenPassVS.hlsl"
             #pragma fragment NarrowRangeFilterPassFrag
-            #define MAX_FILTERSIZE_2D 32
+            #define MAX_FILTERSIZE_2D 20
 
             Texture2D _FluidDepthRT;
             SamplerState _point_clamp_sampler;
@@ -39,7 +39,7 @@
 
                 float lower_clamp = positionVS.z - _ParticlesRadius * _ClampRatio;
 
-                float threshold = _ParticlesRadius * _ThresholdRatio;
+                float threshold = _ParticlesRadius * _ThresholdRatio / standardDeviation / standardDeviation;
                 float upper = positionVS.z + threshold;
                 float lower = positionVS.z - threshold;
 

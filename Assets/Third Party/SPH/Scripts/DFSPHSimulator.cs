@@ -39,6 +39,10 @@ namespace LODFluid
         public int DivergenceIterationCount = 3;
         public int PressureIterationCount = 1;
 
+        public bool ComputeAnisotropyMatrix = true;
+        [Range(0, 10)]
+        public uint IterNum = 3;
+
         private DivergenceFreeSPHSolver DFSPH;
 
         private void OnDrawGizmos()
@@ -64,7 +68,7 @@ namespace LODFluid
             if (Input.GetKeyDown(KeyCode.Space))
                 Emit = !Emit;
 
-            if (Emit && Time.frameCount % 10 == 0)
+            if (Emit)
             {
                 DFSPH.AddParticleBlock(
                     WaterGeneratePosition,
@@ -83,23 +87,34 @@ namespace LODFluid
             //SetupDataForReconstruction();
         }
 
-        private void FixedUpdate()
-        {
-            DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
+            DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
             DFSPH.Advect(TimeStep);
             SetupDataForReconstruction();
         }
 
-        public Simulator2ReconstructionData m_ParticleData;
+        //private void FixedUpdate()
+        //{
+        //    DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
+        //    DFSPH.Advect(TimeStep);
+        //    SetupDataForReconstruction();
+        //}
+
+        public Simulator2ReconstructionData ParticleData;
         public void SetupDataForReconstruction()
         {
-            m_ParticleData.ArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
-
-            m_ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
-            m_ParticleData.AnisotropyBuffer = null;
-
-            m_ParticleData.MinPos = SimulationRangeMin;
-            m_ParticleData.MaxPos = new Vector3(64, 32, 64);  //TODO:
+            ParticleData.ArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
+            if (ComputeAnisotropyMatrix)
+            {
+                ParticleData.NarrowPositionBuffer = DFSPH.NarrowPositionBuffer;
+                ParticleData.AnisotropyBuffer = DFSPH.AnisotropyBuffer;
+            }
+            else
+            {
+                ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
+                ParticleData.AnisotropyBuffer = null;
+            }
+            ParticleData.MinPos = new Vector3(-75, 0, 10);
+            ParticleData.MaxPos = new Vector3(20, 15, 60); 
         }
 
 

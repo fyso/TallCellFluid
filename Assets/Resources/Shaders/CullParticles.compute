@@ -6,7 +6,7 @@
 #include "../ShaderLibrary/Common.hlsl"
 #pragma multi_compile _ _CULLWITHLAYER _CULLWITHADAPTIVE
 
-#define GROUP_THREAD_NUM 256
+#define GROUP_THREAD_NUM 512
 int _DrawLayer;
 uint _MaxVisibleCount;
 
@@ -57,7 +57,7 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
 {
     uint count = 1;
     uint sumCount = 0;
-    float mid = _MidFactor * (_FarPlane - _NearPlane) + _NearPlane;
+    float mid = _MidFactor * _PerspectiveGridDimZ;
     for (uint z = 0; z < _PerspectiveGridDimZ; z++)
     {
         uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
@@ -75,11 +75,12 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
             if(particleCountOfGrid > 0)
             {   
                 _VisibleGridBuffer[cellLinerIndex] = 1;           
-                sumCount += particleCountOfGrid * (2 - (float)z / mid);
-        
-                if (sumCount > _MaxVisibleCount) break;
+                if(z < mid)
+                    sumCount += particleCountOfGrid * 8.9 * (1.5 - (float)z / mid); //large
+                else
+                    sumCount += particleCountOfGrid *  8.9 * (1 -(float)z / _PerspectiveGridDimZ);   //low:
+                if (sumCount > 2.1 *_NearPlane) break;
             }
-
 #endif
     }
 }

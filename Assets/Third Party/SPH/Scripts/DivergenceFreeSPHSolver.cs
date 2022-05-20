@@ -67,6 +67,9 @@ namespace LODFluid
         public ComputeBuffer Dynamic3DParticleVolumeBuffer;
         public ComputeBuffer Dynamic3DParticleBoundaryVelocityBuffer;
 
+        public ComputeBuffer NarrowPositionBuffer;
+        public ComputeBuffer AnisotropyBuffer;
+
         private DynamicParticle DynamicParticleTool;
         private GPUCountingSortHash CompactNSearchTool;
         private DivergenceFreeSPH DivergenceFreeSPHTool;
@@ -147,6 +150,9 @@ namespace LODFluid
             Dynamic3DParticleBoundaryVelocityBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
 
 
+            NarrowPositionBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
+            AnisotropyBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint) * 2);
+
             VolumeMapBoundaryTool = new VolumeMapBoundary();
             VolumeMapBoundaryTool.GenerateBoundaryMapData(
                 vBoundaryObjects,
@@ -170,6 +176,8 @@ namespace LODFluid
             Dynamic3DParticleDistanceBuffer.Release();
             Dynamic3DParticleVolumeBuffer.Release();
             Dynamic3DParticleBoundaryVelocityBuffer.Release();
+            NarrowPositionBuffer.Release();
+            AnisotropyBuffer.Release();
         }
 
         public void AddParticleBlock(Vector3 WaterGeneratePosition, Vector3Int WaterGenerateResolution, Vector3 WaterGenerateInitVelocity)
@@ -183,7 +191,8 @@ namespace LODFluid
                 ParticleRadius);
         }
 
-        public void Solve(int DivergenceIterationCount, int PressureIterationCount, float vTimeStep, float vViscosity, float vSurfaceTension, float vGravity)
+        public void Solve(int DivergenceIterationCount, int PressureIterationCount, float vTimeStep, float vViscosity, float vSurfaceTension, float vGravity,
+            bool vComputeAnisotropyMatrix, uint vIterNum)
         {
             DynamicParticleTool.DeleteParticleOutofRange(
                     Dynamic3DParticle,
@@ -238,9 +247,13 @@ namespace LODFluid
                     Dynamic3DParticleClosestPointBuffer,
                     Dynamic3DParticleVolumeBuffer,
                     Dynamic3DParticleBoundaryVelocityBuffer,
+                    NarrowPositionBuffer,
+                    AnisotropyBuffer,
                     HashGridMin, HashGridCellLength, HashGridRes, SearchRadius, ParticleVolume,
                     vTimeStep, vViscosity, vSurfaceTension, vGravity,
-                    DivergenceIterationCount, PressureIterationCount
+                    DivergenceIterationCount, PressureIterationCount,
+                    true, true,
+                    vComputeAnisotropyMatrix, vIterNum
                 );
 
             CompactNSearchTool.GPUScanner.Scan(Dynamic3DParticleFoamParticleCountBuffer, Dynamic3DParticleFoamParticleOffsetBuffer);

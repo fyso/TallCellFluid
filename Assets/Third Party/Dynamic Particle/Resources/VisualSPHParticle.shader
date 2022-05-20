@@ -94,7 +94,7 @@ Shader "Custom/VisualParticle"
                     case 5:
                         result.uv = float2(1, 1);
                         break;
-                    }
+                }
                 result.positionCS = TransformWViewToHClip(sphereCenter + float3(_ParticleRadius * result.uv, 0.0f));
 
 #if _VISUALDATATYPE_VELOCITY
