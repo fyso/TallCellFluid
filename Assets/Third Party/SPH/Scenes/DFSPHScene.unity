@@ -394,11 +394,11 @@ MonoBehaviour:
   SurfaceTension: 0.1
   Gravity: 9.8
   MaxParticleCount: 250000
-  MaxFoamParticleCount: 1000000
+  MaxFoamParticleCount: 3000000
   DivergenceIterationCount: 1
-  PressureIterationCount: 3
+  PressureIterationCount: 2
   ComputeAnisotropyMatrix: 1
-  IterNum: 3
+  IterNum: 1
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
 Transform:
