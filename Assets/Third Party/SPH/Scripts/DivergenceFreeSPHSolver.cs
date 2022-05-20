@@ -178,6 +178,7 @@ namespace LODFluid
             ParticleCellIndexCache.Release();
             ParticleInnerSortIndexCache.Release();
             Dynamic3DParticleIndirectArgumentBuffer.Release();
+            NarrowParticleIndirectArgumentBuffer.Release();
 
             FoamParticle.Release();
             FoamParticleCache.Release();
