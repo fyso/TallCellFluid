@@ -299,7 +299,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: 0, y: -0.0000009536743, z: 0}
+    m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 4.266667, y: 4.266667, z: 4.266667}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
@@ -307,7 +307,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 427c3b38b26b95649aa6b6bd18880eb3, type: 2}
+  sdfData: {fileID: 11400000, guid: 52bbc932902bbe34aac0ea70004ce7e4, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -558,15 +558,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: -33.949158, y: 15.199996, z: 39.999992}
-    m_Extent: {x: 38.854404, y: 17.62032, z: 19.093925}
+    m_Center: {x: -35.325775, y: 8.460461, z: 39.999992}
+    m_Extent: {x: 38.576195, y: 18.063066, z: 19.093925}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers: []
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 3907f8e8cb51ad543bad6605d9d2516c, type: 2}
+  sdfData: {fileID: 11400000, guid: 3be01e70988acb74792afce8bd6e21a7, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -642,7 +642,7 @@ MonoBehaviour:
   SimulationRangeMin: {x: -75, y: -64, z: -64}
   SimulationRangeRes: {x: 150, y: 128, z: 128}
   WaterGeneratePosition: {x: -72, y: 25, z: 25}
-  WaterGenerateResolution: {x: 1, y: 32, z: 32}
+  WaterGenerateResolution: {x: 4, y: 32, z: 32}
   WaterGenerateInitVelocity: {x: 10, y: 0, z: 0}
   WaterVisualMaterial: {fileID: 2100000, guid: cf9b8969db227a64dbc9c75547c92c6a, type: 2}
   FoamVisualMaterial: {fileID: 2100000, guid: 9a30a4c40837ea8418e7ae33a8c96913, type: 2}
@@ -824,7 +824,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &8164078560040880146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -838,8 +838,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: -0.0000009536743, y: 0, z: 0}
-    m_Extent: {x: 96.46034, y: 24.373571, z: 21.485075}
+    m_Center: {x: -0.00000047683716, y: 0, z: 0}
+    m_Extent: {x: 98.00539, y: 31.477076, z: 21.485075}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
   bakedRenderers:
@@ -847,7 +847,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 8b6a95ef8fb891140bd3af12a6c26139, type: 2}
+  sdfData: {fileID: 11400000, guid: ccc8fd0adb3edf444ac786cf6fd1f27c, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75

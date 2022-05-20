@@ -15,7 +15,7 @@ namespace LODFluid
         private ComputeBuffer ScanCache1;
         private ComputeBuffer ScanCache2;
 
-        ~GPUScan()
+        public void Release()
         {
             ScanCache1.Release();
             ScanCache2.Release();
