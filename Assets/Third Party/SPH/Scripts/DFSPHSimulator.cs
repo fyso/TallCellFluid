@@ -78,17 +78,17 @@ namespace LODFluid
             //        WaterGenerateResolution,
             //        WaterGenerateInitVelocity);
             //}
+            //DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
+            //DFSPH.Advect(TimeStep);
+            //SetupDataForReconstruction();
+        }
+
+        private void FixedUpdate()
+        {
             DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
             DFSPH.Advect(TimeStep);
             SetupDataForReconstruction();
         }
-
-        //private void FixedUpdate()
-        //{
-        //    DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
-        //    DFSPH.Advect(TimeStep);
-        //    SetupDataForReconstruction();
-        //}
 
         public Simulator2ReconstructionData m_ParticleData;
         public void SetupDataForReconstruction()
