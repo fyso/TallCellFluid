@@ -421,10 +421,24 @@ public partial class CameraRenderer : MonoBehaviour
 
         m_CommandBuffer.name = "SmoothFluidDepth";
         m_SettingManager.m_ReconstructSetting.UpdateShaderProperty();
-        m_CommandBuffer.SetRenderTarget(m_SmoothFluidDepthRT, m_SmoothFluidDepthRT);
-        m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
-        m_CommandBuffer.SetGlobalTexture("_FluidDepthRT", m_FluidDepthRT);
-        m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_FilterMaterial, 0, MeshTopology.Triangles, 3);
+
+        switch(m_SettingManager.m_ReconstructSetting.m_FilterMethod)
+        {
+            case FilterMethod._1D:
+
+                break;
+
+            case FilterMethod._2D:
+                m_CommandBuffer.SetRenderTarget(m_SmoothFluidDepthRT, m_SmoothFluidDepthRT);
+                m_CommandBuffer.ClearRenderTarget(true, true, Color.clear);
+                m_CommandBuffer.SetGlobalTexture("_FluidDepthRT", m_FluidDepthRT);
+                m_CommandBuffer.EnableShaderKeyword("_2D");
+                m_CommandBuffer.DisableShaderKeyword("_1D_X");
+                m_CommandBuffer.DisableShaderKeyword("_1D_Y");
+                m_CommandBuffer.DrawProcedural(Matrix4x4.identity, m_FilterMaterial, 0, MeshTopology.Triangles, 3);
+            break;
+        }
+
 
         ExecuteCommandBuffer();
     }

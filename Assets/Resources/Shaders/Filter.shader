@@ -18,6 +18,7 @@
             #include "../ShaderLibrary/FullScreenPassVS.hlsl"
             #pragma fragment NarrowRangeFilterPassFrag
             #define MAX_FILTERSIZE_2D 20
+            #pragma multi_compile _2D _1D_X _1D_Y
 
             Texture2D _FluidDepthRT;
             SamplerState _point_clamp_sampler;
@@ -46,10 +47,20 @@
                 float2 texelSize = 1.0f / _ScreenParams.xy;
                 float sumDepthValue = 0;
                 float sumWeight = 0;
+#ifdef _1D_Y
+                int i = 0;
+#else
                 for (int i = -filterSize; i <= filterSize; ++i)
                 {
+#endif
+
+#ifdef _1D_X
+                    int k = 0;
+#else
                     for (int k = -filterSize; k <= filterSize; ++k)
                     {
+#endif
+                    
                         float2 texCoordOffset = float2(i, k) * texelSize;
                         float sampleDepth = GetDepthVSFromDepthTex(_FluidDepthRT, _point_clamp_sampler, input.uv + texCoordOffset);
 

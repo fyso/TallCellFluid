@@ -708,7 +708,7 @@ MonoBehaviour:
   DivergenceIterationCount: 1
   PressureIterationCount: 2
   ComputeAnisotropyMatrix: 1
-  IterNum: 0
+  IterNum: 3
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
 Transform:

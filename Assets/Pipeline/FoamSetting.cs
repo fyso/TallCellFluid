@@ -5,8 +5,8 @@ public class FoamSetting : ScriptableObject
 {
     public bool m_DrawFoam = true;
 
-    [Range(0.1f, 0.5f)]
-    public float m_FoamRadius = 0.2f;
+    [Range(0.1f, 0.2f)]
+    public float m_FoamRadius = 0.12f;
 
     [Range(0, 1f)]
     public float m_Diffusion = 0.7f;
