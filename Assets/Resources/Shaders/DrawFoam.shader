@@ -81,7 +81,7 @@
                         break;
 
                     case 2:
-                        output.uv = float2(1, 1);
+                        output.uv = float2(1, -1);
                         output.positionCS = TransformWViewToHClip(sphereCenterVS + u - l);
                         break;
 
@@ -91,12 +91,12 @@
                         break;
 
                     case 4:
-                        output.uv = float2(1, 1);
+                        output.uv = float2(-1, 1);
                         output.positionCS = TransformWViewToHClip(sphereCenterVS - u + l);
                         break;
 
                     case 5:
-                        output.uv = float2(1, -1);
+                        output.uv = float2(1, 1);
                         output.positionCS = TransformWViewToHClip(sphereCenterVS + u + l);
                         break;
                 }

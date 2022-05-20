@@ -465,6 +465,8 @@ public partial class CameraRenderer : MonoBehaviour
 
     void RenderOutsideFoam()
     {
+        if (!m_SettingManager.m_FoamSetting.m_DrawFoam) return;
+
         m_CommandBuffer.name = "OutsideFoam";
         m_CommandBuffer.SetRenderTarget(m_OutputRT, m_SceneDepthRT);
         m_CommandBuffer.ClearRenderTarget(false, false, Color.clear);
