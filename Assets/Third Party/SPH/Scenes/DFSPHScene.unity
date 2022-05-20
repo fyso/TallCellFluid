@@ -352,7 +352,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 6e315669fbab6384e8a3b7c825825bc8, type: 2}
+  sdfData: {fileID: 11400000, guid: 52bbc932902bbe34aac0ea70004ce7e4, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -613,7 +613,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 3907f8e8cb51ad543bad6605d9d2516c, type: 2}
+  sdfData: {fileID: 11400000, guid: 3be01e70988acb74792afce8bd6e21a7, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -991,7 +991,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 8b6a95ef8fb891140bd3af12a6c26139, type: 2}
+  sdfData: {fileID: 11400000, guid: ccc8fd0adb3edf444ac786cf6fd1f27c, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75

@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: RenderingSetting
   m_EditorClassIdentifier: 
   m_Skybox: {fileID: 8900000, guid: 65844975f3a977b419b0d5fdff86f07a, type: 3}
-  m_Diffuse: {r: 0.20465466, g: 0.5293052, b: 0.6886792, a: 0.07058824}
-  m_GrazingDiffuse: {r: 0.5829477, g: 0.6991047, b: 0.9433962, a: 0.28235295}
+  m_Diffuse: {r: 0.2242791, g: 0.42928696, b: 0.754717, a: 0.07058824}
+  m_GrazingDiffuse: {r: 0.0292809, g: 0.5164336, b: 0.8867924, a: 0.0627451}
   m_WaterIOF: 1.33
   m_ShowSkyBox: 1
   m_ShowDiffuse: 1
   m_ShowSpecular: 1
   m_ShowReflecion: 1
   m_ShowRefraction: 1
-  m_DiffuseStrength: 1
+  m_DiffuseStrength: 0.28
   m_SpecularSpottedStrength: 1
   m_SpecularStrength: 1
   m_ReflecionStrength: 2
-  m_RefractionStrength: 1
+  m_RefractionStrength: 0
