@@ -383,7 +383,8 @@ MonoBehaviour:
   WaterGeneratePosition: {x: -72, y: 25, z: 25}
   WaterGenerateResolution: {x: 1, y: 32, z: 32}
   WaterGenerateInitVelocity: {x: 10, y: 0, z: 0}
-  SPHVisualMaterial: {fileID: 2100000, guid: cf9b8969db227a64dbc9c75547c92c6a, type: 2}
+  WaterVisualMaterial: {fileID: 2100000, guid: cf9b8969db227a64dbc9c75547c92c6a, type: 2}
+  FoamVisualMaterial: {fileID: 2100000, guid: 9a30a4c40837ea8418e7ae33a8c96913, type: 2}
   BoundaryObjects:
   - {fileID: 8164078560040880145}
   - {fileID: 137159759222451813}
@@ -393,6 +394,7 @@ MonoBehaviour:
   SurfaceTension: 0.1
   Gravity: 9.8
   MaxParticleCount: 250000
+  MaxFoamParticleCount: 1000000
   DivergenceIterationCount: 1
   PressureIterationCount: 3
   ComputeAnisotropyMatrix: 1
@@ -472,7 +474,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 6e315669fbab6384e8a3b7c825825bc8, type: 2}
+  sdfData: {fileID: 11400000, guid: 52bbc932902bbe34aac0ea70004ce7e4, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -639,7 +641,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &8164078560040880146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -662,7 +664,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 8b6a95ef8fb891140bd3af12a6c26139, type: 2}
+  sdfData: {fileID: 11400000, guid: ccc8fd0adb3edf444ac786cf6fd1f27c, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75

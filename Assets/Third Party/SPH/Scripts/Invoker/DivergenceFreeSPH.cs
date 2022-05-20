@@ -84,7 +84,8 @@ namespace LODFluid
             Vector3 vHashGridMin, float HashGridCellLength, Vector3Int vHashGridResolution,
             float vSearchRadius, float vParticleVolume, float vTimeStep, float vViscosity, float vSurfaceTension, float vGravity, 
             int vDivergenceFreeIterationCount = 3, int vPressureIterationCount = 2, 
-            bool vUseVolumeMapBoundary = true, bool EnableDivergenceFreeSlover = true, 
+            bool vUseVolumeMapBoundary = true, bool EnableDivergenceFreeSlover = true,
+            bool vComputeAnisotropyMatrix = true, uint vIterNum = 3,
             float vMinCurvature = 0.5f, float vMaxCurvature = 15.0f, float vMinRelativeVelLength = 0.5f, float vMaxRelativeVelLength = 15.0f, int vNumTaRate = 10, int vNumWcRate = 100)
         {
             DivergenceFreeSPHSloverCS.SetFloats("HashGridMin", vHashGridMin.x, vHashGridMin.y, vHashGridMin.z);

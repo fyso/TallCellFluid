@@ -85,7 +85,6 @@ namespace LODFluid
             //DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity);
             //DFSPH.Advect(TimeStep);
             //SetupDataForReconstruction();
-        }
 
             DFSPH.Solve(DivergenceIterationCount, PressureIterationCount, TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum);
             DFSPH.Advect(TimeStep);
