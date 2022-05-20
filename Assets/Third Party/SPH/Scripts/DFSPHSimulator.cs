@@ -101,7 +101,11 @@ namespace LODFluid
         public Simulator2ReconstructionData ParticleData;
         public void SetupDataForReconstruction()
         {
-            ParticleData.ArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
+            ParticleData.ParticleArgumentBuffer = DFSPH.Dynamic3DParticleIndirectArgumentBuffer;
+            ParticleData.FoamArgumentBuffer = DFSPH.Dynamic3DFoamParticleIndirectArgumentBuffer;
+            ParticleData.FoamPositionBuffer = DFSPH.FoamParticle.ParticlePositionBuffer;
+            ParticleData.FoamVelocityBuffer = DFSPH.FoamParticle.ParticleVelocityBuffer;
+            ParticleData.FoamLifeTimeBuffer = DFSPH.FoamParticle.ParticleLifeTimeBuffer;
             if (ComputeAnisotropyMatrix)
             {
                 ParticleData.NarrowPositionBuffer = DFSPH.NarrowPositionBuffer;

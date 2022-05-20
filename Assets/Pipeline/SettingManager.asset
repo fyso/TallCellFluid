@@ -16,3 +16,4 @@ MonoBehaviour:
   m_CullParticleSetting: {fileID: 11400000, guid: e0aa751be2f640445935e4ae31c3f8c9, type: 2}
   m_ReconstructSetting: {fileID: 11400000, guid: 2a12ad91724788646a94004ed9ec78ba, type: 2}
   m_RenderingSetting: {fileID: 11400000, guid: 0a4b205c68dede0428ad129652eece81, type: 2}
+  m_FoamSetting: {fileID: 11400000, guid: 1dd4ed0cc093a054e844c2bffaed09de, type: 2}

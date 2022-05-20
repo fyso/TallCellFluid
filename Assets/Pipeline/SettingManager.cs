@@ -7,4 +7,5 @@ public class SettingManager : ScriptableObject
     public CullParticleSetting m_CullParticleSetting;
     public ReconstructSetting m_ReconstructSetting;
     public RenderingSetting m_RenderingSetting;
+    public FoamSetting m_FoamSetting;
 }

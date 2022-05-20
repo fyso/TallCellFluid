@@ -168,6 +168,7 @@ public partial class CameraRenderer : MonoBehaviour
     CullingResults m_CullingResults;
     CommandBuffer m_CommandBuffer;
 
+    #region Resource
     RenderTextureManager m_OutputRTManager = new RenderTextureManager("Output")
     {
         m_EnableRandomWrite = true
@@ -178,17 +179,21 @@ public partial class CameraRenderer : MonoBehaviour
     RenderTexture m_SmoothFluidDepthRT;
     RenderTexture m_FluidNormalRT;
     RenderTexture m_CullDebugRT;
+    Dictionary<string, PerspectiveGridData> PerspectiveGridData = new Dictionary<string, PerspectiveGridData>();
+    #endregion
 
+    #region Shader
     Material m_DrawFluidParticlesMaterial = Resources.Load<Material>("Materials/DrawFluidParticles");
     Material m_FilterMaterial = Resources.Load<Material>("Materials/Filter");
     Material m_GenerateNoramalMaterial = Resources.Load<Material>("Materials/GenerateNoramal");
     Material m_ToolsMaterial = Resources.Load<Material>("Materials/Tools");
     ComputeShader m_CullParticlesCS = Resources.Load("Shaders/CullParticles") as ComputeShader;
 
-    Dictionary<string, PerspectiveGridData> PerspectiveGridData = new Dictionary<string, PerspectiveGridData>();
-
     RayTracingAccelerationStructure m_AccelerationStructure;
     RayTracingShader m_ShadeFluidShader = Resources.Load<RayTracingShader>("Shaders/ShadeFluid");
+
+    Material m_FoamMaterial = Resources.Load<Material>("Materials/DrawFoam");
+    #endregion
 
     public CameraRenderer()
     {
@@ -219,6 +224,7 @@ public partial class CameraRenderer : MonoBehaviour
             SmoothFluidDepth();
             GenerateFluidNoramal();
             RenderFluid();
+            RenderOutsideFoam();
         }
         if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || 
             m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
@@ -327,8 +333,8 @@ public partial class CameraRenderer : MonoBehaviour
             m_CommandBuffer.DisableShaderKeyword("_DEPTHSPLIT_NONLINEAR");
 
         m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticlePositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.NarrowPositionBuffer);
-        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticleIndirectArgment", m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer);
-        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 0);
+        m_CommandBuffer.SetComputeBufferParam(m_CullParticlesCS, addUpParticleCountOfGridKernel, "_ParticleIndirectArgment", m_SettingManager.m_Simulator2ReconstructionData.ParticleArgumentBuffer);
+        m_CommandBuffer.DispatchCompute(m_CullParticlesCS, addUpParticleCountOfGridKernel, m_SettingManager.m_Simulator2ReconstructionData.ParticleArgumentBuffer, 0);
         m_CommandBuffer.DispatchCompute(m_CullParticlesCS, clearVisibleGridKernel, Mathf.CeilToInt((float)PerspectiveGridData[m_Camera.name].m_GridCount / 512), 1, 1);
 
         switch (m_SettingManager.m_CullParticleSetting.m_CullMode)
@@ -397,14 +403,14 @@ public partial class CameraRenderer : MonoBehaviour
             m_CommandBuffer.DrawProceduralIndirect(
                 Matrix4x4.identity,
                 m_DrawFluidParticlesMaterial, 1,
-                MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 12);
+                MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.ParticleArgumentBuffer, 12);
         }
         else
         {
             m_CommandBuffer.DrawProceduralIndirect(
                 Matrix4x4.identity,
                 m_DrawFluidParticlesMaterial, 0,
-                MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.ArgumentBuffer, 12);
+                MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.ParticleArgumentBuffer, 12);
         }
         ExecuteCommandBuffer();
     }
@@ -438,6 +444,7 @@ public partial class CameraRenderer : MonoBehaviour
     }
     #endregion
 
+    #region Rendering
     void RenderFluid()
     {
         m_SettingManager.m_RenderingSetting.UpdateShaderProperty();
@@ -455,6 +462,29 @@ public partial class CameraRenderer : MonoBehaviour
 
         ExecuteCommandBuffer();
     }
+
+    void RenderOutsideFoam()
+    {
+        m_CommandBuffer.name = "OutsideFoam";
+        m_CommandBuffer.SetRenderTarget(m_OutputRT, m_SceneDepthRT);
+        m_CommandBuffer.ClearRenderTarget(false, false, Color.clear);
+
+        m_CommandBuffer.EnableShaderKeyword("_OUTSIDE_FOAM");
+        m_CommandBuffer.SetGlobalTexture("_FluidNormalRT", m_FluidNormalRT);
+        m_CommandBuffer.SetGlobalBuffer("_FoamPositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.FoamPositionBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_FoamVelocityBuffer", m_SettingManager.m_Simulator2ReconstructionData.FoamVelocityBuffer);
+        m_CommandBuffer.SetGlobalBuffer("_FoamLifeTimeBuffer", m_SettingManager.m_Simulator2ReconstructionData.FoamLifeTimeBuffer);
+
+        m_SettingManager.m_FoamSetting.UpdateShaderProperty();
+
+        m_CommandBuffer.DrawProceduralIndirect(
+            Matrix4x4.identity,
+            m_FoamMaterial, 0,
+            MeshTopology.Triangles, m_SettingManager.m_Simulator2ReconstructionData.FoamArgumentBuffer, 12);
+
+        ExecuteCommandBuffer();
+    }
+    #endregion
 
     void Show(RenderTexture outputRT, RenderTexture depthRT = null)
     {

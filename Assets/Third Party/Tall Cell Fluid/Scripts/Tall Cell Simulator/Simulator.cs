@@ -37,7 +37,7 @@ public class Simulator
 
     public void SetupDataForReconstruction(Simulator2ReconstructionData vData, bool vComputeAnisotropyMatrix)
     {
-        vData.ArgumentBuffer = m_DynamicParticle.Argument;
+        vData.ParticleArgumentBuffer = m_DynamicParticle.Argument;
         if(vComputeAnisotropyMatrix)
         {
             vData.NarrowPositionBuffer = m_ParticlePostProcessingTools.m_NarrowPositionBuffer;
