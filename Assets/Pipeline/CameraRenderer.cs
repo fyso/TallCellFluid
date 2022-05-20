@@ -471,7 +471,7 @@ public partial class CameraRenderer : MonoBehaviour
         m_CommandBuffer.SetRenderTarget(m_OutputRT, m_SceneDepthRT);
         m_CommandBuffer.ClearRenderTarget(false, false, Color.clear);
 
-        m_CommandBuffer.EnableShaderKeyword("_OUTSIDE_FOAM");
+        //m_CommandBuffer.EnableShaderKeyword("_OUTSIDE_FOAM");
         m_CommandBuffer.SetGlobalTexture("_FluidNormalRT", m_FluidNormalRT);
         m_CommandBuffer.SetGlobalBuffer("_FoamPositionBuffer", m_SettingManager.m_Simulator2ReconstructionData.FoamPositionBuffer);
         m_CommandBuffer.SetGlobalBuffer("_FoamVelocityBuffer", m_SettingManager.m_Simulator2ReconstructionData.FoamVelocityBuffer);

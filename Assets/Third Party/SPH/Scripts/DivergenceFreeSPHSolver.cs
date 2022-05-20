@@ -29,6 +29,11 @@ namespace LODFluid
         }
     }
 
+    public class ParticleLayer
+    {
+
+    }
+
     public class DivergenceFreeSPHSolver
     {
         public ParticleBuffer Dynamic3DParticle;
