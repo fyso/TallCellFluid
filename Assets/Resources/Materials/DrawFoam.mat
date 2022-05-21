@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Diffuse
-  m_Shader: {fileID: 4800000, guid: 884a1550e7ffc8647afaf9b69a02a800, type: 3}
+  m_Name: DrawFoam
+  m_Shader: {fileID: 4800000, guid: ec89349b556a19d47b91fadd0036402a, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -73,7 +73,6 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.33962262, g: 0.22508007, b: 0.18102525, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []

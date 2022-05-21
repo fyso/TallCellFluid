@@ -9,12 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86d3f50f70bba1746b0dc74a55152d3e, type: 3}
-  m_Name: ReconstructSetting
+  m_Script: {fileID: 11500000, guid: 9eb5a18c9631db248a1aaa7dba158c67, type: 3}
+  m_Name: FoamSetting
   m_EditorClassIdentifier: 
-  m_ParticlesRadius: 0.196
-  m_FilterMethod: 1
-  m_FilterRadiusWS: 0.14
-  m_ClampRatio: 0.77
-  m_ThresholdRatio: 12.91
-  m_Sigma: 0.147
+  m_DrawFoam: 1
+  m_FoamRadius: 0.117
+  m_Diffusion: 0.085
+  m_MotionBlurScale: 0.01
+  m_FoamColor: {r: 1, g: 1, b: 1, a: 1}

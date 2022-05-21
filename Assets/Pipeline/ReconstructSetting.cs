@@ -1,11 +1,18 @@
 using UnityEngine;
 
+public enum FilterMethod
+{
+    _2D = 0,
+    _1D = 1
+}
+
 [CreateAssetMenu(menuName = "Rendering/Reconstruct Setting Asset")]
 public class ReconstructSetting : ScriptableObject
 {
-    [Range(0, 3)]
+    [Range(0, 1)]
     public float m_ParticlesRadius = 0.25f;
-    [Range(0, 5)]
+    public FilterMethod m_FilterMethod = FilterMethod._2D;
+    [Range(0, 1)]
     public float m_FilterRadiusWS = 0.5f;
     [Range(0, 10)]
     public float m_ClampRatio = 1.0f;

@@ -7,56 +7,86 @@
 #pragma kernel computeDensityAdv
 #pragma kernel solvePressureIteration
 #pragma kernel updateVelocityWithNoPressureForce
-#pragma kernel advectAndSwapParticleBuffer
+#pragma kernel computeFoamParticleCountPerWaterParticle
+#pragma kernel generateFoamParticle
+#pragma kernel updateFoamParticleCountArgument
+#pragma kernel advectFoamParticle
+#pragma kernel advectWaterParticle
 #pragma kernel parallelReductionMin
 #pragma kernel parallelReductionMax
 
+//sph slot
 float3 HashGridMin;
 float HashGridCellLength;
 uint HashGridResolutionX;
 uint HashGridResolutionY;
 uint HashGridResolutionZ;
-
 float SearchRadius;
 float ParticleVolume;
 float TimeStep;
 float Viscosity;
 float Gravity;
 float SurfaceTension;
-
-bool UseVolumeMapBoundary;
 bool ComputeAnisotropyMatrix;
 uint IterNum;
 
 StructuredBuffer<uint> TargetParticleIndirectArgment_R;
-
+RWStructuredBuffer<uint> NarrowParticleIndirectArgment_R;
 StructuredBuffer<uint> HashGridCellParticleCount_R;
 StructuredBuffer<uint> HashGridCellParticleOffset_R;
-
 StructuredBuffer<float3> TargetParticlePosition_R;
 RWStructuredBuffer<float3> TargetParticlePosition_RW;
-
 StructuredBuffer<float3> TargetParticleVelocity_R;
 RWStructuredBuffer<float3> TargetParticleVelocity_RW;
-
 StructuredBuffer<float> Density_R;
 RWStructuredBuffer<float> Density_RW;
-
 StructuredBuffer<float> Alpha_R;
 RWStructuredBuffer<float> Alpha_RW;
-
 StructuredBuffer<float> DensityChange_R;
 RWStructuredBuffer<float> DensityChange_RW;
-
 StructuredBuffer<float> DensityAdv_R;
 RWStructuredBuffer<float> DensityAdv_RW;
-
 StructuredBuffer<float3> Normal_R;
 RWStructuredBuffer<float3> Normal_RW;
-
 StructuredBuffer<float3> ParticleClosestPoint_R;
 StructuredBuffer<float> Volume_R;
 StructuredBuffer<float3> ParticleBoundaryVelocity_R;
+
+StructuredBuffer<float> FoamGenerateArgument;
+StructuredBuffer<uint> FoamParticleCount_R;
+RWStructuredBuffer<uint> FoamParticleCount_RW;
+StructuredBuffer<uint> FoamParticleOffset_R;
+RWStructuredBuffer<uint> FoamParticleOffset_RW;
+StructuredBuffer<float> ParticleVelDiff_R;
+RWStructuredBuffer<float> ParticleVelDiff_RW;
+StructuredBuffer<float> ParticleCurvature_R;
+RWStructuredBuffer<float> ParticleCurvature_RW;
+StructuredBuffer<float> ParticleKe_R;
+RWStructuredBuffer<float> ParticleKe_RW;
+
+//foam slot
+float3 TimeSeed;
+uint MaxFoamParticleCount;
+float MaxRelativeVelLength;
+float MinRelativeVelLength;
+float MaxCurvature;
+float MinCurvature;
+float MaxK;
+float MinK;
+uint NumTaRate;
+uint NumWcRate;
+uint FoamUpdateRate;
+float FoamScale;
+StructuredBuffer<uint> FoamParticleIndirectArgment_R;
+RWStructuredBuffer<uint> FoamParticleIndirectArgment_RW;
+StructuredBuffer<float3> FoamParticlePosition_R;
+RWStructuredBuffer<float3> FoamParticlePosition_RW;
+StructuredBuffer<float3> FoamParticleVelocity_R;
+RWStructuredBuffer<float3> FoamParticleVelocity_RW;
+StructuredBuffer<uint> FoamParticleFilter_R;
+RWStructuredBuffer<uint> FoamParticleFilter_RW;
+StructuredBuffer<float> FoamParticleLifeTime_R;
+RWStructuredBuffer<float> FoamParticleLifeTime_RW;
 
 RWStructuredBuffer<float3> NarrowPositionBuffer_W;
 RWStructuredBuffer<uint2> AnisotropyBuffer_W;
@@ -147,7 +177,13 @@ void computeFluidProperty(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
     );
     CenterPos /= WeightSum;
     NarrowPositionBuffer_W[CurrentParticleIndex] = CenterPos;
-    
+    NarrowParticleIndirectArgment_R[0] = TargetParticleIndirectArgment_R[0];
+    NarrowParticleIndirectArgment_R[1] = TargetParticleIndirectArgment_R[1];
+    NarrowParticleIndirectArgment_R[2] = TargetParticleIndirectArgment_R[2];
+    NarrowParticleIndirectArgment_R[3] = TargetParticleIndirectArgment_R[3];
+    NarrowParticleIndirectArgment_R[4] = TargetParticleIndirectArgment_R[4];
+    NarrowParticleIndirectArgment_R[5] = TargetParticleIndirectArgment_R[5];
+    NarrowParticleIndirectArgment_R[6] = TargetParticleIndirectArgment_R[6];
     
     if (ComputeAnisotropyMatrix)
     {
@@ -274,6 +310,8 @@ void computeFluidProperty(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         // Compress scale
         float maxSigma = max(max(Eignvalue[0][0], Eignvalue[1][1]), Eignvalue[2][2]);
         float3 scale = float3(max(maxSigma / 4, Eignvalue[0][0]), max(maxSigma / 4, Eignvalue[1][1]), max(maxSigma / 4, Eignvalue[2][2]));
+        scale *= min(WeightSum / 5, 1);
+        //float3 scale = float3(0.05, 0.05, 0.05);
         uint s = min(uint(scale.x * 4096), 2047);
         s |= min(uint(scale.y * 2048), 1023) << 11;
         s |= min(uint(scale.z * 4096), 2047) << 21;
@@ -316,21 +354,15 @@ void computeFluidProperty(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         AnisotropyBuffer_W[CurrentParticleIndex] = uint2(result, s);
     }
     
-    
-    
-    
-    if (UseVolumeMapBoundary)
+    float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
+    if (CurrClosestPointAndVolume.w > 0)
     {
-        float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
-        if (CurrClosestPointAndVolume.w > 0)
-        {
-            float BoundaryKernelValue = computeCubicKernelW(length(CurrentPos - CurrClosestPointAndVolume.xyz), SearchRadius);
-            float3 BoundaryKernelGrad = computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius);
+        float BoundaryKernelValue = computeCubicKernelW(length(CurrentPos - CurrClosestPointAndVolume.xyz), SearchRadius);
+        float3 BoundaryKernelGrad = computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius);
 
-            CurrDensity += CurrClosestPointAndVolume.w * BoundaryKernelValue;
-            Sum_Mj_GradWij += CurrClosestPointAndVolume.w * BoundaryKernelGrad;
-            CurrNormal += ParticleVolume * BoundaryKernelGrad;
-        }
+        CurrDensity += CurrClosestPointAndVolume.w * BoundaryKernelValue;
+        Sum_Mj_GradWij += CurrClosestPointAndVolume.w * BoundaryKernelGrad;
+        CurrNormal += ParticleVolume * BoundaryKernelGrad;
     }
     float AlphaTemp = dot(Sum_Mj_GradWij, Sum_Mj_GradWij) + Sum_Norm2_Mj_GradWij;
     
@@ -386,14 +418,11 @@ void computeDensityChange(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Gro
         }
     );
     
-    if (UseVolumeMapBoundary)
+    float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
+    float3 CurrBoundaryVelocity = ParticleBoundaryVelocity_R[CurrentParticleIndex];
+    if (CurrClosestPointAndVolume.w > 0)
     {
-        float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
-        float3 CurrBoundaryVelocity = ParticleBoundaryVelocity_R[CurrentParticleIndex];
-        if (CurrClosestPointAndVolume.w > 0)
-        {
-            CurrDensityChange += CurrClosestPointAndVolume.w * dot((CurrentVel - CurrBoundaryVelocity), computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius));
-        }
+        CurrDensityChange += CurrClosestPointAndVolume.w * dot((CurrentVel - CurrBoundaryVelocity), computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius));
     }
     
     CurrDensityChange = max(CurrDensityChange, 0.0f);
@@ -465,16 +494,12 @@ void solveDivergenceIteration(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV
         }
     );
     
-    
-    if (UseVolumeMapBoundary)
+    if (abs(CenterKi) > EPSILON)
     {
-        if (abs(CenterKi) > EPSILON)
+        float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
+        if (CurrClosestPointAndVolume.w > 0 && abs(CenterKi) > EPSILON)
         {
-            float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
-            if (CurrClosestPointAndVolume.w > 0 && abs(CenterKi) > EPSILON)
-            {
-                CurrentVel += TimeStep * 1.0f * CenterKi * CurrClosestPointAndVolume.w * computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius);
-            }
+            CurrentVel += TimeStep * 1.0f * CenterKi * CurrClosestPointAndVolume.w * computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius);
         }
     }
     
@@ -528,14 +553,11 @@ void computeDensityAdv(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupI
         }
     );
     
-    if (UseVolumeMapBoundary)
+    float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
+    float3 CurrBoundaryVelocity = ParticleBoundaryVelocity_R[CurrentParticleIndex];
+    if (CurrClosestPointAndVolume.w > 0)
     {
-        float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
-        float3 CurrBoundaryVelocity = ParticleBoundaryVelocity_R[CurrentParticleIndex];
-        if (CurrClosestPointAndVolume.w > 0)
-        {
-            CurrDensityDelta += CurrClosestPointAndVolume.w * dot((CurrentVel - CurrBoundaryVelocity), computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius));
-        }
+        CurrDensityDelta += CurrClosestPointAndVolume.w * dot((CurrentVel - CurrBoundaryVelocity), computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius));
     }
     
     CurrDensityDelta = CenterDensity + TimeStep * CurrDensityDelta;
@@ -603,19 +625,28 @@ void solvePressureIteration(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_G
         }
     );
     
-    if (UseVolumeMapBoundary)
+    if (abs(CenterKi) > EPSILON)
     {
-        if (abs(CenterKi) > EPSILON)
+        float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
+        if (CurrClosestPointAndVolume.w > 0 && abs(CenterKi) > EPSILON)
         {
-            float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
-            if (CurrClosestPointAndVolume.w > 0 && abs(CenterKi) > EPSILON)
-            {
-                CurrentVel += TimeStep * CenterKi * CurrClosestPointAndVolume.w * computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius);
-            }
+            CurrentVel += TimeStep * CenterKi * CurrClosestPointAndVolume.w * computeCubicKernelGradW(CurrentPos - CurrClosestPointAndVolume.xyz, SearchRadius);
         }
     }
     
     TargetParticleVelocity_RW[CurrentParticleIndex] = CurrentVel;
+}
+
+float FoamKernel(float v)
+{
+    if (v <= SearchRadius)
+    {
+        return (1.0f - v / SearchRadius) * 3.0f / (PI * pow(SearchRadius, 3.0f));
+    }
+    else
+    {
+        return 0.0f;
+    }
 }
 
 [numthreads(SPH_THREAD_NUM, 1, 1)]
@@ -641,6 +672,9 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
         return;
     float3 ViscosityAcc = float3(0.0f, 0.0f, 0.0f);
     float3 SurfaceTensionAcc = float3(0.0f, 0.0f, 0.0f);
+    float Curvature = 0.0f;
+    float Vdiff = 0.0f;
+    int NeighborCount = 0;
     FOR_EACH_NEIGHBOR(
         float3 NeighborPos = float3(0, 0, 0);
         if (c >= BlockStart && c < BlockEnd)
@@ -670,6 +704,11 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
 				NeighborNormal = Normal_R[c];
                 NeighborDensity = Density_R[c];
             }
+    
+    
+            float3 RelativePos = CurrentPos - NeighborPos;
+            float3 RelativeVel = CurrentVel - NeighborVel;
+        
 
 			//xsph viscosity
             //ViscosityAcc -= Viscosity * (ParticleVolume / NeighborDensity) * (CurrentVel - NeighborVel) * computeCubicKernelW(Dist, SearchRadius) / TimeStep;
@@ -684,53 +723,199 @@ void updateVelocityWithNoPressureForce(uint ThreadIdx : SV_GroupIndex, uint Grou
 				SurfaceTensionAcc -= SurfaceTension * ParticleVolume * Density0 * normalize(RelativePos) * computeAdhesionKernelW(Dist, SearchRadius);
 			}
 			SurfaceTensionAcc -= SurfaceTension * (CenterNormal - NeighborNormal);
+    
+            //foam factor
+            if (dot(RelativePos, CenterNormal) > 0)
+            {
+                Curvature += (1.0f - dot(CenterNormal, NeighborNormal)) * FoamKernel(length(RelativePos));
+            }
+            float3 NormalizedPosij = normalize(RelativePos);
+            float3 NormalizedVelij = normalize(RelativeVel);
+            Vdiff += length(RelativeVel) * (1.0f - dot(NormalizedVelij, NormalizedPosij)) * FoamKernel(length(RelativePos));
+            NeighborCount++;
         }
     );
     
-    if (UseVolumeMapBoundary)
+    Curvature = Curvature * dot(normalize(CurrentVel), CenterNormal) >= 0.6f ? 1.0f : 0.0f;
+    float Ke = 0.5f * ParticleVolume * Density0 * pow(length(CurrentVel), 2.0f);
+    
+    float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
+    float3 CurrBoundaryVelocity = ParticleBoundaryVelocity_R[CurrentParticleIndex];
+    if (CurrClosestPointAndVolume.w > 0)
     {
-        float4 CurrClosestPointAndVolume = float4(ParticleClosestPoint_R[CurrentParticleIndex], Volume_R[CurrentParticleIndex]);
-        float3 CurrBoundaryVelocity = ParticleBoundaryVelocity_R[CurrentParticleIndex];
-        if (CurrClosestPointAndVolume.w > 0)
-        {
-            float Dist = length(CurrentPos - CurrClosestPointAndVolume.xyz);
+        float Dist = length(CurrentPos - CurrClosestPointAndVolume.xyz);
             
 			//xsph viscosity
             //ViscosityAcc -= Viscosity * (CurrClosestPointAndVolume.w / CenterDensity) * (CurrentVel - CurrBoundaryVelocity) * computeCubicKernelW(Dist, SearchRadius) / TimeStep;
             
             //surface tension
-            if (Dist > EPSILON)
-            {
-                SurfaceTensionAcc -= SurfaceTension * CurrClosestPointAndVolume.w * Density0 * normalize(CurrentPos - CurrClosestPointAndVolume.xyz) * computeAdhesionKernelW(Dist, SearchRadius);
-            }
+        if (Dist > EPSILON)
+        {
+            SurfaceTensionAcc -= SurfaceTension * CurrClosestPointAndVolume.w * Density0 * normalize(CurrentPos - CurrClosestPointAndVolume.xyz) * computeAdhesionKernelW(Dist, SearchRadius);
         }
+        Ke = 0.0f;
+        Curvature = 0.0f;
+        Vdiff = 0.0f;
     }
-
+    
+    if (NeighborCount > 16)
+    {
+        Ke = 0.0f;
+        Curvature = 0.0f;
+        Vdiff = 0.0f;
+    }
+    
     CurrentVel += ViscosityAcc * TimeStep;
     CurrentVel += SurfaceTensionAcc * TimeStep;
     CurrentVel += float3(0.0f, -Gravity, 0.0f) * TimeStep;
-    
     TargetParticleVelocity_RW[CurrentParticleIndex] = CurrentVel;
+    ParticleVelDiff_RW[CurrentParticleIndex] = Vdiff;
+    ParticleCurvature_RW[CurrentParticleIndex] = Curvature;
+    ParticleKe_RW[CurrentParticleIndex] = Ke;
 }
 
-StructuredBuffer<float3> BackParticlePosition_R;
-StructuredBuffer<float3> BackParticleVelocity_R;
-StructuredBuffer<uint> BackParticleFilter_R;
-RWStructuredBuffer<float3> FrontParticlePosition_RW;
-RWStructuredBuffer<float3> FrontParticleVelocity_RW;
-RWStructuredBuffer<uint> FrontParticleFilter_RW;
 [numthreads(SPH_THREAD_NUM, 1, 1)]
-void advectAndSwapParticleBuffer(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+void computeFoamParticleCountPerWaterParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint ParticleCount = TargetParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    uint CurrentParticleIndex = ThreadIdx + GroupIdx * SPH_THREAD_NUM;
+    if (CurrentParticleIndex >= ParticleCount)
+        return;
+    
+    float Curvature = ParticleCurvature_R[CurrentParticleIndex];
+    float Vdiff = ParticleVelDiff_R[CurrentParticleIndex];
+    float Ke = ParticleKe_R[CurrentParticleIndex];
+    
+    float Ita = clamp(Vdiff, MinRelativeVelLength, MaxRelativeVelLength) / (MaxRelativeVelLength - MinRelativeVelLength);
+    float Iwc = clamp(Curvature, MinCurvature, MaxCurvature) / (MaxCurvature - MinCurvature);
+    float Ike = clamp(Ke, MinK, MaxK) / (MaxK - MinK);
+    
+    uint NewFoamParticleCount = floor(/*Ike * */((float) NumTaRate * Ita + (float) NumWcRate * Iwc)/* * TimeStep*/ * FoamScale);
+    FoamParticleCount_RW[CurrentParticleIndex] = NewFoamParticleCount;
+}
+
+float rand1(float n)
+{
+    return frac(sin(n) * 43758.5453123);
+}
+
+[numthreads(SPH_THREAD_NUM, 1, 1)]
+void generateFoamParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint CurrentParticleIndex = ThreadIdx + GroupIdx * SPH_THREAD_NUM;
+    uint ParticleCount = TargetParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    if (CurrentParticleIndex >= ParticleCount)
+        return;
+    
+    uint CurrCount = FoamParticleCount_R[CurrentParticleIndex];
+    uint CurrOffset = 0 ? 0 : FoamParticleOffset_R[CurrentParticleIndex - 1];
+    uint CurrFoamParticleCount = FoamParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    if (CurrFoamParticleCount + CurrCount + CurrOffset >= MaxFoamParticleCount)
+        return;
+    
+    if (CurrCount <= 0)
+        return;
+    
+    float3 CenterPos = TargetParticlePosition_R[CurrentParticleIndex];
+    float3 CenterVel = TargetParticleVelocity_R[CurrentParticleIndex];
+    float3 Vn = normalize(CenterVel);
+        
+    float3 v = (1, 0, 0);
+    if (abs(dot(v, Vn)) > 0.999)
+        v = float3(0, 1, 0);
+    float3 e1 = normalize(cross(Vn, v));
+    float3 e2 = normalize(cross(Vn, e1));
+    
+    //generate diffuse particle
+    for (int c = 0; c < CurrCount; c++)
+    {
+        float H = rand1(TimeSeed.x + CurrentParticleIndex + c);
+        float R = rand1(TimeSeed.y + CurrentParticleIndex + c);
+        float Theta = rand1(TimeSeed.z + CurrentParticleIndex + c);
+        
+        H = (H - 0.5f) * TimeStep * length(CenterVel);
+        R = SearchRadius * R * 100;
+        Theta = Theta * 2.0f * PI;
+    
+        float3 X = CenterPos + R * cos(Theta) * e1 + R * sin(Theta) * e2 + H * Vn;
+        float3 V = R * cos(Theta) * e1 + R * sin(Theta) * e2 + CenterVel;
+        
+        int InsertIndex = CurrFoamParticleCount + CurrOffset + c;
+        FoamParticlePosition_RW[InsertIndex] = X;
+        FoamParticleVelocity_RW[InsertIndex] = V;
+        FoamParticleFilter_RW[InsertIndex] = 1;
+        FoamParticleLifeTime_RW[InsertIndex] = 0.0f;
+    }
+}
+
+[numthreads(1, 1, 1)]
+void updateFoamParticleCountArgument(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint ParticleCount = TargetParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    uint CurrAddFoamParticleCount = FoamParticleOffset_R[ParticleCount - 1];
+    int NewFoamParticleCount = min(FoamParticleIndirectArgment_RW[ParticleCountArgumentOffset] + CurrAddFoamParticleCount, MaxFoamParticleCount);
+    FoamParticleIndirectArgment_RW[ParticleCountArgumentOffset] = NewFoamParticleCount;
+    FoamParticleIndirectArgment_RW[ParticleXGridCountArgumentOffset] = ceil((float) NewFoamParticleCount / SPH_THREAD_NUM);
+}
+
+[numthreads(SPH_THREAD_NUM, 1, 1)]
+void advectFoamParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
+{
+    uint CurrentParticleIndex = ThreadIdx + GroupIdx * SPH_THREAD_NUM;
+    uint ParticleCount = FoamParticleIndirectArgment_R[ParticleCountArgumentOffset];
+    if (CurrentParticleIndex >= ParticleCount)
+        return;
+    
+    float3 CurrentPos = FoamParticlePosition_RW[CurrentParticleIndex];
+    float3 CurrentVel = FoamParticleVelocity_RW[CurrentParticleIndex];
+    
+    float3 VelocitySum = float3(0, 0, 0);
+    uint NeighborCount = 0;
+    float3 CurrSurfaceNormal = float3(0, 0, 0);
+    float3 DensityDrad = float3(0, 0, 0);
+    
+    FOR_EACH_NEIGHBOR(
+        float3 NeighborPosition = TargetParticlePosition_R[c];
+        float Dist = length(CurrentPos - NeighborPosition);
+        if (Dist < SearchRadius && Dist > 0.0f)
+        {
+            CurrSurfaceNormal += Normal_R[c];
+            VelocitySum += TargetParticleVelocity_R[c];
+            DensityDrad -= (ParticleVolume * Density0 * computeCubicKernelGradW(CurrentPos - NeighborPosition, SearchRadius));
+            NeighborCount++;
+        }
+    );
+    
+    if (NeighborCount > 2)
+        CurrentVel = VelocitySum / (float3) NeighborCount++;
+    
+    float MixFactor = 0.213f;
+    if (abs(length(DensityDrad) - 0.0f) >= 1e-6 && abs(length(CurrSurfaceNormal) - 0.0f) >= 1e-6)
+    {
+        CurrSurfaceNormal = normalize(CurrSurfaceNormal);
+        float3 HizFactor = dot(CurrSurfaceNormal, DensityDrad);
+        CurrentVel = (1 - MixFactor) * CurrentVel + MixFactor * length(CurrentVel) * normalize(DensityDrad - HizFactor * CurrSurfaceNormal);
+    }
+    
+    float CurrLifeTime = FoamParticleLifeTime_RW[CurrentParticleIndex];
+    if (NeighborCount > 32 || CurrLifeTime > 50 * TimeStep)
+        FoamParticleFilter_RW[CurrentParticleIndex] = 0;
+    
+    if (NeighborCount < 2)
+        CurrLifeTime += TimeStep * 10;
+    
+    FoamParticleLifeTime_RW[CurrentParticleIndex] = CurrLifeTime + TimeStep;
+    FoamParticlePosition_RW[CurrentParticleIndex] += CurrentVel * TimeStep;
+    FoamParticleVelocity_RW[CurrentParticleIndex] = CurrentVel;
+}
+
+[numthreads(SPH_THREAD_NUM, 1, 1)]
+void advectWaterParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID)
 {
     uint i = ThreadIdx + GroupIdx * SPH_THREAD_NUM;
     if (i >= TargetParticleIndirectArgment_R[ParticleCountArgumentOffset])
         return;
-    
-    float3 NewPosition = BackParticlePosition_R[i];
-    float3 NewVelocity = BackParticleVelocity_R[i];
-    FrontParticlePosition_RW[i] = NewPosition + NewVelocity * TimeStep;
-    FrontParticleVelocity_RW[i] = BackParticleVelocity_R[i];
-    FrontParticleFilter_RW[i] = BackParticleFilter_R[i];
+    TargetParticlePosition_RW[i] += TargetParticleVelocity_R[i] * TimeStep;
 }
 
 uint _DataCount;

@@ -20,13 +20,11 @@ namespace LODFluid
         private int DeleteParticleOutofRangeKernel;
 
         private uint MaxParticleSize;
-        private ParticleBuffer NarrowParticleCache;
-        private ComputeBuffer ParticleScatterOffsetCache;
         private GPUScan GPUScanner;
 
-        ~DynamicParticle()
+        public void Relaese()
         {
-            ParticleScatterOffsetCache.Release();
+            GPUScanner.Release();
         }
 
         public DynamicParticle(uint vMaxParticleSize)
@@ -39,9 +37,7 @@ namespace LODFluid
             DeleteParticleOutofRangeKernel = DynamicParticleToolCS.FindKernel("deleteParticleOutofRange");
 
             MaxParticleSize = vMaxParticleSize;
-            ParticleScatterOffsetCache = new ComputeBuffer((int)vMaxParticleSize, sizeof(uint));
-            NarrowParticleCache = new ParticleBuffer(vMaxParticleSize);
-            GPUScanner = new GPUScan(vMaxParticleSize);
+            GPUScanner = new GPUScan();
         }
 
         public void AddParticleBlock(
@@ -79,13 +75,16 @@ namespace LODFluid
              ComputeBuffer vParticleBoundaryDistanceBuffer,
              Vector3 vHashGridMin,
              float vHashGridCellLength,
-             Vector3Int vHashGridResolution)
+             Vector3Int vHashGridResolution,
+             float vMaxLifeTime)
         {
             DynamicParticleToolCS.SetFloats("HashGridMin", vHashGridMin.x, vHashGridMin.y, vHashGridMin.z);
             DynamicParticleToolCS.SetFloat("HashGridCellLength", vHashGridCellLength);
             DynamicParticleToolCS.SetInts("HashGridResolution", vHashGridResolution.x, vHashGridResolution.y, vHashGridResolution.z);
+            DynamicParticleToolCS.SetFloat("MaxLifeTime", vMaxLifeTime);
             DynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleIndrectArgment_R", vParticleIndirectArgumentBuffer);
             DynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticlePosition_R", voTarget.ParticlePositionBuffer);
+            DynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleLifeTime_R", voTarget.ParticleLifeTimeBuffer);
             DynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleBoundaryDiatance_R", vParticleBoundaryDistanceBuffer);
             DynamicParticleToolCS.SetBuffer(DeleteParticleOutofRangeKernel, "ParticleFilter_RW", voTarget.ParticleFilterBuffer);
             DynamicParticleToolCS.DispatchIndirect(DeleteParticleOutofRangeKernel, vParticleIndirectArgumentBuffer);
@@ -93,35 +92,35 @@ namespace LODFluid
 
         public void NarrowParticleData(
             ref ParticleBuffer voTargetParticleBuffer,
+            ref ParticleBuffer voNarrowParticleCache,
+            ComputeBuffer vParticleScatterOffsetCache,
             ComputeBuffer vParticleIndirectArgumentBuffer)
         {
             GPUScanner.Scan(
                 voTargetParticleBuffer.ParticleFilterBuffer,
-                ParticleScatterOffsetCache);
+                vParticleScatterOffsetCache);
 
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleScatterOffset_R", ParticleScatterOffsetCache);
+            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleScatterOffset_R", vParticleScatterOffsetCache);
             DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "ParticleIndrectArgment_R", vParticleIndirectArgumentBuffer);
 
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticlePosition_RW", NarrowParticleCache.ParticlePositionBuffer);
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleVelocity_RW", NarrowParticleCache.ParticleVelocityBuffer);
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleFilter_RW", NarrowParticleCache.ParticleFilterBuffer);
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleMortonCode_RW", NarrowParticleCache.ParticleMortonCodeBuffer);
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleDensity_RW", NarrowParticleCache.ParticleDensityBuffer);
+            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticlePosition_RW", voNarrowParticleCache.ParticlePositionBuffer);
+            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleVelocity_RW", voNarrowParticleCache.ParticleVelocityBuffer);
+            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleFilter_RW", voNarrowParticleCache.ParticleFilterBuffer);
+            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "NarrowParticleLifeTime_RW", voNarrowParticleCache.ParticleLifeTimeBuffer);
 
             DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticlePosition_R", voTargetParticleBuffer.ParticlePositionBuffer);
             DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleVelocity_R", voTargetParticleBuffer.ParticleVelocityBuffer);
             DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleFilter_R", voTargetParticleBuffer.ParticleFilterBuffer);
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleMortonCode_R", voTargetParticleBuffer.ParticleMortonCodeBuffer);
-            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleDensity_R", voTargetParticleBuffer.ParticleDensityBuffer);
+            DynamicParticleToolCS.SetBuffer(ScatterParticleDataKernel, "TargetParticleLifeTime_R", voTargetParticleBuffer.ParticleLifeTimeBuffer);
 
             DynamicParticleToolCS.DispatchIndirect(ScatterParticleDataKernel, vParticleIndirectArgumentBuffer);
 
-            DynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleScatterOffset_R", ParticleScatterOffsetCache);
+            DynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleScatterOffset_R", vParticleScatterOffsetCache);
             DynamicParticleToolCS.SetBuffer(UpdateParticleNarrowCountArgmentKernel, "ParticleIndrectArgment_RW", vParticleIndirectArgumentBuffer);
             DynamicParticleToolCS.Dispatch(UpdateParticleNarrowCountArgmentKernel, 1, 1, 1);
 
-            ParticleBuffer Temp = NarrowParticleCache;
-            NarrowParticleCache = voTargetParticleBuffer;
+            ParticleBuffer Temp = voNarrowParticleCache;
+            voNarrowParticleCache = voTargetParticleBuffer;
             voTargetParticleBuffer = Temp;
         }
     }
