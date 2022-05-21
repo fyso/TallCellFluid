@@ -264,7 +264,7 @@ public partial class CameraRenderer : MonoBehaviour
         if (m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithLayer || 
             m_SettingManager.m_CullParticleSetting.m_CullMode == CullMode.FreezeWithAdaptive)
             Show(m_CullDebugRT);
-        else Show(m_OutputRT);
+        else Show(m_FluidNormalRT);
 
         DrawUnsupportedShaders();
         DrawGizmos();

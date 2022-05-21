@@ -613,7 +613,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 3907f8e8cb51ad543bad6605d9d2516c, type: 2}
+  sdfData: {fileID: 11400000, guid: 744e5a6c35a51c448b2117d85fa1f1f5, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -668,6 +668,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1784697732}
   - component: {fileID: 1784697731}
+  - component: {fileID: 1784697733}
   m_Layer: 0
   m_Name: SPHSimulator
   m_TagString: Untagged
@@ -707,7 +708,7 @@ MonoBehaviour:
   MaxFoamParticleCount: 6000000
   DivergenceIterationCount: 1
   PressureIterationCount: 2
-  ComputeAnisotropyMatrix: 1
+  ComputeAnisotropyMatrix: 0
   IterNum: 3
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
@@ -724,6 +725,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: -51.905, y: 0, z: 0}
+--- !u!114 &1784697733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784697730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06c0317e0632e6c47bb855ee99f95544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  renderPipelineAsset: {fileID: 11400000, guid: 46b29c2503bfe714ab6e7d31481896ee, type: 2}
 --- !u!1 &1899711898
 GameObject:
   m_ObjectHideFlags: 0
@@ -742,7 +756,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1899711899
 Transform:
   m_ObjectHideFlags: 0
@@ -846,7 +860,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8164078560040880145}
   m_LocalRotation: {x: -0, y: -0, z: -0.037196185, w: 0.99930805}
-  m_LocalPosition: {x: 6.6, y: 31.8, z: 41.1}
+  m_LocalPosition: {x: -16.4, y: 33.5, z: 41.1}
   m_LocalScale: {x: 180.86314, y: 45.700447, z: 40.284515}
   m_Children: []
   m_Father: {fileID: 1766839093}
@@ -968,7 +982,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &8164078560040880146
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -982,7 +996,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bounds:
-    m_Center: {x: -0.00000047683716, y: 0, z: 0}
+    m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 98.00539, y: 31.477076, z: 21.485075}
   dimensions: {x: 32, y: 32, z: 32}
   fitToVertices: 1
@@ -991,7 +1005,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 8b6a95ef8fb891140bd3af12a6c26139, type: 2}
+  sdfData: {fileID: 11400000, guid: 96381d7df37133047a4eae21adea0101, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75

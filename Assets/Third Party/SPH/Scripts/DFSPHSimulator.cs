@@ -104,14 +104,14 @@ namespace LODFluid
             }
 
             int[] particleCount = new int[5] { 0, 0, 0, 0, 0 };
-            ParticleData.ArgumentBuffer.GetData(particleCount, 0, 0, 5);
+            ParticleData.ParticleArgumentBuffer.GetData(particleCount, 0, 0, 5);
             SBoundingBox boundingBox = new SBoundingBox { };
-            DFSPH.SetUpBoundingBox(ParticleData.NarrowPositionBuffer, particleCount[4], ref boundingBox);
+            DFSPH.SetUpBoundingBox(ParticleData.PositionBuffer, particleCount[4], ref boundingBox);
             ParticleData.MinPos = boundingBox.MinPos;
             ParticleData.MaxPos = boundingBox.MaxPos;
+        }
 
-
-            void OnRenderObject()
+        void OnRenderObject()
         {
             WaterVisualMaterial.SetPass(0);
             WaterVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.Dynamic3DParticle.ParticlePositionBuffer);
