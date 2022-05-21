@@ -4,6 +4,12 @@ using UnityEngine;
 
 namespace LODFluid
 {
+    public struct SBoundingBox
+    {
+        public Vector3 MinPos;
+        public Vector3 MaxPos;
+    }
+
     public class DynamicParticle
     {
         private ComputeShader DynamicParticleToolCS;
@@ -117,7 +123,6 @@ namespace LODFluid
             ParticleBuffer Temp = NarrowParticleCache;
             NarrowParticleCache = voTargetParticleBuffer;
             voTargetParticleBuffer = Temp;
-
         }
     }
 }

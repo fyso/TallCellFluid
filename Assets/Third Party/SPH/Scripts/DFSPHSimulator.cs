@@ -98,17 +98,20 @@ namespace LODFluid
                 ParticleData.NarrowPositionBuffer = DFSPH.Dynamic3DParticle.ParticlePositionBuffer;
                 ParticleData.AnisotropyBuffer = null;
             }
-            ParticleData.MinPos = new Vector3(-75, 0, 10);
-            ParticleData.MaxPos = new Vector3(20, 15, 60); 
-        }
 
-
-        void OnRenderObject()
-        {
-            SPHVisualMaterial.SetPass(0);
-            SPHVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.Dynamic3DParticle.ParticlePositionBuffer);
-            SPHVisualMaterial.SetBuffer("_particleVelocityBuffer", DFSPH.Dynamic3DParticle.ParticleVelocityBuffer);
-            Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, DFSPH.Dynamic3DParticleIndirectArgumentBuffer, 12);
+            int[] particleCount = new int[5] { 0, 0, 0, 0, 0};
+            ParticleData.ArgumentBuffer.GetData(particleCount, 0, 0, 5);
+            SBoundingBox boundingBox = new SBoundingBox { };
+            DFSPH.SetUpBoundingBox(ParticleData.NarrowPositionBuffer, particleCount[4], ref boundingBox);
+            ParticleData.MinPos = boundingBox.MinPos;
+            ParticleData.MaxPos = boundingBox.MaxPos;
         }
+        //void OnRenderObject()
+        //{
+        //    SPHVisualMaterial.SetPass(0);
+        //    SPHVisualMaterial.SetBuffer("_particlePositionBuffer", DFSPH.Dynamic3DParticle.ParticlePositionBuffer);
+        //    SPHVisualMaterial.SetBuffer("_particleVelocityBuffer", DFSPH.Dynamic3DParticle.ParticleVelocityBuffer);
+        //    Graphics.DrawProceduralIndirectNow(MeshTopology.Triangles, DFSPH.Dynamic3DParticleIndirectArgumentBuffer, 12);
+        //}
     }
 }

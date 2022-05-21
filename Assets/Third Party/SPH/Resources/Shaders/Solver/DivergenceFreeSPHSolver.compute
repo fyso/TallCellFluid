@@ -8,6 +8,8 @@
 #pragma kernel solvePressureIteration
 #pragma kernel updateVelocityWithNoPressureForce
 #pragma kernel advectAndSwapParticleBuffer
+#pragma kernel parallelReductionMin
+#pragma kernel parallelReductionMax
 
 float3 HashGridMin;
 float HashGridCellLength;
@@ -729,4 +731,152 @@ void advectAndSwapParticleBuffer(uint ThreadIdx : SV_GroupIndex, uint GroupIdx :
     FrontParticlePosition_RW[i] = NewPosition + NewVelocity * TimeStep;
     FrontParticleVelocity_RW[i] = BackParticleVelocity_R[i];
     FrontParticleFilter_RW[i] = BackParticleFilter_R[i];
+}
+
+uint _DataCount;
+StructuredBuffer<float3> _InputBuffer;
+groupshared float3 sharedMem[SPH_THREAD_NUM];
+RWStructuredBuffer<float3> ReductionResult;
+
+//each thread read 4 partilces
+[numthreads(REDUCTION_THREAD_NUM, 1, 1)]
+void parallelReductionMin(uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex)
+{
+    //Write to shared memory
+    float3 temp0, temp1, temp2, temp3;
+    uint particleIndex = 4 * DTid.x;
+    if (particleIndex < _DataCount - 3)
+    {
+        temp0 = min(_InputBuffer[particleIndex], _InputBuffer[particleIndex + 1]);
+        temp1 = min(_InputBuffer[particleIndex + 2], _InputBuffer[particleIndex + 3]);
+        sharedMem[2 * GI]     = temp0;
+        sharedMem[2 * GI + 1] = temp1;
+    }
+    else
+    {
+        float3 tempPos = _InputBuffer[_DataCount - 1];
+        if (particleIndex < _DataCount)
+        {
+            temp0 = _InputBuffer[particleIndex];
+            if (particleIndex + 1 < _DataCount)
+                temp1 = _InputBuffer[particleIndex + 1];
+            else
+                temp1 = tempPos;
+        
+            if (particleIndex + 2 < _DataCount)
+                temp2 = _InputBuffer[particleIndex + 2];
+            else
+                temp2 = tempPos;
+        
+            if (particleIndex + 3 < _DataCount)
+                temp3 = _InputBuffer[particleIndex + 3];
+            else
+                temp3 = tempPos;
+            
+            sharedMem[2 * GI] = min(temp0, temp1);
+            sharedMem[2 * GI + 1] = min(temp2, temp3);
+        }      
+        else
+        {
+            sharedMem[2 * GI] = tempPos;
+            sharedMem[2 * GI + 1] = tempPos;
+        }
+    }    
+    GroupMemoryBarrierWithGroupSync();
+    
+    //Reduction
+    if (GI < 256)
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI + 256]);
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GI < 128)
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI + 128]);
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GI < 64)
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI + 64]);
+    GroupMemoryBarrierWithGroupSync();
+
+    if (GI < 32)
+    {
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI + 32]);
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI + 16]);
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI +  8]);
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI +  4]);
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI +  2]);
+        sharedMem[GI] = min(sharedMem[GI], sharedMem[GI +  1]);
+    }
+    if (GI == 0)
+        ReductionResult[Gid.x] = sharedMem[0];
+}
+
+[numthreads(REDUCTION_THREAD_NUM, 1, 1)]
+void parallelReductionMax(uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint GI : SV_GroupIndex)
+{
+     //Write to shared memory
+    float3 temp0, temp1, temp2, temp3;
+    uint particleIndex = 4 * DTid.x;
+    if (particleIndex < _DataCount - 3)
+    {
+        temp0 = max(_InputBuffer[particleIndex], _InputBuffer[particleIndex + 1]);
+        temp1 = max(_InputBuffer[particleIndex + 2], _InputBuffer[particleIndex + 3]);
+        sharedMem[2 * GI] = temp0;
+        sharedMem[2 * GI + 1] = temp1;
+    }
+    else
+    {
+        float3 tempPos = _InputBuffer[_DataCount - 1];
+        if (particleIndex < _DataCount)
+        {
+            temp0 = _InputBuffer[particleIndex];
+            if (particleIndex + 1 < _DataCount)
+                temp1 = _InputBuffer[particleIndex + 1];
+            else
+                temp1 = tempPos;
+        
+            if (particleIndex + 2 < _DataCount)
+                temp2 = _InputBuffer[particleIndex + 2];
+            else
+                temp2 = tempPos;
+        
+            if (particleIndex + 3 < _DataCount)
+                temp3 = _InputBuffer[particleIndex + 3];
+            else
+                temp3 = tempPos;
+            
+            sharedMem[2 * GI] = max(temp0, temp1);
+            sharedMem[2 * GI + 1] = max(temp2, temp3);
+        }
+        else
+        {
+            sharedMem[2 * GI] = tempPos;
+            sharedMem[2 * GI + 1] = tempPos;
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
+    
+    //Reduction
+    if (GI < 256)
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 256]);
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GI < 128)
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 128]);
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (GI < 64)
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 64]);
+    GroupMemoryBarrierWithGroupSync();
+
+    if (GI < 32)
+    {
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 32]);
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 16]);
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 8]);
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 4]);
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 2]);
+        sharedMem[GI] = max(sharedMem[GI], sharedMem[GI + 1]);
+    }
+    if (GI == 0)
+        ReductionResult[Gid.x] = sharedMem[0];
 }

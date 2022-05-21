@@ -128,11 +128,7 @@
                 output.depth = fluidDepth;
                 #ifdef _FREEZE
                     float3 cellIndex3D = input.cellOfParticleIndex3D;
-                   // output.gridIndexDebug = float4(cellIndex3D, 1.0);
-                    if(cellIndex3D.x < 62)
-                        output.gridIndexDebug = float4(1, 0, 0, 1.0);
-                    else
-                        output.gridIndexDebug = float4(0, 0, 1, 1.0);
+                    output.gridIndexDebug = float4(cellIndex3D, 1.0);                       
                 #endif
 
                 return output;

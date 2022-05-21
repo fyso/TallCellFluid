@@ -9,6 +9,11 @@ public class PerspectiveGridData
     float m_CameraFov;
     float m_CameraNear;
     float m_CameraFar;
+    float m_GridLeft;
+    float m_GridRight;
+    float m_GridDown;
+    float m_GridUp;
+
     float m_GridNear;
     float m_GridFar;
     Vector3 m_GridMin;
@@ -104,27 +109,57 @@ public class PerspectiveGridData
         p6 = m_ViewMatrixForGrid * p6;
         p7 = m_ViewMatrixForGrid * p7;
 
-        float near = -1000;
-        near = Math.Max(p0.z, near);
-        near = Math.Max(p1.z, near);
-        near = Math.Max(p2.z, near);
-        near = Math.Max(p3.z, near);
-        near = Math.Max(p4.z, near);
-        near = Math.Max(p5.z, near);
-        near = Math.Max(p6.z, near);
-        near = Math.Max(p7.z, near);
-        m_GridNear = Math.Max(m_CameraNear, -near);
+        //X÷·
+        float result;
+        result = p0.x < p1.x ? p0.x : p1.x;
+        result = p2.x < result ? p2.x : result;
+        result = p3.x < result ? p3.x : result;
+        result = p4.x < result ? p4.x : result;
+        result = p5.x < result ? p5.x : result;
+        result = p6.x < result ? p6.x : result;
+        m_GridLeft = p7.x < result ? p7.x : result;
 
-        float far = 0;
-        far = Math.Min(p0.z, far);
-        far = Math.Min(p1.z, far);
-        far = Math.Min(p2.z, far);
-        far = Math.Min(p3.z, far);
-        far = Math.Min(p4.z, far);
-        far = Math.Min(p5.z, far);
-        far = Math.Min(p6.z, far);
-        far = Math.Min(p7.z, far);
-        m_GridFar = Math.Min(m_CameraFar, -far);
+        result = p0.x > p1.x ? p0.x : p1.x;
+        result = p2.x > result ? p2.x : result;
+        result = p3.x > result ? p3.x : result;
+        result = p4.x > result ? p4.x : result;
+        result = p5.x > result ? p5.x : result;
+        result = p6.x > result ? p6.x : result;
+        m_GridRight = p7.x > result ? p7.x : result;
+
+        result = p0.y < p1.y ? p0.y : p1.y;
+        result = p2.y < result ? p2.y : result;
+        result = p3.y < result ? p3.y : result;
+        result = p4.y < result ? p4.y : result;
+        result = p5.y < result ? p5.y : result;
+        result = p6.y < result ? p6.y : result;
+        m_GridDown = p7.y < result ? p7.y : result;
+
+        result = p0.y > p1.y ? p0.y : p1.y;
+        result = p2.y > result ? p2.y : result;
+        result = p3.y > result ? p3.y : result;
+        result = p4.y > result ? p4.y : result;
+        result = p5.y > result ? p5.y : result;
+        result = p6.y > result ? p6.y : result;
+        m_GridUp = p7.y > result ? p7.y : result;
+
+        result = p0.z > p1.z ? p0.z : p1.z;
+        result = p2.z > result ? p2.z : result;
+        result = p3.z > result ? p3.z : result;
+        result = p4.z > result ? p4.z : result;
+        result = p5.z > result ? p5.z : result;
+        result = p6.z > result ? p6.z : result;
+        result = p7.z > result ? p7.z : result;
+        m_GridNear = m_CameraNear > -result ? m_CameraNear : -result;
+
+        result = p0.z < p1.z ? p0.z : p1.z;
+        result = p2.z < result ? p2.z : result;
+        result = p3.z < result ? p3.z : result;
+        result = p4.z < result ? p4.z : result;
+        result = p5.z < result ? p5.z : result;
+        result = p6.z < result ? p6.z : result;
+        result = p7.z < result ? p7.z : result;
+        m_GridFar = m_CameraFar < -result ? m_CameraFar : -result;
 
         float sampleRadioInv = 0f;
         int   perspectiveGridDimZ = 0;

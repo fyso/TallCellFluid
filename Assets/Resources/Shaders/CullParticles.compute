@@ -7,6 +7,8 @@
 #pragma multi_compile _ _CULLWITHLAYER _CULLWITHADAPTIVE
 
 #define GROUP_THREAD_NUM 512
+#define THREADTOTAL 64
+
 int _DrawLayer;
 uint _MaxVisibleCount;
 
@@ -58,28 +60,30 @@ void searchVisibleGrid(uint3 DTid : SV_DispatchThreadID)
     uint count = 1;
     uint sumCount = 0;
     float mid = _MidFactor * _PerspectiveGridDimZ;
+    float midPlane = (_FarPlane + _NearPlane) * 0.5;
+    float stopCount = 0.01 * midPlane * _MaxVisibleCount;
+    
     for (uint z = 0; z < _PerspectiveGridDimZ; z++)
     {
         uint cellLinerIndex = tex3DIndex2Liner(uint3(DTid.x, DTid.y, z));
         uint particleCountOfGrid = _ParticleCountOfGrid[cellLinerIndex];
-#ifdef _CULLWITHLAYER
+        #ifdef _CULLWITHLAYER
             if ((particleCountOfGrid > 0) && (count <= _DrawLayer))
             {
                 _VisibleGridBuffer[cellLinerIndex] = 1;
                 if (count == _DrawLayer)
-                    break;
-                
+                    break;   
                 count++;
             }
-#elif _CULLWITHADAPTIVE     
+        #elif _CULLWITHADAPTIVE     
             if(particleCountOfGrid > 0)
             {   
                 _VisibleGridBuffer[cellLinerIndex] = 1;           
                 if(z < mid)
-                    sumCount += particleCountOfGrid * 8.9 * (1.5 - (float)z / mid); //large
+                    sumCount += particleCountOfGrid; //large:[1, ]
                 else
-                    sumCount += particleCountOfGrid *  8.9 * (1 -(float)z / _PerspectiveGridDimZ);   //low:
-                if (sumCount > 2.1 *_NearPlane) break;
+                    sumCount += particleCountOfGrid;   //low:[1 : 0]
+                if (sumCount > stopCount) break;
             }
 #endif
     }
@@ -104,7 +108,8 @@ void calThicknessGrid(uint3 DTid : SV_DispatchThreadID)
         {
             innerFlag = true;
         }
-        if (innerFlag) cellLayerCount++;
+        if (innerFlag)
+            cellLayerCount++;
        
         particleCountOfPreGrid = count;
     }

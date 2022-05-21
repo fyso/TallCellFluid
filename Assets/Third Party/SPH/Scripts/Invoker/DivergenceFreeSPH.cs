@@ -13,6 +13,8 @@ namespace LODFluid
         private int slovePressureIterationKernel;
         private int updateVelocityWithNoPressureForceKernel;
         private int advectAndSwapParticleBufferKernel;
+        private int parallelReductionMinKernel;
+        private int parallelReductionMaxKernel;
 
         private ParticleBuffer BackParticleCache;
 
@@ -31,6 +33,8 @@ namespace LODFluid
             slovePressureIterationKernel = DivergenceFreeSPHSloverCS.FindKernel("solvePressureIteration");
             updateVelocityWithNoPressureForceKernel = DivergenceFreeSPHSloverCS.FindKernel("updateVelocityWithNoPressureForce");
             advectAndSwapParticleBufferKernel = DivergenceFreeSPHSloverCS.FindKernel("advectAndSwapParticleBuffer");
+            parallelReductionMinKernel = DivergenceFreeSPHSloverCS.FindKernel("parallelReductionMin");
+            parallelReductionMaxKernel = DivergenceFreeSPHSloverCS.FindKernel("parallelReductionMax");
 
             BackParticleCache = new ParticleBuffer(vMaxParticleCount);
         }
@@ -192,6 +196,46 @@ namespace LODFluid
                 Profiler.EndSample();
             }
             Profiler.EndSample();
+        }
+
+        public void SetUpBoundingBox(ComputeBuffer vPostionBuffer, ComputeBuffer vReductionBuffer, int vParticleCount, ref SBoundingBox voBoundingBox)
+        {
+            int dataCount = vParticleCount;
+            ComputeBuffer inputBuffer = vPostionBuffer;
+            int reductionCount = Mathf.CeilToInt((float)dataCount / 1024);
+            for (int i = reductionCount; i > 0; i = Mathf.CeilToInt((float)i / 1024))
+            {
+                DivergenceFreeSPHSloverCS.SetInt("_DataCount", dataCount);
+                DivergenceFreeSPHSloverCS.SetBuffer(parallelReductionMinKernel, "_InputBuffer", inputBuffer);
+                DivergenceFreeSPHSloverCS.SetBuffer(parallelReductionMinKernel, "ReductionResult", vReductionBuffer);
+                DivergenceFreeSPHSloverCS.Dispatch(parallelReductionMinKernel, (int)i, 1, 1);
+                dataCount = i;
+                if (i == 1) break;
+                inputBuffer = vReductionBuffer;
+            }
+
+            //Get BoundingBox
+            Vector3[] result = new Vector3[1];
+            vReductionBuffer.GetData(result, 0, 0, 1);
+            voBoundingBox.MinPos = result[0];
+
+            dataCount = vParticleCount;
+            inputBuffer = vPostionBuffer;
+            for (int i = reductionCount; i > 0; i = Mathf.CeilToInt((float)i / 1024))
+            {
+                DivergenceFreeSPHSloverCS.SetInt("_DataCount", dataCount);
+                DivergenceFreeSPHSloverCS.SetBuffer(parallelReductionMaxKernel, "_InputBuffer", inputBuffer);
+                DivergenceFreeSPHSloverCS.SetBuffer(parallelReductionMaxKernel, "ReductionResult", vReductionBuffer);
+
+                DivergenceFreeSPHSloverCS.Dispatch(parallelReductionMaxKernel, (int)i, 1, 1);
+                dataCount = i;
+                if (i == 1) break;
+                inputBuffer = vReductionBuffer;
+            }
+
+            //Get BoundingBox
+            vReductionBuffer.GetData(result, 0, 0, 1); 
+            voBoundingBox.MaxPos = result[0];
         }
     }
 }

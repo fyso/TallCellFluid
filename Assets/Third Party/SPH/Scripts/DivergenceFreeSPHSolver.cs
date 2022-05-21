@@ -55,6 +55,7 @@ namespace LODFluid
 
         public ComputeBuffer NarrowPositionBuffer;
         public ComputeBuffer AnisotropyBuffer;
+        public ComputeBuffer ReductionBuffer;
 
         private DynamicParticle DynamicParticleTool;
         private GPUCountingSortHash CompactNSearchTool;
@@ -65,6 +66,7 @@ namespace LODFluid
         public Vector3 SimulationRangeMin;
         public Vector3Int SimulationRangeRes;
         public float ParticleRadius;
+
         public Vector3 HashGridMin { get { return SimulationRangeMin; } }
         public Vector3Int HashGridRes { get { return SimulationRangeRes; } }
         public float HashGridCellLength { get { return ParticleRadius * 4.0f; } }
@@ -112,6 +114,9 @@ namespace LODFluid
             NarrowPositionBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
             AnisotropyBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint) * 2);
 
+            int reductionCount = Mathf.CeilToInt((float)vMaxParticleCount / 1024);
+            ReductionBuffer = new ComputeBuffer(reductionCount, sizeof(float) * 3);
+
             VolumeMapBoundaryTool = new VolumeMapBoundary();
             VolumeMapBoundaryTool.GenerateBoundaryMapData(
                 vBoundaryObjects,
@@ -135,6 +140,7 @@ namespace LODFluid
             Dynamic3DParticleBoundaryVelocityBuffer.Release();
             NarrowPositionBuffer.Release();
             AnisotropyBuffer.Release();
+            ReductionBuffer.Release();
         }
 
         public void AddParticleBlock(Vector3 WaterGeneratePosition, Vector3Int WaterGenerateResolution, Vector3 WaterGenerateInitVelocity)
@@ -213,6 +219,11 @@ namespace LODFluid
                     ref Dynamic3DParticle,
                     Dynamic3DParticleIndirectArgumentBuffer,
                     vTimeStep);
+        }
+
+        public void SetUpBoundingBox(ComputeBuffer vNarrowPosBuffer, int vParticleCount, ref SBoundingBox voBoundingBox)
+        {
+            DivergenceFreeSPHTool.SetUpBoundingBox(vNarrowPosBuffer, ReductionBuffer, vParticleCount, ref voBoundingBox);
         }
     }
 }

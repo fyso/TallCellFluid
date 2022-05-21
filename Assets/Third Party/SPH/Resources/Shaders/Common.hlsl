@@ -3,6 +3,7 @@
 
 #define SPH_THREAD_NUM 512
 #define SHALLOW_THREAD_NUM 32
+#define REDUCTION_THREAD_NUM 256
 
 #define ParticleXGridCountArgumentOffset 0
 #define ParticleYGridCountArgumentOffset 1
