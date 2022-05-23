@@ -18,4 +18,4 @@ MonoBehaviour:
   m_PerspectiveGridDimX: 128
   m_PerspectiveGridDimY: 128
   m_DepthSplitMode: 1
-  m_CullMode: 2
+  m_CullMode: 0

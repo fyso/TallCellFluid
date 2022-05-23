@@ -295,15 +295,6 @@ namespace LODFluid
             DivergenceFreeSPHSloverCS.SetBool("ComputeAnisotropyMatrix", vComputeAnisotropyMatrix);
             DivergenceFreeSPHSloverCS.SetInt("IterNum", (int)vIterNum);
 
-            DivergenceFreeSPHSloverCS.SetFloat("MinCurvature", vMinCurvature);
-            DivergenceFreeSPHSloverCS.SetFloat("MaxCurvature", vMaxCurvature);
-            DivergenceFreeSPHSloverCS.SetFloat("MinRelativeVelLength", vMinRelativeVelLength);
-            DivergenceFreeSPHSloverCS.SetFloat("MaxRelativeVelLength", vMaxRelativeVelLength);
-            DivergenceFreeSPHSloverCS.SetInt("NumTaRate", vNumTaRate);
-            DivergenceFreeSPHSloverCS.SetInt("NumWcRate", vNumWcRate);
-            DivergenceFreeSPHSloverCS.SetFloat("MaxKe", Mathf.Pow(0.00001f, 2) * ParticleVolume * 1000.0f * 0.5f);
-            DivergenceFreeSPHSloverCS.SetFloat("MinKe", Mathf.Pow(0.0f, 2) * ParticleVolume * 1000.0f * 0.5f);
-
             DynamicParticleTool.DeleteParticleOutofRange(
                     Dynamic3DParticle,
                     Dynamic3DParticleIndirectArgumentBuffer,
@@ -429,6 +420,16 @@ namespace LODFluid
                 DivergenceFreeSPHSloverCS.DispatchIndirect(slovePressureIterationKernel, Dynamic3DParticleIndirectArgumentBuffer);
             }
 
+            //compute foam info
+            DivergenceFreeSPHSloverCS.SetFloat("MinCurvature", vMinCurvature);
+            DivergenceFreeSPHSloverCS.SetFloat("MaxCurvature", vMaxCurvature);
+            DivergenceFreeSPHSloverCS.SetFloat("MinRelativeVelLength", vMinRelativeVelLength);
+            DivergenceFreeSPHSloverCS.SetFloat("MaxRelativeVelLength", vMaxRelativeVelLength);
+            DivergenceFreeSPHSloverCS.SetInt("NumTaRate", vNumTaRate);
+            DivergenceFreeSPHSloverCS.SetInt("NumWcRate", vNumWcRate);
+            DivergenceFreeSPHSloverCS.SetFloat("MaxKe", Mathf.Pow(0.00001f, 2) * ParticleVolume * 1000.0f * 0.5f);
+            DivergenceFreeSPHSloverCS.SetFloat("MinKe", Mathf.Pow(0.0f, 2) * ParticleVolume * 1000.0f * 0.5f);
+
             DivergenceFreeSPHSloverCS.SetBuffer(computeFoamParticleCountPerWaterParticle, "TargetParticleIndirectArgment_R", Dynamic3DParticleIndirectArgumentBuffer);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFoamParticleCountPerWaterParticle, "ParticleVelDiff_R", Dynamic3DParticleParticleVdiffBuffer);
             DivergenceFreeSPHSloverCS.SetBuffer(computeFoamParticleCountPerWaterParticle, "ParticleCurvature_R", Dynamic3DParticleParticleCurvatureBuffer);
@@ -462,6 +463,7 @@ namespace LODFluid
             DivergenceFreeSPHSloverCS.SetBuffer(updateFoamParticleCountArgument, "FoamParticleIndirectArgment_RW", Dynamic3DFoamParticleIndirectArgumentBuffer);
             DivergenceFreeSPHSloverCS.Dispatch(updateFoamParticleCountArgument, 1, 1, 1);
 
+            //do foam physics
             DynamicParticleTool.NarrowParticleData(
                     ref FoamParticle,
                     ref FoamParticleCache,

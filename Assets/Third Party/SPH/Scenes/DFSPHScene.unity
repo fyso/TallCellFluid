@@ -352,7 +352,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 6e315669fbab6384e8a3b7c825825bc8, type: 2}
+  sdfData: {fileID: 11400000, guid: 52bbc932902bbe34aac0ea70004ce7e4, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -613,7 +613,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 744e5a6c35a51c448b2117d85fa1f1f5, type: 2}
+  sdfData: {fileID: 11400000, guid: 3be01e70988acb74792afce8bd6e21a7, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75
@@ -708,7 +708,7 @@ MonoBehaviour:
   MaxFoamParticleCount: 6000000
   DivergenceIterationCount: 1
   PressureIterationCount: 2
-  ComputeAnisotropyMatrix: 0
+  ComputeAnisotropyMatrix: 1
   IterNum: 3
   ParticleData: {fileID: 11400000, guid: 88529f63bd00193478f04434a51d1b8d, type: 2}
 --- !u!4 &1784697732
@@ -860,7 +860,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8164078560040880145}
   m_LocalRotation: {x: -0, y: -0, z: -0.037196185, w: 0.99930805}
-  m_LocalPosition: {x: -16.4, y: 33.5, z: 41.1}
+  m_LocalPosition: {x: -0.5, y: 33.5, z: 41.1}
   m_LocalScale: {x: 180.86314, y: 45.700447, z: 40.284515}
   m_Children: []
   m_Father: {fileID: 1766839093}
@@ -1005,7 +1005,7 @@ MonoBehaviour:
   targetVoxelSize: 0
   useTargetVoxelSize: 0
   useManualBounds: 0
-  sdfData: {fileID: 11400000, guid: 96381d7df37133047a4eae21adea0101, type: 2}
+  sdfData: {fileID: 11400000, guid: ccc8fd0adb3edf444ac786cf6fd1f27c, type: 2}
   raySamples: 256
   jitterSeed: 555
   jitterScale: 0.75

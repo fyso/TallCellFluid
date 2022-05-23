@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FoamSetting
   m_EditorClassIdentifier: 
   m_DrawFoam: 1
-  m_FoamRadius: 0.117
-  m_Diffusion: 0.085
+  m_FoamRadius: 0.1603
+  m_Diffusion: 0.01
   m_MotionBlurScale: 0.01
   m_FoamColor: {r: 1, g: 1, b: 1, a: 1}
