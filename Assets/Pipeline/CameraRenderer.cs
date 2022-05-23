@@ -13,9 +13,9 @@ public class PerspectiveGridData
     float m_GridRight;
     float m_GridDown;
     float m_GridUp;
-
     float m_GridNear;
     float m_GridFar;
+
     Vector3 m_GridMin;
     Vector3 m_GridMax;
     DepthSplitMode m_DepthSplitMode;
@@ -31,15 +31,19 @@ public class PerspectiveGridData
     {
         m_GridMin = gridMin;
         m_GridMax = gridMax;
-        m_CameraFov  = camera.fieldOfView;
+        m_CameraFov = camera.fieldOfView;
         m_CameraNear = camera.nearClipPlane;
-        m_CameraFar  = camera.farClipPlane;
-        m_DepthSplitMode      = depthSplitMode;
+        m_CameraFar = camera.farClipPlane;
+        m_DepthSplitMode = depthSplitMode;
         m_PerspectiveGridDimX = perspectiveGridDimX;
         m_PerspectiveGridDimY = perspectiveGridDimY;
-        m_ViewMatrixForGrid   = camera.worldToCameraMatrix;
-        CalculateGridDim();
+        m_ViewMatrixForGrid = camera.worldToCameraMatrix;
+        CalculateGridDim(camera.aspect);
 
+        Shader.SetGlobalFloat("_LeftPlane", m_GridLeft);
+        Shader.SetGlobalFloat("_PerspectiveGridLengthX", m_GridRight - m_GridLeft);
+        Shader.SetGlobalFloat("_DownPlane", m_GridDown);
+        Shader.SetGlobalFloat("_PerspectiveGridLengthY", m_GridUp - m_GridDown);
         Shader.SetGlobalFloat("_NearPlane", m_GridNear);
         Shader.SetGlobalFloat("_FarPlane", m_GridFar);
         Shader.SetGlobalMatrix("_ViewMatrixForGrid", m_ViewMatrixForGrid);
@@ -49,17 +53,17 @@ public class PerspectiveGridData
 
     public void UpdatePerspectiveGridData(Camera camera, Vector3 gridMin, Vector3 gridMax, int perspectiveGridDimX, int perspectiveGridDimY, DepthSplitMode depthSplitMode, bool isFreeze)
     {
-        if(!isFreeze)
+        if (!isFreeze)
         {
-             if (m_GridMin != gridMin ||
-                 m_GridMax != gridMax ||
-                 m_CameraFov != camera.fieldOfView ||
-                 m_CameraFar != camera.farClipPlane ||
-                 m_CameraNear != camera.nearClipPlane ||
-                 m_PerspectiveGridDimX != perspectiveGridDimX ||
-                 m_PerspectiveGridDimY != perspectiveGridDimY ||
-                 m_DepthSplitMode != depthSplitMode ||
-                 m_ViewMatrixForGrid != camera.worldToCameraMatrix)
+            if (m_GridMin != gridMin ||
+                m_GridMax != gridMax ||
+                m_CameraFov != camera.fieldOfView ||
+                m_CameraFar != camera.farClipPlane ||
+                m_CameraNear != camera.nearClipPlane ||
+                m_PerspectiveGridDimX != perspectiveGridDimX ||
+                m_PerspectiveGridDimY != perspectiveGridDimY ||
+                m_DepthSplitMode != depthSplitMode ||
+                m_ViewMatrixForGrid != camera.worldToCameraMatrix)
             {
                 m_GridMin = gridMin;
                 m_GridMax = gridMax;
@@ -70,7 +74,7 @@ public class PerspectiveGridData
                 m_PerspectiveGridDimX = perspectiveGridDimX;
                 m_PerspectiveGridDimY = perspectiveGridDimY;
                 m_ViewMatrixForGrid = camera.worldToCameraMatrix;
-                CalculateGridDim();
+                CalculateGridDim(camera.aspect);
             }
         }
         else
@@ -78,10 +82,14 @@ public class PerspectiveGridData
             if (m_DepthSplitMode != depthSplitMode)
             {
                 m_DepthSplitMode = depthSplitMode;
-                CalculateGridDim();
+                CalculateGridDim(camera.aspect);
             }
         }
 
+        Shader.SetGlobalFloat("_LeftPlane", m_GridLeft);
+        Shader.SetGlobalFloat("_PerspectiveGridLengthX", m_GridRight - m_GridLeft);
+        Shader.SetGlobalFloat("_DownPlane", m_GridDown);
+        Shader.SetGlobalFloat("_PerspectiveGridLengthY", m_GridUp - m_GridDown);
         Shader.SetGlobalFloat("_NearPlane", m_GridNear);
         Shader.SetGlobalFloat("_FarPlane", m_GridFar);
         Shader.SetGlobalMatrix("_ViewMatrixForGrid", m_ViewMatrixForGrid);
@@ -89,8 +97,11 @@ public class PerspectiveGridData
         Shader.SetGlobalBuffer("_ParticleCountOfGrid", m_ParticleCountOfGridBuffer);
     }
 
-    void CalculateGridDim()
+    void CalculateGridDim(float vAspect)
     {
+        float fieldView = m_CameraFov * Mathf.Deg2Rad * 0.5f;
+        float tanFieldView = Mathf.Tan(fieldView);
+
         Vector4 p0 = new Vector4(m_GridMin.x, m_GridMin.y, m_GridMin.z, 1.0f);
         Vector4 p6 = new Vector4(m_GridMax.x, m_GridMax.y, m_GridMax.z, 1.0f);
         Vector4 p1 = new Vector4(p6.x, p0.y, p0.z, 1.0f);
@@ -108,41 +119,8 @@ public class PerspectiveGridData
         p5 = m_ViewMatrixForGrid * p5;
         p6 = m_ViewMatrixForGrid * p6;
         p7 = m_ViewMatrixForGrid * p7;
-
         //X÷·
         float result;
-        result = p0.x < p1.x ? p0.x : p1.x;
-        result = p2.x < result ? p2.x : result;
-        result = p3.x < result ? p3.x : result;
-        result = p4.x < result ? p4.x : result;
-        result = p5.x < result ? p5.x : result;
-        result = p6.x < result ? p6.x : result;
-        m_GridLeft = p7.x < result ? p7.x : result;
-
-        result = p0.x > p1.x ? p0.x : p1.x;
-        result = p2.x > result ? p2.x : result;
-        result = p3.x > result ? p3.x : result;
-        result = p4.x > result ? p4.x : result;
-        result = p5.x > result ? p5.x : result;
-        result = p6.x > result ? p6.x : result;
-        m_GridRight = p7.x > result ? p7.x : result;
-
-        result = p0.y < p1.y ? p0.y : p1.y;
-        result = p2.y < result ? p2.y : result;
-        result = p3.y < result ? p3.y : result;
-        result = p4.y < result ? p4.y : result;
-        result = p5.y < result ? p5.y : result;
-        result = p6.y < result ? p6.y : result;
-        m_GridDown = p7.y < result ? p7.y : result;
-
-        result = p0.y > p1.y ? p0.y : p1.y;
-        result = p2.y > result ? p2.y : result;
-        result = p3.y > result ? p3.y : result;
-        result = p4.y > result ? p4.y : result;
-        result = p5.y > result ? p5.y : result;
-        result = p6.y > result ? p6.y : result;
-        m_GridUp = p7.y > result ? p7.y : result;
-
         result = p0.z > p1.z ? p0.z : p1.z;
         result = p2.z > result ? p2.z : result;
         result = p3.z > result ? p3.z : result;
@@ -161,8 +139,46 @@ public class PerspectiveGridData
         result = p7.z < result ? p7.z : result;
         m_GridFar = m_CameraFar < -result ? m_CameraFar : -result;
 
+        result = p0.y < p1.y ? p0.y : p1.y;
+        result = p2.y < result ? p2.y : result;
+        result = p3.y < result ? p3.y : result;
+        result = p4.y < result ? p4.y : result;
+        result = p5.y < result ? p5.y : result;
+        result = p6.y < result ? p6.y : result;
+        result = p7.y < result ? p7.y : result;
+        float maxHalfHeight = m_GridFar * tanFieldView;
+        m_GridDown = -maxHalfHeight < result ? result : -maxHalfHeight;
+
+        result = p0.y > p1.y ? p0.y : p1.y;
+        result = p2.y > result ? p2.y : result;
+        result = p3.y > result ? p3.y : result;
+        result = p4.y > result ? p4.y : result;
+        result = p5.y > result ? p5.y : result;
+        result = p6.y > result ? p6.y : result;
+        result = p7.y > result ? p7.y : result;
+        m_GridUp = maxHalfHeight > result ? result : maxHalfHeight;
+
+        float maxHalfWidth = maxHalfHeight * vAspect;
+        result = p0.x < p1.x ? p0.x : p1.x;
+        result = p2.x < result ? p2.x : result;
+        result = p3.x < result ? p3.x : result;
+        result = p4.x < result ? p4.x : result;
+        result = p5.x < result ? p5.x : result;
+        result = p6.x < result ? p6.x : result;
+        result = p7.x < result ? p7.x : result;
+        m_GridLeft = -maxHalfWidth < result ? result : -maxHalfWidth;
+
+        result = p0.x > p1.x ? p0.x : p1.x;
+        result = p2.x > result ? p2.x : result;
+        result = p3.x > result ? p3.x : result;
+        result = p4.x > result ? p4.x : result;
+        result = p5.x > result ? p5.x : result;
+        result = p6.x > result ? p6.x : result;
+        result = p7.x > result ? p7.x : result;
+        m_GridRight = maxHalfWidth > result ? result : maxHalfWidth;
+
         float sampleRadioInv = 0f;
-        int   perspectiveGridDimZ = 0;
+        int perspectiveGridDimZ = 0;
         switch (m_DepthSplitMode)
         {
             case DepthSplitMode.Uniform:
@@ -171,20 +187,18 @@ public class PerspectiveGridData
                 break;
             case DepthSplitMode.Log:
                 float log = Mathf.Log(m_GridFar / m_GridNear);
-                float fieldView = m_CameraFov * Mathf.Deg2Rad * 0.5f; //TODO:Orthographic
-                sampleRadioInv = m_PerspectiveGridDimY / (2.0f * Mathf.Tan(fieldView));
+                sampleRadioInv = m_PerspectiveGridDimY / (2.0f * tanFieldView);
                 perspectiveGridDimZ = Mathf.CeilToInt(log * sampleRadioInv);
                 break;
             case DepthSplitMode.Cube:
                 float logFarAndNear = Mathf.Log(m_GridFar / m_GridNear);
-                float fieldOfView = m_CameraFov * Mathf.Deg2Rad * 0.5f; 
-                float sD = 2.0f * Mathf.Tan(fieldOfView) / m_PerspectiveGridDimY;
+                float sD = 2.0f * tanFieldView / m_PerspectiveGridDimY;
                 sampleRadioInv = 1.0f / Mathf.Log(1.0f + sD);
                 perspectiveGridDimZ = Mathf.CeilToInt(logFarAndNear * sampleRadioInv);
                 break;
         }
-        m_GridCount = m_PerspectiveGridDimX * m_PerspectiveGridDimY * perspectiveGridDimZ;
 
+        m_GridCount = m_PerspectiveGridDimX * m_PerspectiveGridDimY * perspectiveGridDimZ;
         Shader.SetGlobalFloat("_SampleRadioInv", sampleRadioInv);
         Shader.SetGlobalInt("_PerspectiveGridDimZ", perspectiveGridDimZ);
 

@@ -12,7 +12,11 @@
 uint _PerspectiveGridDimX;
 uint _PerspectiveGridDimY;
 uint _PerspectiveGridDimZ;
+uint _PerspectiveGridLengthX;
+uint _PerspectiveGridLengthY;
 float _SampleRadioInv;
+float _LeftPlane;
+float _DownPlane;
 float _NearPlane;
 float _FarPlane;
 
@@ -21,22 +25,34 @@ int3 viewPos2Index3D(float3 viewPos)
     float parm1 = 0.5f * glstate_matrix_projection[1][1] / viewPos.z;
     float aspectInv = _ScreenParams.y / _ScreenParams.x;
     float ndcX = viewPos.x * parm1 * aspectInv + 0.5;
-    int   index_X = floor(ndcX * _PerspectiveGridDimX);
-    if (index_X < 0 && index_X > -3)
-        index_X = 0;
+    int index_X = 0;
+    if (ndcX < 0 || ndcX > 1)
+        index_X = -1;
+    else
+    {
+        ndcX = (viewPos.x - _LeftPlane) / _PerspectiveGridLengthX;
+        index_X = floor(ndcX * _PerspectiveGridDimX);
+    }
+    
     float ndcY = viewPos.y * parm1 + 0.5;
-    int   index_Y = floor(ndcY * _PerspectiveGridDimY);
-    if (index_Y < 0 && index_Y > -3)
-        index_Y = 0;
+    int index_Y = 0;
+    if (ndcY < 0 || ndcY > 1)
+        index_Y = -1;
+    else
+    {
+        ndcY = (viewPos.y - _DownPlane) / _PerspectiveGridLengthY;
+        index_Y = floor(ndcY * _PerspectiveGridDimY);
+    }
     
     #ifdef _DEPTHSPLIT_NONLINEAR
-        int index_Z = floor(log(-viewPos.z / _NearPlane) * _SampleRadioInv);
+            int index_Z = floor(log(-viewPos.z / _NearPlane) * _SampleRadioInv);
     #else
-    int index_Z = floor((-viewPos.z - _NearPlane) / _SampleRadioInv * _PerspectiveGridDimZ);
+        int index_Z = floor((-viewPos.z - _NearPlane) / _SampleRadioInv * _PerspectiveGridDimZ);
     #endif
 
     return int3(index_X, index_Y, index_Z);
 }
+
 
 uint tex3DIndex2Liner(uint3 tex3DIndex)
 {

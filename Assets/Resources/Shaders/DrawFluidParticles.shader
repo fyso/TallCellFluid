@@ -80,14 +80,14 @@
 
                 #ifdef _CULL
                     int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePos, 1.0f)));
-                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                    if (any(tex3DIndex < 0))
                         return Clip();
                     uint cellLinerIndex = tex3DIndex2Liner(tex3DIndex);
                     uint visible = _VisibleGridBuffer[cellLinerIndex];
                     if (visible != 1) return Clip(); 
                 #elif _FREEZE
                     int3 tex3DIndex = viewPos2Index3D(mul(_ViewMatrixForGrid, float4(particlePos, 1.0f)));
-                    if (any(tex3DIndex < 0) || any(tex3DIndex > int3(_PerspectiveGridDimX, _PerspectiveGridDimY, _PerspectiveGridDimZ)))
+                    if (any(tex3DIndex < 0))
                         output.cellOfParticleIndex3D = float3(1, instanceID, 0);
                     else
                     {
