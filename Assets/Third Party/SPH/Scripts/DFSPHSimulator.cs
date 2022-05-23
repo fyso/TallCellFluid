@@ -43,7 +43,7 @@ namespace LODFluid
         [Range(0, 10)]
         public uint IterNum = 3;
 
-        private DivergenceFreeSPHSolver DFSPH;
+        private AdaptiveDivergenceFreeSPHSolver DFSPH;
 
         private void OnDrawGizmos()
         {
@@ -59,7 +59,7 @@ namespace LODFluid
 
         void Start()
         {
-            DFSPH = new DivergenceFreeSPHSolver(BoundaryObjects, MaxParticleCount, MaxFoamParticleCount, SimulationRangeMin, SimulationRangeRes, ParticleRadius);
+            DFSPH = new AdaptiveDivergenceFreeSPHSolver(BoundaryObjects, MaxParticleCount, MaxFoamParticleCount, SimulationRangeMin, SimulationRangeRes, ParticleRadius);
         }
 
         private bool Emit = true;
