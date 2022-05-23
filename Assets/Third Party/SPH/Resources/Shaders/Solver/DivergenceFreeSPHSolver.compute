@@ -884,6 +884,9 @@ void advectFoamParticle(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_Group
         }
     );
     
+    if(NeighborCount > 2)
+        CurrentVel = VelocitySum / (float) NeighborCount;
+    
     float MixFactor = 0.213f;
     if (abs(length(DensityDrad) - 0.0f) >= 1e-6 && abs(length(CurrSurfaceNormal) - 0.0f) >= 1e-6)
     {
