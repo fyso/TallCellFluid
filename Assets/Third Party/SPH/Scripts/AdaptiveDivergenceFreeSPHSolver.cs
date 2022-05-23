@@ -29,6 +29,228 @@ namespace LODFluid
         }
     }
 
+    public class ParticleLayer
+    {
+        public float ParticleRadius { get { return ParticleRadius; } }
+        public float SearchRadius { get { return m_ParticleRadius * 4.0f; } }
+        public float ParticleVolume { get { return 0.8f * Mathf.Pow(2.0f * m_ParticleRadius, 3.0f); } }
+        public float CubicZero { get { return 8.0f / (Mathf.PI * Mathf.Pow(SearchRadius, 3.0f)); } }
+
+        public ParticleLayer(uint vMaxParticleCount, float vParticleRadius)
+        {
+            m_ParticleRadius = vParticleRadius;
+
+            m_FrontParticle = new ParticleBuffer(vMaxParticleCount);
+            m_BackParticle = new ParticleBuffer(vMaxParticleCount);
+
+            int[] ParticleIndirectArgumentCPU = new int[7] { 1, 1, 1, 6, 0, 0, 0 };
+            m_IndirectArgument = new ComputeBuffer(7, sizeof(int), ComputeBufferType.IndirectArguments);
+            m_IndirectArgument.SetData(ParticleIndirectArgumentCPU);
+
+            m_NarrowScatterCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
+            m_BoundaryDistanceBuffer = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_HashCellIndexCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
+            m_HashCellInnerSortIndexCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
+
+            m_DensityCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_AlphaCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_DensityChangeCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_DensityAdvCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_NormalCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
+
+            m_BoundaryClosestPointCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
+            m_BoundaryVolumeCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_BoundaryVelocityCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
+
+            m_FoamParticleCountCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
+            m_FoamParticleOffsetCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint));
+            m_ParticleVdiffCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_ParticleCurvatureCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+            m_ParticleKeCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float));
+
+            m_NarrowPositionCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(float) * 3);
+            m_AnisotropyCache = new ComputeBuffer((int)vMaxParticleCount, sizeof(uint) * 2);
+        }
+
+        public void Release()
+        {
+            m_FrontParticle.Release();
+            m_BackParticle.Release();
+            m_IndirectArgument.Release();
+
+            m_NarrowScatterCache.Release();
+
+            m_HashCellIndexCache.Release();
+            m_HashCellInnerSortIndexCache.Release();
+
+            m_AlphaCache.Release();
+            m_DensityCache.Release();
+            m_DensityChangeCache.Release();
+            m_DensityAdvCache.Release();
+            m_NormalCache.Release();
+
+            m_BoundaryVolumeCache.Release();
+            m_BoundaryDistanceBuffer.Release();
+            m_BoundaryVelocityCache.Release();
+            m_BoundaryClosestPointCache.Release();
+
+            m_FoamParticleCountCache.Release();
+            m_FoamParticleOffsetCache.Release();
+            m_ParticleVdiffCache.Release();
+            m_ParticleCurvatureCache.Release();
+            m_ParticleKeCache.Release();
+
+            m_NarrowPositionCache.Release();
+            m_AnisotropyCache.Release();
+        }
+
+        private ComputeShader DivergenceFreeSPHSloverCS;
+        private int computeFluidProperty;
+        private int computeDensityChange;
+        private int solveDivergenceIteration;
+        private int computeDensityAdv;
+        private int slovePressureIterationKernel;
+        private int updateVelocityWithNoPressureForce;
+        private int computeFoamParticleCountPerWaterParticle;
+        private int advectWaterParticle;
+        private int generateFoamParticle;
+        private int updateFoamParticleCountArgument;
+        private int advectFoamParticle;
+
+        private float m_ParticleRadius;
+
+        private ParticleBuffer m_FrontParticle;
+        private ParticleBuffer m_BackParticle;
+        private ComputeBuffer m_IndirectArgument;
+
+        private ComputeBuffer m_NarrowScatterCache;
+
+        private ComputeBuffer m_HashCellIndexCache;
+        private ComputeBuffer m_HashCellInnerSortIndexCache;
+
+        private ComputeBuffer m_AlphaCache;
+        private ComputeBuffer m_DensityCache;
+        private ComputeBuffer m_DensityChangeCache;
+        private ComputeBuffer m_DensityAdvCache;
+        private ComputeBuffer m_NormalCache;
+
+        private ComputeBuffer m_BoundaryVolumeCache;
+        private ComputeBuffer m_BoundaryDistanceBuffer;
+        private ComputeBuffer m_BoundaryVelocityCache;
+        private ComputeBuffer m_BoundaryClosestPointCache;
+
+        private ComputeBuffer m_FoamParticleCountCache;
+        private ComputeBuffer m_FoamParticleOffsetCache;
+        private ComputeBuffer m_ParticleVdiffCache;
+        private ComputeBuffer m_ParticleCurvatureCache;
+        private ComputeBuffer m_ParticleKeCache;
+
+        private ComputeBuffer m_NarrowPositionCache;
+        private ComputeBuffer m_AnisotropyCache;
+    }
+
+    public struct Emitter
+    {
+        public Vector3 Position;
+        public Vector2Int Size;
+        public Vector3 Direction;
+        public Vector3 Velocity;
+    }
+
+    public struct Boundary
+    {
+        public void Release()
+        {
+            SignedDistance.Release();
+            Volume.Release();
+        }
+
+        public GameObject BoundaryObject;
+        public CubicMap SignedDistance;
+        public CubicMap Volume;
+    }
+
+    public struct HashGrid
+    {
+        public Vector3 Min;
+        public float CellLength;
+        public Vector3Int Resoultion;
+    }
+
+    public class AdaptiveFluidSolver
+    {
+        public AdaptiveFluidSolver(int vFineLevelParticleMaxCount, float vFineLevelParticleRadius, float vFineLevelParticleRange, 
+            int vDetailLayerCount, 
+            Vector3 vSimulationRangeMin, Vector3 vSimulationRangeMax)
+        {
+            m_ParticleMaxCount = vFineLevelParticleMaxCount;
+            m_FineLevelParticleRadius = vFineLevelParticleRadius;
+            m_FineLevelParticleRange = vFineLevelParticleRange;
+            m_DetailLayerCount = vDetailLayerCount;
+
+            m_HashGrid = new HashGrid();
+            m_HashGrid.Min = vSimulationRangeMin;
+            m_HashGrid.CellLength = vFineLevelParticleRadius * 4.0f;
+
+            Vector3 Dia = vSimulationRangeMax - vSimulationRangeMin;
+            m_HashGrid.Resoultion = new Vector3Int(
+                Mathf.CeilToInt(Dia.x / m_HashGrid.CellLength),
+                Mathf.CeilToInt(Dia.y / m_HashGrid.CellLength),
+                Mathf.CeilToInt(Dia.z / m_HashGrid.CellLength));
+
+            m_ParticleLayers = new List<ParticleLayer>();
+            m_Emitters = new List<Emitter>();
+
+            for (int i = 0; i < m_DetailLayerCount; i++)
+                m_ParticleLayers.Add(new ParticleLayer((uint) m_ParticleMaxCount, m_FineLevelParticleRadius * Mathf.Pow(2, i)));
+        }
+
+        public void Release()
+        {
+            foreach (ParticleLayer Layer in m_ParticleLayers)
+                Layer.Release();
+        }
+
+        public void AddEmitter(Emitter vInput)
+        {
+            m_Emitters.Add(vInput);
+        }
+
+        public void AddBoundary(Boundary vInput)
+        {
+            m_Boundarys.Add(vInput);
+        }
+
+        public void GenerateHashInfo()
+        {
+
+        }
+
+        public void SplitAndMergeByNewCenterPosition(Vector3 vPosition)
+        {
+            //for each particle detail layer
+            for(int i = 0; i < m_DetailLayerCount; i++)
+            {
+                //pick out particle in finer range particle (GPU operation)
+                //split them and add new particle to finer layer (GPU operation)
+
+                //pick out particle in coarser range particle (GPU operation)
+                //merge them and add new particle to coarser layer (GPU operation)
+            }
+        }
+
+        private int m_DetailLayerCount;
+        private int m_ParticleMaxCount;
+        private float m_FineLevelParticleRadius;
+        private float m_FineLevelParticleRange;
+            
+        private HashGrid m_HashGrid;
+
+        private List<ParticleLayer> m_ParticleLayers;
+        private List<Emitter> m_Emitters;
+        private List<Boundary> m_Boundarys;
+    }
+
     public class AdaptiveDivergenceFreeSPHSolver
     {
         public ParticleBuffer Dynamic3DParticle;
