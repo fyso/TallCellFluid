@@ -67,18 +67,18 @@ namespace LODFluid
         {
             if (Input.GetKeyDown(KeyCode.Space))
                 Emit = !Emit;
+        }
 
-            if (Emit && Time.frameCount % 10 == 0)
+        private void FixedUpdate()
+        {
+            if (Emit)
             {
                 DFSPH.AddParticleBlock(
                     WaterGeneratePosition,
                     WaterGenerateResolution,
                     WaterGenerateInitVelocity);
             }
-        }
 
-        private void FixedUpdate()
-        {
             DFSPH.Step(TimeStep, Viscosity, SurfaceTension, Gravity, ComputeAnisotropyMatrix, IterNum, DivergenceIterationCount, PressureIterationCount);
             SetupDataForReconstruction();
         }

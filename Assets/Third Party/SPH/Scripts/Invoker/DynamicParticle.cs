@@ -60,6 +60,7 @@ namespace LODFluid
             DynamicParticleToolCS.SetBuffer(AddParticleBlockKernel, "ParticleIndrectArgment_RW", voParticleIndirectArgumentBuffer);
             DynamicParticleToolCS.SetBuffer(AddParticleBlockKernel, "ParticlePosition_RW", voTarget.ParticlePositionBuffer);
             DynamicParticleToolCS.SetBuffer(AddParticleBlockKernel, "ParticleVelocity_RW", voTarget.ParticleVelocityBuffer);
+            DynamicParticleToolCS.SetBuffer(AddParticleBlockKernel, "ParticleLifeTime_RW", voTarget.ParticleLifeTimeBuffer);
             DynamicParticleToolCS.SetBuffer(AddParticleBlockKernel, "ParticleFilter_RW", voTarget.ParticleFilterBuffer);
             DynamicParticleToolCS.Dispatch(AddParticleBlockKernel, (int)Mathf.Ceil((float)AddedParticleCount / Common.SPHThreadCount), 1, 1);
             

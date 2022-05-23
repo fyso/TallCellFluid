@@ -17,7 +17,7 @@ RWStructuredBuffer<float3> ParticleVelocity_RW;
 StructuredBuffer<uint> ParticleFilter_R;
 RWStructuredBuffer<uint> ParticleFilter_RW;
 StructuredBuffer<float> ParticleLifeTime_R;
-RWStructuredBuffer<float> ParticleLifeTim_RW;
+RWStructuredBuffer<float> ParticleLifeTime_RW;
 
 StructuredBuffer<float> ParticleBoundaryDiatance_R;
 
@@ -50,6 +50,7 @@ void addParticleBlock(uint ThreadIdx : SV_GroupIndex, uint GroupIdx : SV_GroupID
     uint x = xp % WaterBlockResX;
     ParticlePosition_RW[CurrParticleCount + i] = WaterGeneratePos + float3(x, y, z) * ParticleRadius * 2.0f;
     ParticleVelocity_RW[CurrParticleCount + i] = ParticleInitVel;
+    ParticleLifeTime_RW[CurrParticleCount + i] = 0.0f;
     ParticleFilter_RW[CurrParticleCount + i] = 1;
 }
 
